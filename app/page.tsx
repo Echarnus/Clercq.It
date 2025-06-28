@@ -56,7 +56,11 @@ export default function HomePage() {
               </Badge>
             ))}
           </div>
-          <Button asChild size="lg" className="bg-slate-900 hover:bg-slate-800">
+          <Button
+            asChild
+            size="lg"
+            className="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          >
             <Link href="/portfolio">
               View My Work <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
