@@ -36,7 +36,7 @@ export default function HomePage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100"
+      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       <Header currentPage="home" />
@@ -44,8 +44,8 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-5xl font-bold text-slate-900 mb-6">Full Stack Developer</h2>
-          <p className="text-xl text-slate-600 mb-8 leading-relaxed">
+          <h2 className="text-5xl font-bold text-slate-900 mb-6 dark:text-white">Full Stack Developer</h2>
+          <p className="text-xl text-slate-600 mb-8 leading-relaxed dark:text-slate-300">
             Passionate about creating complete digital solutions from A to Z. With expertise in modern technologies, I
             build scalable applications that solve real-world problems.
           </p>
@@ -66,16 +66,19 @@ export default function HomePage() {
 
       {/* Skills Section */}
       <section className="container mx-auto px-4 py-16">
-        <h3 className="text-3xl font-bold text-center text-slate-900 mb-12">What I Do</h3>
+        <h3 className="text-3xl font-bold text-center text-slate-900 mb-12 dark:text-white">What I Do</h3>
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {skills.map((skill, index) => (
-            <Card key={index} className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm">
+            <Card
+              key={index}
+              className="text-center border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20"
+            >
               <CardHeader>
-                <skill.icon className="h-12 w-12 mx-auto text-slate-700 mb-4" />
-                <CardTitle className="text-slate-900">{skill.label}</CardTitle>
+                <skill.icon className="h-12 w-12 mx-auto text-slate-700 mb-4 dark:text-slate-300" />
+                <CardTitle className="text-slate-900 dark:text-white">{skill.label}</CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription className="text-slate-600">{skill.description}</CardDescription>
+                <CardDescription className="text-slate-600 dark:text-slate-400">{skill.description}</CardDescription>
               </CardContent>
             </Card>
           ))}
@@ -85,8 +88,8 @@ export default function HomePage() {
       {/* Featured Projects */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h3 className="text-3xl font-bold text-slate-900 mb-4">Featured Projects</h3>
-          <p className="text-slate-600 max-w-2xl mx-auto">
+          <h3 className="text-3xl font-bold text-slate-900 mb-4 dark:text-white">Featured Projects</h3>
+          <p className="text-slate-600 max-w-2xl mx-auto dark:text-slate-300">
             Here are some of the projects I've been working on, showcasing my expertise in full-stack development and
             cloud technologies.
           </p>
@@ -96,7 +99,7 @@ export default function HomePage() {
           {featuredProjects.map((project, index) => (
             <Card
               key={index}
-              className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm"
+              className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20"
             >
               <CardHeader className="p-0">
                 <div className="relative overflow-hidden rounded-t-lg">
@@ -110,8 +113,10 @@ export default function HomePage() {
                 </div>
               </CardHeader>
               <CardContent className="p-6">
-                <CardTitle className="text-slate-900 mb-2">{project.title}</CardTitle>
-                <CardDescription className="text-slate-600 mb-4">{project.description}</CardDescription>
+                <CardTitle className="text-slate-900 mb-2 dark:text-white">{project.title}</CardTitle>
+                <CardDescription className="text-slate-600 mb-4 dark:text-slate-400">
+                  {project.description}
+                </CardDescription>
                 <div className="flex flex-wrap gap-2">
                   {project.tags.map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
@@ -134,12 +139,12 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12">
+      <footer className="bg-slate-900 text-white py-12 dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div>
               <h4 className="font-semibold mb-4">Portfolio</h4>
-              <ul className="space-y-2 text-slate-300">
+              <ul className="space-y-2 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="/portfolio" className="hover:text-white transition-colors">
                     All Projects
@@ -159,7 +164,7 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Sitemap</h4>
-              <ul className="space-y-2 text-slate-300">
+              <ul className="space-y-2 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="/" className="hover:text-white transition-colors">
                     Home
@@ -176,7 +181,7 @@ export default function HomePage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Connect</h4>
-              <ul className="space-y-3 text-slate-300">
+              <ul className="space-y-3 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -202,7 +207,7 @@ export default function HomePage() {
               </ul>
             </div>
           </div>
-          <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400">
+          <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
             <p>Made with ❤️ using React, .NET, Docker • Hosted on Scaleway</p>
           </div>
         </div>
