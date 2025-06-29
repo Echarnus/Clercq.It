@@ -72,7 +72,7 @@ export default function PortfolioPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100"
+      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       {/* Header */}
@@ -88,8 +88,8 @@ export default function PortfolioPage() {
             </Link>
           </Button>
 
-          <h2 className="text-4xl font-bold text-slate-900 mb-6">My Portfolio</h2>
-          <p className="text-xl text-slate-600 leading-relaxed">
+          <h2 className="text-4xl font-bold text-slate-900 mb-6 dark:text-white">My Portfolio</h2>
+          <p className="text-xl text-slate-600 leading-relaxed dark:text-slate-300">
             A collection of projects showcasing my expertise in full-stack development, cloud technologies, and modern
             software architecture. Each project demonstrates different aspects of my technical skills and
             problem-solving approach.
@@ -104,7 +104,7 @@ export default function PortfolioPage() {
             {projects.map((project, index) => (
               <Card
                 key={index}
-                className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm ${project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""}`}
+                className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 ${project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""}`}
               >
                 <div className={`relative overflow-hidden ${project.featured ? "md:order-1" : ""}`}>
                   <Image
@@ -120,7 +120,7 @@ export default function PortfolioPage() {
                   className={`p-6 ${project.featured ? "md:order-2 md:flex md:flex-col md:justify-center" : ""}`}
                 >
                   <div className="flex items-start justify-between mb-4">
-                    <CardTitle className="text-slate-900 text-xl">{project.title}</CardTitle>
+                    <CardTitle className="text-slate-900 text-xl dark:text-white">{project.title}</CardTitle>
                     <div className="flex gap-2 ml-4">
                       <Button asChild size="sm" variant="outline">
                         <Link href={project.liveUrl}>
@@ -135,7 +135,7 @@ export default function PortfolioPage() {
                     </div>
                   </div>
 
-                  <CardDescription className="text-slate-600 mb-4 leading-relaxed">
+                  <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
                     {project.description}
                   </CardDescription>
 
@@ -154,12 +154,12 @@ export default function PortfolioPage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-slate-900 text-white py-12">
+      <footer className="bg-slate-900 text-white py-12 dark:bg-slate-950">
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             <div>
               <h4 className="font-semibold mb-4">Portfolio</h4>
-              <ul className="space-y-2 text-slate-300">
+              <ul className="space-y-2 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="/portfolio" className="hover:text-white transition-colors">
                     All Projects
@@ -179,7 +179,7 @@ export default function PortfolioPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Sitemap</h4>
-              <ul className="space-y-2 text-slate-300">
+              <ul className="space-y-2 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="/" className="hover:text-white transition-colors">
                     Home
@@ -204,7 +204,7 @@ export default function PortfolioPage() {
             </div>
             <div>
               <h4 className="font-semibold mb-4">Connect</h4>
-              <ul className="space-y-3 text-slate-300">
+              <ul className="space-y-3 text-slate-300 dark:text-slate-400">
                 <li>
                   <Link href="#" className="hover:text-white transition-colors flex items-center gap-2">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -230,7 +230,7 @@ export default function PortfolioPage() {
               </ul>
             </div>
           </div>
-          <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400">
+          <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
             <p>Made with ❤️ using React, .NET, Docker • Hosted on Scaleway</p>
           </div>
         </div>
