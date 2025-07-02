@@ -1,11 +1,8 @@
-import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
+import Link from "next/link";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Navigation } from "./navigation";
 
-interface HeaderProps {
-  currentPage: "home" | "portfolio"
-}
-
-export function Header({ currentPage }: HeaderProps) {
+export function Header() {
   return (
     <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50 dark:bg-slate-900/80 dark:border-slate-800">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
@@ -22,33 +19,11 @@ export function Header({ currentPage }: HeaderProps) {
             <span className="font-bold">D</span>
             <span className="font-light">evelopment</span>
           </p>
-        </div>
-        <div className="flex items-center gap-4">
-          <nav className="flex gap-6">
-            <Link
-              href="/"
-              className={
-                currentPage === "home"
-                  ? "text-slate-900 font-medium border-b-2 border-slate-900 dark:text-white dark:border-white"
-                  : "text-slate-600 hover:text-slate-900 transition-colors hover:border-b-2 hover:border-slate-600 dark:text-slate-400 dark:hover:text-white dark:hover:border-slate-400"
-              }
-            >
-              Home
-            </Link>
-            <Link
-              href="/portfolio"
-              className={
-                currentPage === "portfolio"
-                  ? "text-slate-900 font-medium border-b-2 border-slate-900 dark:text-white dark:border-white"
-                  : "text-slate-600 hover:text-slate-900 transition-colors hover:border-b-2 hover:border-slate-600 dark:text-slate-400 dark:hover:text-white dark:hover:border-slate-400"
-              }
-            >
-              Portfolio
-            </Link>
-          </nav>
+        </div>        <div className="flex items-center gap-4">
+          <Navigation />
           <ThemeToggle />
         </div>
       </div>
     </header>
-  )
+  );
 }

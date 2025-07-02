@@ -1,7 +1,8 @@
 {
-  "name": "my-v0-project",
+  "name": "clercq-it",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@10.12.4",
   "scripts": {
     "build": "next build",
     "dev": "next dev",
