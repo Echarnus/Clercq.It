@@ -9,37 +9,20 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Github, Mail } from "lucide-react";
 import Image from "next/image";
+import { createScope } from "@/lib/services/container";
+import type { ProjectsService } from "@/lib/services/projectsService";
 
-export default function PortfolioPage() {
-  const projects = [
-    {
-      title: "ClercqIt",
-      description:
-        "A personal portfolio website showcasing my skills and projects in full-stack development, cloud solutions, and modern software architecture.",
-      image: "/placeholder.svg?height=250&width=400",
-      tags: [
-        "React",
-        "ASP.Net",
-        "Scaleway",
-        "Docker",
-        "TailwindCSS",
-        "Next.js",
-        "PostGreSQL",
-        "GitHub Actions",
-        "V0",
-      ],
-      liveUrl: "#",
-      githubUrl: "https://github.com/Echarnus/Clercq.It",
-      featured: true,
-    },
-  ];
+export default async function PortfolioPage() {
+  // Create a per-request DI scope and resolve the ProjectsService directly
+  const scope = createScope();
+  const projectsService = scope.resolve<ProjectsService>("ProjectsService");
+  const projects = await projectsService.getProjects();
 
   return (
     <div
       className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
-
       {/* Portfolio Header */}
       <section className="container mx-auto px-4 py-16">
         <div className="max-w-4xl mx-auto">
@@ -66,70 +49,77 @@ export default function PortfolioPage() {
       <section className="container mx-auto px-4 pb-16">
         <div className="max-w-6xl mx-auto">
           <div className="grid gap-8">
-            {projects.map((project, index) => (
-              <Card
-                key={index}
-                className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 ${
-                  project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""
-                }`}
-              >
-                <div
-                  className={`relative overflow-hidden ${
-                    project.featured ? "md:order-1" : ""
+            {projects.length === 0 ? (
+              <div className="text-center text-slate-600 dark:text-slate-400">
+                No projects found. Add markdown files to
+                src/ClercqIt.Web/content/projects
+              </div>
+            ) : (
+              projects.map((project, index) => (
+                <Card
+                  key={index}
+                  className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 ${
+                    project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""
                   }`}
                 >
-                  <Image
-                    src={project.image || "/placeholder.svg"}
-                    alt={project.title}
-                    width={400}
-                    height={250}
-                    className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                      project.featured
-                        ? "h-64 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                        : "h-48 rounded-t-lg"
+                  <div
+                    className={`relative overflow-hidden ${
+                      project.featured ? "md:order-1" : ""
                     }`}
-                  />
-                </div>
+                  >
+                    <Image
+                      src={project.image || "/placeholder.svg"}
+                      alt={project.title}
+                      width={400}
+                      height={250}
+                      className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                        project.featured
+                          ? "h-64 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none"
+                          : "h-48 rounded-t-lg"
+                      }`}
+                    />
+                  </div>
 
-                <CardContent
-                  className={`p-6 ${
-                    project.featured
-                      ? "md:order-2 md:flex md:flex-col md:justify-center"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <CardTitle className="text-slate-900 text-xl dark:text-white">
-                      {project.title}
-                    </CardTitle>
-                    <div className="flex gap-2 ml-4">
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={project.liveUrl}>
-                          <ExternalLink className="h-4 w-4" />
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline">
-                        <Link href={project.githubUrl}>
-                          <Github className="h-4 w-4" />
-                        </Link>
-                      </Button>
+                  <CardContent
+                    className={`p-6 ${
+                      project.featured
+                        ? "md:order-2 md:flex md:flex-col md:justify-center"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <CardTitle className="text-slate-900 text-xl dark:text-white">
+                        {project.title}
+                      </CardTitle>
+                      <div className="flex gap-2 ml-4">
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={project.liveUrl ?? "#"}>
+                            <ExternalLink className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline">
+                          <Link href={project.githubUrl ?? "#"}>
+                            <Github className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </div>
                     </div>
-                  </div>
 
-                  <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
-                    {project.description}
-                  </CardDescription>
+                    <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
+                      {project.description}
+                    </CardDescription>
 
-                  <div className="flex flex-wrap gap-2">
-                    {project.tags.map((tag) => (
-                      <Badge key={tag} variant="secondary" className="text-xs">
-                        {tag}
-                      </Badge>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div className="flex flex-wrap gap-2">
+                      {project.tags?.map((tag) => (
+                        <Badge key={tag} variant="secondary" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </section>
