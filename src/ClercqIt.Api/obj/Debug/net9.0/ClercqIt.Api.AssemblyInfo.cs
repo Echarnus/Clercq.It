@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ClercqIt.Api")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+210cc56bcda078f3613003940c616466e9bb0a17")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+96d7a00bca170ef50aa5f2eb21c5293c88d56257")]
 [assembly: System.Reflection.AssemblyProductAttribute("ClercqIt.Api")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ClercqIt.Api")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

@@ -60,7 +60,7 @@ export function Footer() {
             <ul className="space-y-3 text-slate-300 dark:text-slate-400">
               <li>
                 <Link
-                  href="#"
+                  href="https://www.linkedin.com/in/kenneth-de-clercq-2b834269/"
                   className="hover:text-white transition-colors flex items-center gap-2"
                 >
                   <svg
@@ -75,7 +75,7 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="#"
+                  href="https://github.com/Echarnus"
                   className="hover:text-white transition-colors flex items-center gap-2"
                 >
                   <svg
@@ -88,7 +88,7 @@ export function Footer() {
                   GitHub
                 </Link>
               </li>
-              <li>
+              {/* <li>
                 <Link
                   href="#"
                   className="hover:text-white transition-colors flex items-center gap-2"
@@ -96,12 +96,14 @@ export function Footer() {
                   <Mail className="w-4 h-4" />
                   Email
                 </Link>
-              </li>
+              </li> */}
             </ul>
           </div>
         </div>
         <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
-          <p>Made with ❤️ using React, .NET, Docker • Hosted on Scaleway</p>
+          <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight">
+            Made with ❤️ using React, .NET, Docker • Hosted on Scaleway
+          </p>
         </div>
       </div>
     </footer>
