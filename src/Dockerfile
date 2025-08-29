@@ -10,20 +10,30 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
-COPY package.json pnpm-lock.yaml ./
+COPY ClercqIt.Web/package.json ClercqIt.Web/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile || pnpm install --force
 
 # Rebuild the source code only when needed
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=deps app/node_modules ./node_modules
+COPY ClercqIt.Web/. .
 
 # Build the application
 RUN pnpm run build
 
+# Use the official Nginx image to the
+FROM nginx:latest AS runner
+
+# Install Node.js on the Nginx image
+RUN apt-get update && \
+    apt-get install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_23.x | bash - && \
+    apt-get install -y nodejs && \
+    node --version && npm --version
+
 # Production image, copy all the files and run next
-FROM base AS runner
+FROM runner AS final
 WORKDIR /app
 
 ENV NODE_ENV production
@@ -43,9 +53,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 80
 
 ENV PORT 3000
 ENV HOSTNAME "0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["node", "server.js && nginx -g 'daemon off;'"]

@@ -7,7 +7,7 @@ export function Header() {
     <header className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-50 dark:bg-slate-900/80 dark:border-slate-800">
       <div className="container mx-auto px-4 py-4 flex justify-between items-center">
         <div>
-          <h1 className="text-4xl text-slate-900 leading-tight tracking-wider dark:text-white">
+          <h1 className="-ml-[0.10rem] text-4xl text-slate-900 leading-tight tracking-[0.13rem] dark:text-white">
             <span className="font-black">C</span>
             <span className="font-thin">lercq</span>
             <span className="font-black">l</span>
