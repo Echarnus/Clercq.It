@@ -118,7 +118,7 @@ export default function HomePage() {
             Featured Projects
           </h3>
           <p className="text-slate-600 max-w-2xl mx-auto dark:text-slate-300">
-            Here are some of the projects I've been working on, showcasing my
+            Here are some of the projects I&apos;ve been working on, showcasing my
             expertise in full-stack development and cloud technologies.
           </p>
         </div>
