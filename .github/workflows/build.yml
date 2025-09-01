@@ -70,8 +70,10 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             ${{ steps.meta.outputs.labels }}
-            org.opencontainers.image.version=${{ steps.gitversion.outputs.semVer }}
-            org.opencontainers.image.revision=${{ steps.gitversion.outputs.sha }}
+            org.opencontainers.image.version=${{
+              steps.gitversion.outputs.semVer }}
+            org.opencontainers.image.revision=${{
+              steps.gitversion.outputs.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

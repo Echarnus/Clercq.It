@@ -41,17 +41,21 @@ jobs:
       - name: Set deployment version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && \
+             [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "version=${{ github.event.inputs.version }}" >> \
+              $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.gitversion.outputs.semVer }}" >> \
+              $GITHUB_OUTPUT
           fi
 
       - name: Deploy to Scaleway
         run: |
           echo "Deploying version: ${{ steps.version.outputs.version }}"
-          echo "Image: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
-          
+          echo "Image: ${{ env.IMAGE_NAME }}:${{
+            steps.version.outputs.version }}"
+
           # TODO: Add actual deployment steps here
           # This could include:
           # - SSH into Scaleway instance
@@ -59,7 +63,7 @@ jobs:
           # - Stop/start containers
           # - Update docker-compose.yml
           # - Health checks
-          
+
           echo "Deployment completed successfully!"
 
       - name: Update deployment status
