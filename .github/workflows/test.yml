@@ -25,7 +25,7 @@ jobs:
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v1
         with:
-          versionSpec: '6.x'
+          versionSpec: '6.0.x'
 
       - name: Determine Version
         uses: gittools/actions/gitversion/execute@v1
@@ -67,7 +67,7 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./src/ClercqIt.Web
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
 
       - name: Run linter
         working-directory: ./src/ClercqIt.Web
