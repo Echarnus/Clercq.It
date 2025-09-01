@@ -1,0 +1,27 @@
+# Build Outputs
+bin/
+obj/
+out/
+dist/
+*.dll
+*.exe
+*.pdb
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# IDE Files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Temporary Files
+*.tmp
+dotnet-install.sh
+
+# Logs
+*.log
