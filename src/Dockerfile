@@ -1,61 +1,83 @@
-# Use the official Node.js runtime as a parent image
-FROM node:23-alpine AS base
+# Build stage for .NET API
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
+WORKDIR /src
+COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
+RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+COPY ClercqIt.Api/ ClercqIt.Api/
+RUN dotnet build ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/build
+RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 
-# Install pnpm globally using corepack (recommended way)
-RUN corepack enable && corepack prepare pnpm@10.12.4 --activate
+# Build stage for Next.js frontend  
+FROM node:23-alpine AS node-base
+RUN npm install -g pnpm@10.12.4
 
-# Install dependencies only when needed
-FROM base AS deps
+# Install dependencies for Next.js
+FROM node-base AS node-deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
-
-# Install dependencies based on the preferred package manager
 COPY ClercqIt.Web/package.json ClercqIt.Web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile || pnpm install --force
+RUN pnpm install --frozen-lockfile
 
-# Rebuild the source code only when needed
-FROM base AS builder
+# Build Next.js application
+FROM node-base AS node-builder
 WORKDIR /app
-COPY --from=deps app/node_modules ./node_modules
-COPY ClercqIt.Web/. .
-
-# Build the application
+COPY --from=node-deps /app/node_modules ./node_modules
+COPY ClercqIt.Web/ .
 RUN pnpm run build
 
-# Use the official Nginx image to the
-FROM nginx:latest AS runner
-
-# Install Node.js on the Nginx image
-RUN apt-get update && \
-    apt-get install -y curl && \
-    curl -fsSL https://deb.nodesource.com/setup_23.x | bash - && \
-    apt-get install -y nodejs && \
-    node --version && npm --version
-
-# Production image, copy all the files and run next
-FROM runner AS final
+# Final runtime stage with nginx
+FROM nginx:alpine AS final
 WORKDIR /app
 
-ENV NODE_ENV production
+# Install .NET runtime for the API
+RUN apk add --no-cache ca-certificates wget \
+    && wget https://packages.microsoft.com/config/alpine/3.19/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
+    || echo "Using alternative method for .NET installation" \
+    && apk add --no-cache dotnet9-runtime aspnetcore9-runtime || \
+    apk add --no-cache libgcc libssl3 libstdc++ zlib icu-libs krb5-libs libintl
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Install Node.js for the frontend
+RUN apk add --no-cache nodejs npm
 
-COPY --from=builder /app/public ./public
+# Create non-root users
+RUN addgroup -g 1001 -S nodejs \
+    && adduser -S nextjs -u 1001 -G nodejs \
+    && addgroup -g 1002 -S dotnet \
+    && adduser -S dotnetuser -u 1002 -G dotnet
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Automatically leverage output traces to reduce image size
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Copy .NET API
+COPY --from=dotnet-build --chown=dotnetuser:dotnet /app/publish /app/api
 
-USER nextjs
+# Copy Next.js application
+COPY --from=node-builder --chown=nextjs:nodejs /app/public /app/frontend/public
+COPY --from=node-builder --chown=nextjs:nodejs /app/.next/standalone /app/frontend/
+COPY --from=node-builder --chown=nextjs:nodejs /app/.next/static /app/frontend/.next/static
+
+# Create startup script
+RUN echo '#!/bin/sh' > /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start .NET API in background' >> /app/start.sh && \
+    echo 'cd /app/api' >> /app/start.sh && \
+    echo 'su dotnetuser -c "dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000" &' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start Next.js frontend in background' >> /app/start.sh && \
+    echo 'cd /app/frontend' >> /app/start.sh && \
+    echo 'su nextjs -c "PORT=3000 HOSTNAME=0.0.0.0 node server.js" &' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Wait a moment for services to start' >> /app/start.sh && \
+    echo 'sleep 2' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Start nginx in foreground' >> /app/start.sh && \
+    echo 'nginx -g "daemon off;"' >> /app/start.sh
+
+RUN chmod +x /app/start.sh
 
 EXPOSE 80
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
+ENV NODE_ENV=production
+ENV ASPNETCORE_ENVIRONMENT=Production
 
-CMD ["node", "server.js && nginx -g 'daemon off;'"]
+CMD ["/app/start.sh"]
