@@ -73,3 +73,95 @@ public class WeatherForecastTests : IClassFixture<WebApplicationFactory<Program>
         public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
     }
 }
+
+public class ProjectTests : IClassFixture<WebApplicationFactory<Program>>
+{
+    private readonly WebApplicationFactory<Program> _factory;
+    private readonly HttpClient _client;
+
+    public ProjectTests(WebApplicationFactory<Program> factory)
+    {
+        _factory = factory;
+        _client = _factory.CreateClient();
+    }
+
+    [Fact]
+    public async Task GetProjects_ReturnsSuccessStatusCode()
+    {
+        // Act
+        var response = await _client.GetAsync("/projects");
+
+        // Assert
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task GetProjects_ReturnsValidJson()
+    {
+        // Act
+        var response = await _client.GetAsync("/projects");
+        var content = await response.Content.ReadAsStringAsync();
+
+        // Assert
+        Assert.NotNull(content);
+        Assert.NotEmpty(content);
+        
+        // Verify it's valid JSON
+        var projects = JsonSerializer.Deserialize<Project[]>(content, new JsonSerializerOptions 
+        { 
+            PropertyNameCaseInsensitive = true 
+        });
+        
+        Assert.NotNull(projects);
+        Assert.Equal(5, projects.Length);
+    }
+
+    [Fact]
+    public async Task GetProjects_ReturnsValidProjectData()
+    {
+        // Act
+        var response = await _client.GetAsync("/projects");
+        var content = await response.Content.ReadAsStringAsync();
+        var projects = JsonSerializer.Deserialize<Project[]>(content, new JsonSerializerOptions 
+        { 
+            PropertyNameCaseInsensitive = true 
+        });
+
+        // Assert
+        Assert.NotNull(projects);
+        foreach (var project in projects)
+        {
+            Assert.True(project.Id > 0);
+            Assert.NotNull(project.Name);
+            Assert.NotEmpty(project.Name);
+            Assert.NotNull(project.Description);
+            Assert.NotEmpty(project.Description);
+            Assert.NotNull(project.Status);
+            Assert.NotEmpty(project.Status);
+            Assert.True(project.CreatedDate > DateTime.MinValue);
+        }
+    }
+
+    [Fact]
+    public async Task GetProjects_ReturnsExpectedProjectNames()
+    {
+        // Act
+        var response = await _client.GetAsync("/projects");
+        var content = await response.Content.ReadAsStringAsync();
+        var projects = JsonSerializer.Deserialize<Project[]>(content, new JsonSerializerOptions 
+        { 
+            PropertyNameCaseInsensitive = true 
+        });
+
+        // Assert
+        Assert.NotNull(projects);
+        var projectNames = projects.Select(p => p.Name).ToArray();
+        Assert.Contains("Project Alpha", projectNames);
+        Assert.Contains("Project Beta", projectNames);
+        Assert.Contains("Project Gamma", projectNames);
+        Assert.Contains("Project Delta", projectNames);
+        Assert.Contains("Project Epsilon", projectNames);
+    }
+
+    public record Project(int Id, string Name, string Description, string Status, DateTime CreatedDate);
+}
