@@ -51,20 +51,20 @@ jobs:
           fi
 
       - name: Deploy to Scaleway
+        env:
+          SCALEWAY_IP: ${{ secrets.SCALEWAY_IP }}
+          SCALEWAY_USER: ${{ secrets.SCALEWAY_USER }}
+          SSH_KEY_PATH: /tmp/scaleway_key
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          DOCKER_IMAGE: ${{ env.IMAGE_NAME }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          echo "Deploying version: ${{ steps.version.outputs.version }}"
-          echo "Image: ${{ env.IMAGE_NAME }}:${{
-            steps.version.outputs.version }}"
-
-          # TODO: Add actual deployment steps here
-          # This could include:
-          # - SSH into Scaleway instance
-          # - Pull the Docker image
-          # - Stop/start containers
-          # - Update docker-compose.yml
-          # - Health checks
-
-          echo "Deployment completed successfully!"
+          # Create SSH key file
+          echo "${{ secrets.SCALEWAY_SSH_KEY }}" > /tmp/scaleway_key
+          chmod 600 /tmp/scaleway_key
+          
+          # Run deployment script
+          ./infra/scaleway/deploy.sh
 
       - name: Update deployment status
         if: always()
