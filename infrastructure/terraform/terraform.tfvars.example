@@ -1,0 +1,14 @@
+# Example Terraform Variables Configuration
+# Copy this file to terraform.tfvars and fill in your actual values
+# DO NOT commit terraform.tfvars to version control
+
+# Scaleway Configuration
+scaleway_organization_id = "your-scaleway-organization-id"
+scaleway_zone            = "fr-par-1"
+scaleway_region          = "fr-par"
+
+# Application Configuration
+container_image     = "echarnus/clercq-it:latest"
+database_password   = "your-secure-database-password"
+custom_domain       = "portfolio.clercq.it"  # Optional
+environment         = "portfolio"
