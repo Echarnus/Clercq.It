@@ -188,3 +188,14 @@ TestResults/
 
 # Azure
 *.azure/
+
+# Terraform
+infrastructure/terraform/*.tfstate
+infrastructure/terraform/*.tfstate.*
+infrastructure/terraform/*.tfvars
+!infrastructure/terraform/*.tfvars.example
+infrastructure/terraform/.terraform/
+infrastructure/terraform/.terraform.lock.hcl
+infrastructure/terraform/terraform.tfplan
+infrastructure/terraform/crash.log
+infrastructure/terraform/crash.*.log

@@ -1,0 +1,261 @@
+---
+name: Deploy Infrastructure
+
+on:
+  push:
+    branches: [main]
+    paths: 
+      - 'infrastructure/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infrastructure/**'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Infrastructure action to perform'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
+
+env:
+  TERRAFORM_VERSION: '1.6.0'
+  TF_IN_AUTOMATION: true
+  TF_INPUT: false
+
+jobs:
+  terraform-check:
+    name: Terraform Validation
+    runs-on: ubuntu-latest
+    outputs:
+      fmt_outcome: ${{ steps.fmt.outcome }}
+      init_outcome: ${{ steps.init.outcome }}
+      validate_outcome: ${{ steps.validate.outcome }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Format Check
+        id: fmt
+        run: terraform fmt -check -recursive infrastructure/terraform/
+        continue-on-error: true
+
+      - name: Terraform Init
+        id: init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+        env:
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Terraform Validate
+        id: validate
+        run: |
+          cd infrastructure/terraform
+          terraform validate
+        
+      - name: Comment PR - Validation Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const output = `
+            #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+  terraform-plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    needs: [terraform-check]
+    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    environment: 
+      name: infrastructure-plan
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+        env:
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Terraform Plan
+        id: plan
+        run: |
+          cd infrastructure/terraform
+          terraform plan -no-color -out=tfplan
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+          TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+
+      - name: Comment PR - Plan Results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let plan;
+            try {
+              plan = fs.readFileSync('infrastructure/terraform/tfplan.txt', 'utf8');
+            } catch (err) {
+              plan = 'Plan output not available';
+            }
+            
+            const output = `
+            #### Terraform Plan 📋
+            
+            <details><summary>Show Plan</summary>
+            
+            \`\`\`hcl
+            ${plan}
+            \`\`\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
+
+  terraform-apply:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [terraform-check]
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+    environment: 
+      name: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+        env:
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Terraform Apply
+        id: apply
+        run: |
+          cd infrastructure/terraform
+          terraform apply -auto-approve -no-color
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+          TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+
+      - name: Terraform Output
+        id: output
+        run: |
+          cd infrastructure/terraform
+          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          terraform output -json >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Update Infrastructure Status
+        if: always()
+        run: |
+          if [ ${{ steps.apply.outcome }} = "success" ]; then
+            echo "✅ Infrastructure deployment successful"
+            echo "DEPLOYMENT_STATUS=success" >> $GITHUB_ENV
+          else
+            echo "❌ Infrastructure deployment failed"
+            echo "DEPLOYMENT_STATUS=failure" >> $GITHUB_ENV
+            exit 1
+          fi
+
+  terraform-destroy:
+    name: Destroy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [terraform-check]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
+    environment: 
+      name: production
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: Terraform Init
+        run: |
+          cd infrastructure/terraform
+          terraform init
+        env:
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Terraform Destroy
+        run: |
+          cd infrastructure/terraform
+          terraform destroy -auto-approve -no-color
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+          TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+
+      - name: Destroy Complete
+        run: |
+          echo "🗑️ Infrastructure destroyed successfully"
+          echo "DESTROY_STATUS=success" >> $GITHUB_ENV
