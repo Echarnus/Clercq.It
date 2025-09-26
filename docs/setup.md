@@ -40,7 +40,33 @@ git clone https://github.com/Echarnus/Clercq.It.git
 cd Clercq.It
 ```
 
-### 2. Setup PostgreSQL Database
+### 2. Option A: Run with Aspire (Recommended)
+
+The easiest way to run the entire application stack is using .NET Aspire orchestration:
+
+#### Prerequisites
+- .NET 9.0 SDK
+- Docker Desktop
+
+#### Start the Application
+```bash
+cd src/Clercq.It.AppHost
+dotnet run
+```
+
+This will automatically:
+- Launch the Aspire Dashboard at `http://localhost:15888` 
+- Start PostgreSQL with pgAdmin web interface
+- Launch the API with automatic database connection and migrations
+- Provide comprehensive observability, logging, and monitoring
+
+The Aspire Dashboard provides a unified view of all services, logs, traces, and metrics.
+
+### 2. Option B: Manual Setup
+
+If you prefer to run services manually or don't want to use Aspire:
+
+#### Database Setup
 
 #### Option A: Docker (Recommended)
 ```bash
@@ -303,6 +329,7 @@ Install recommended extensions:
 
 Once your development environment is set up:
 1. Review the [Architecture Documentation](./architecture.md)
-2. Explore the API endpoints at `https://localhost:7000/swagger`
-3. Check the test coverage with `dotnet test --collect:"XPlat Code Coverage"`
-4. Start developing new features following Clean Architecture patterns
+2. Learn about [Aspire Orchestration](./aspire.md) for enhanced development experience
+3. Explore the API endpoints at `https://localhost:7000/swagger` or `https://localhost:7000/scalar/v1`
+4. Check the test coverage with `dotnet test --collect:"XPlat Code Coverage"`
+5. Start developing new features following Clean Architecture patterns

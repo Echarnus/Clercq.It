@@ -5,21 +5,34 @@ using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add Aspire service defaults (telemetry, logging, health checks)
+builder.AddServiceDefaults();
+
 // Add services to the container
 builder.Services.AddOpenApi();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
 
-// Add connection string configuration
-builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
-builder.Configuration.AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true);
-builder.Configuration.AddEnvironmentVariables();
+// Check if we're running under Aspire (has the connection string name)
+bool useAspire = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ConnectionStrings__ClercqItDb"));
+if (useAspire)
+{
+    // Add Aspire PostgreSQL integration
+    builder.Services.AddNpgsqlDataSource("ClercqItDb");
+    builder.Services.AddInfrastructure(builder.Configuration, useAspirePostgreSQL: true);
+}
+else
+{
+    // Fallback to traditional connection string
+    builder.Services.AddInfrastructure(builder.Configuration, useAspirePostgreSQL: false);
+}
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline
+app.MapDefaultEndpoints(); // Aspire health checks and telemetry
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

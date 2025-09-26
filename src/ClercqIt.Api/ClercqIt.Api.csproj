@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.6" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -19,6 +20,7 @@
     <ProjectReference Include="..\Clercq.It.Domain\Clercq.It.Domain.csproj" />
     <ProjectReference Include="..\Clercq.It.Application\Clercq.It.Application.csproj" />
     <ProjectReference Include="..\Clercq.It.Infrastructure\Clercq.It.Infrastructure.csproj" />
+    <ProjectReference Include="..\Clercq.It.ServiceDefaults\Clercq.It.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>
