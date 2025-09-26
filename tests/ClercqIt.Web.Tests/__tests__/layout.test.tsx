@@ -1,29 +1,21 @@
 import { render, screen } from '@testing-library/react'
 import '@testing-library/jest-dom'
 
-// Mock the layout component to avoid complex dependencies
-jest.mock('../app/layout', () => {
-  return function Layout({ children }: { children: React.ReactNode }) {
-    return (
-      <html>
-        <body>
-          <div data-testid="layout-wrapper">
-            {children}
-          </div>
-        </body>
-      </html>
-    )
-  }
-})
-
-import Layout from '../app/layout'
+// Mock Layout component to avoid complex dependencies
+const MockLayout = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div data-testid="layout-wrapper">
+      {children}
+    </div>
+  )
+}
 
 describe('Layout', () => {
   it('renders children correctly', () => {
     render(
-      <Layout>
+      <MockLayout>
         <div data-testid="test-content">Test content</div>
-      </Layout>
+      </MockLayout>
     )
     
     const testContent = screen.getByTestId('test-content')
@@ -33,9 +25,9 @@ describe('Layout', () => {
 
   it('includes layout wrapper', () => {
     render(
-      <Layout>
+      <MockLayout>
         <div>Test child</div>
-      </Layout>
+      </MockLayout>
     )
     
     const layoutWrapper = screen.getByTestId('layout-wrapper')

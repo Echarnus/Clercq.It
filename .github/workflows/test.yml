@@ -73,8 +73,12 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
 
-      - name: Install dependencies
+      - name: Install dependencies for main app
         working-directory: ./src/ClercqIt.Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies for tests
+        working-directory: ./tests/ClercqIt.Web.Tests
         run: pnpm install --frozen-lockfile
 
       - name: Run linter
@@ -85,6 +89,6 @@ jobs:
         working-directory: ./src/ClercqIt.Web
         run: pnpm run build
 
-      - name: Run tests
-        working-directory: ./src/ClercqIt.Web
+      - name: Run frontend tests
+        working-directory: ./tests/ClercqIt.Web.Tests
         run: pnpm run test --passWithNoTests
