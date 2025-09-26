@@ -3,9 +3,9 @@ name: Test
 
 "on":
   push:
-    branches: [main, develop]
+    branches: [main, develop, "feature/*"]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   test-dotnet:
@@ -37,9 +37,9 @@ jobs:
       - name: Build
         run: dotnet build --no-restore --configuration Release
 
-      - name: Test
+      - name: Test .NET projects from /tests/
         run: |
-          dotnet test --no-build --configuration Release --verbosity normal \
+          dotnet test tests/**/*.csproj --no-build --configuration Release --verbosity normal \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Upload coverage to Codecov

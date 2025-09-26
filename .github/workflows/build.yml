@@ -3,9 +3,15 @@ name: Build and Push Docker Image
 
 "on":
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build from (if not main)'
+        required: false
+        default: ''
   release:
     types: [published]
 
@@ -14,6 +20,9 @@ env:
   IMAGE_NAME: echarnus/clercq-it
 
 jobs:
+  test:
+    uses: ./.github/workflows/test.yml
+
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
@@ -47,7 +56,7 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Extract metadata
+      - name: Extract metadata and set tags
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -84,5 +93,9 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
-  test:
-    uses: ./.github/workflows/test.yml
+      - name: Output build information
+        run: |
+          echo "🎉 Docker image built and pushed successfully!"
+          echo "📦 Image: ${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}"
+          echo "🏷️ Version: ${{ steps.gitversion.outputs.semVer }}"
+          echo "🔖 Tags: ${{ steps.meta.outputs.tags }}"
