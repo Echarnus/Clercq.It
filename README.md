@@ -5,7 +5,7 @@
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
-A modern full-stack web application showcasing enterprise-grade development practices and CI/CD automation. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
+A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
 
 ## 🚀 Tech Stack
 
@@ -32,54 +32,61 @@ A modern full-stack web application showcasing enterprise-grade development prac
 
 ## 🏗️ Architecture
 
-This application uses a **single-container, multi-service architecture**:
+Built with Clean Architecture principles and Domain-Driven Design:
 
 ```
-┌─────────────────────────────────────┐
-│              Nginx (Port 80)        │
-│         Reverse Proxy               │
-├─────────────────────────────────────┤
-│  /api/* → .NET API (Port 5000)     │
-│  /*     → Next.js App (Port 3000)  │
-└─────────────────────────────────────┘
+┌─────────────────────────────────┐
+│         API Layer               │  ← ASP.NET Core Minimal APIs
+├─────────────────────────────────┤
+│      Application Layer          │  ← MediatR, FluentValidation  
+├─────────────────────────────────┤
+│     Infrastructure Layer        │  ← EF Core, PostgreSQL
+├─────────────────────────────────┤
+│        Domain Layer             │  ← Entities, Value Objects
+└─────────────────────────────────┘
 ```
 
-### Key Architectural Decisions
+## 🚀 Tech Stack
 
-1. **Single Container Deployment** - Simplified orchestration and reduced operational complexity
-2. **Nginx Reverse Proxy** - Efficient request routing and static file serving  
-3. **Standalone Next.js Build** - Optimized for containerized deployment
-4. **Multi-stage Docker Build** - Minimal production image size
-5. **GitHub Flow** - Streamlined branching strategy for continuous deployment
+- **.NET 9** - Modern C# with minimal APIs
+- **PostgreSQL** - Primary database with EF Core
+- **MediatR** - CQRS and mediator pattern implementation  
+- **FluentValidation** - Request validation
+- **Next.js 15** - React framework with TypeScript
+- **Docker** - Containerization with multi-stage builds
+- **Aspire** - Orchestration and development experience
 
-## 🔄 CI/CD Pipeline
+## 📚 Documentation
 
-### Branching Strategy (GitHub Flow)
-- **`main`** - Production branch, triggers deployment
-- **`develop`** - Development branch for feature integration  
-- **`feature/*`** - Feature branches merged via Pull Requests
+All technical documentation is available in the [`/docs`](./docs) folder:
 
-### Automated Workflows
+- **[Setup Guide](./docs/setup.md)** - Development environment setup
+- **[Architecture](./docs/architecture.md)** - Detailed architecture documentation  
+- **[API Reference](./docs/api.md)** - Endpoint documentation *(coming soon)*
+- **[Deployment](./docs/deployment.md)** - Production deployment guide *(coming soon)*
 
-#### 🧪 Test Pipeline (`test.yml`)
-- Runs on every push and pull request
-- **Backend Testing**: xUnit integration tests with coverage
-- **Frontend Testing**: Jest unit tests and ESLint
-- **Build Validation**: Ensures code compiles successfully
+## 🚀 Quick Start
 
-#### 🏗️ Build Pipeline (`build.yml`)  
-- Triggered after successful tests
-- **GitVersion**: Automatic semantic versioning
-- **Multi-platform Build**: AMD64 and ARM64 support
-- **Docker Hub**: Automated image publishing
-- **Security**: Build attestation and provenance
+1. **Prerequisites**: .NET 9, Docker, Node.js 23+
+2. **Clone**: `git clone https://github.com/Echarnus/Clercq.It.git`
+3. **Database**: `docker run -d --name clercq-postgres -e POSTGRES_DB=ClercqItDb -e POSTGRES_USER=clercq_user -e POSTGRES_PASSWORD=clercq_pass -p 5432:5432 postgres:16`
+4. **Migrate**: `cd src/Clercq.It.Infrastructure && dotnet ef database update --startup-project ../ClercqIt.Api`
+5. **Run API**: `cd src/ClercqIt.Api && dotnet run`
+6. **Run Web**: `cd src/ClercqIt.Web && pnpm install && pnpm dev`
 
-#### 🚀 Deploy Pipeline (`deploy.yml`)
-- Triggered on `main` branch pushes
-- **Production Deployment**: Automated Scaleway deployment
-- **Health Checks**: Validates deployment success
-- **Rollback Support**: Manual version specification
+API available at `https://localhost:7000/swagger` • Web at `http://localhost:3000`
 
+<<<<<<< HEAD
+## 🧪 Testing
+
+```bash
+# Run all tests
+dotnet test
+
+# With coverage
+dotnet test --collect:"XPlat Code Coverage"
+```
+=======
 #### 🏗️ Infrastructure Pipeline (`infrastructure.yml`)
 - Triggered on infrastructure changes or manual dispatch
 - **Infrastructure as Code**: Terraform-based Scaleway provisioning
@@ -90,27 +97,16 @@ This application uses a **single-container, multi-service architecture**:
 - **GitVersion** automatically calculates semantic versions
 - **Branch-based Versioning**: Different strategies per branch type
 - **Docker Tags**: Multiple tags for flexible deployment options
+>>>>>>> main
 
 ## 🐳 Docker
 
-### Multi-Stage Build Process
-
-1. **API Build Stage** - .NET SDK for compilation and publishing
-2. **Frontend Build Stage** - Node.js for Next.js build with standalone output
-3. **Production Stage** - Alpine Linux with Nginx, .NET runtime, and Node.js
-
-### Container Features
-- **Security**: Non-root user execution  
-- **Optimization**: Multi-architecture builds (AMD64/ARM64)
-- **Efficiency**: Aggressive build caching
-- **Monitoring**: Health check endpoints
-
-### Running Locally
-
 ```bash
-# Build and run the container
+# Build and run
 docker build -t clercq-it ./src
 docker run -p 80:80 clercq-it
+<<<<<<< HEAD
+=======
 
 # Or use Docker Compose (if available)
 docker-compose up --build
@@ -229,28 +225,18 @@ The application is automatically deployed to **Scaleway** on every push to the `
 ```bash
 # Deploy specific version
 gh workflow run deploy.yml -f version=1.0.0
+>>>>>>> main
 ```
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-## 📋 Project Status
-
-This is a **portfolio project** demonstrating modern development practices:
-
-- ✅ **DevOps Excellence**: Comprehensive CI/CD with GitVersion
-- ✅ **Container Strategy**: Production-ready Docker deployment  
-- ✅ **Testing Culture**: Automated testing with coverage reporting
-- ✅ **Code Quality**: Linting, formatting, and static analysis
-- ✅ **Security First**: Container hardening and attestation
-- ✅ **Cloud Native**: Scaleable architecture for production workloads
-
-## 📝 License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 

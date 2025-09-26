@@ -1,75 +1,46 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
-using System.Text.Json;
 
 namespace ClercqIt.Api.Tests;
 
-public class WeatherForecastTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
 {
     private readonly WebApplicationFactory<Program> _factory;
     private readonly HttpClient _client;
 
-    public WeatherForecastTests(WebApplicationFactory<Program> factory)
+    public ApiEndpointTests(WebApplicationFactory<Program> factory)
     {
         _factory = factory;
         _client = _factory.CreateClient();
     }
 
     [Fact]
-    public async Task GetWeatherForecast_ReturnsSuccessStatusCode()
+    public async Task HealthCheck_ReturnsSuccessStatusCode()
     {
         // Act
-        var response = await _client.GetAsync("/weatherforecast");
+        var response = await _client.GetAsync("/health");
 
         // Assert
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task GetWeatherForecast_ReturnsValidJson()
+    public async Task AliveCheck_ReturnsSuccessStatusCode()
     {
         // Act
-        var response = await _client.GetAsync("/weatherforecast");
-        var content = await response.Content.ReadAsStringAsync();
+        var response = await _client.GetAsync("/alive");
 
         // Assert
-        Assert.NotNull(content);
-        Assert.NotEmpty(content);
-        
-        // Verify it's valid JSON
-        var forecasts = JsonSerializer.Deserialize<WeatherForecast[]>(content, new JsonSerializerOptions 
-        { 
-            PropertyNameCaseInsensitive = true 
-        });
-        
-        Assert.NotNull(forecasts);
-        Assert.Equal(5, forecasts.Length);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
-    public async Task GetWeatherForecast_ReturnsValidWeatherData()
+    public async Task WeatherForecast_EndpointDoesNotExist()
     {
         // Act
         var response = await _client.GetAsync("/weatherforecast");
-        var content = await response.Content.ReadAsStringAsync();
-        var forecasts = JsonSerializer.Deserialize<WeatherForecast[]>(content, new JsonSerializerOptions 
-        { 
-            PropertyNameCaseInsensitive = true 
-        });
 
-        // Assert
-        Assert.NotNull(forecasts);
-        foreach (var forecast in forecasts)
-        {
-            Assert.NotNull(forecast.Summary);
-            Assert.NotEmpty(forecast.Summary);
-            Assert.InRange(forecast.TemperatureC, -20, 55);
-            Assert.True(forecast.Date > DateOnly.MinValue);
-        }
-    }
-
-    public record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-    {
-        public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
+        // Assert - Should return 404 Not Found since we removed it
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
