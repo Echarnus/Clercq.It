@@ -28,6 +28,7 @@ A modern full-stack web application showcasing enterprise-grade development prac
 - **GitVersion** - Semantic versioning
 - **Scaleway** - Cloud hosting platform
 - **Docker Hub** - Container registry
+- **Terraform** - Infrastructure as Code
 
 ## 🏗️ Architecture
 
@@ -78,6 +79,12 @@ This application uses a **single-container, multi-service architecture**:
 - **Production Deployment**: Automated Scaleway deployment
 - **Health Checks**: Validates deployment success
 - **Rollback Support**: Manual version specification
+
+#### 🏗️ Infrastructure Pipeline (`infrastructure.yml`)
+- Triggered on infrastructure changes or manual dispatch
+- **Infrastructure as Code**: Terraform-based Scaleway provisioning
+- **Serverless Architecture**: Auto-scaling database and container
+- **Cost Optimized**: Scales to zero when not in use
 
 ### Version Management
 - **GitVersion** automatically calculates semantic versions
@@ -159,6 +166,40 @@ dotnet build --verbosity normal
 cd src/ClercqIt.Web
 pnpm lint
 ```
+
+## 🏗️ Infrastructure
+
+The application uses a **serverless-first architecture** on Scaleway with automatic scaling and cost optimization:
+
+### Scaleway Infrastructure
+- **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
+- **Serverless SQL**: PostgreSQL database with minimal resource allocation
+- **Organization**: ClercqIt with Portfolio namespace
+- **Cost Optimization**: Infrastructure scales to zero when not in use
+
+### Infrastructure Management
+- **Terraform**: Infrastructure as Code in `/infrastructure/terraform/`
+- **GitHub Actions**: Automated provisioning via `infrastructure.yml` workflow
+- **Environment Protection**: Production deployments require approval
+- **State Management**: Terraform state with proper gitignore patterns
+
+### Quick Infrastructure Setup
+
+```bash
+# Navigate to infrastructure directory
+cd infrastructure/terraform
+
+# Copy and configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your Scaleway credentials
+
+# Initialize and deploy
+terraform init
+terraform plan
+terraform apply
+```
+
+For detailed infrastructure documentation, see [`infrastructure/README.md`](infrastructure/README.md).
 
 ## 📊 Monitoring & Observability
 
