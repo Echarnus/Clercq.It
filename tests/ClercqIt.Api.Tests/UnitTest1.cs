@@ -43,4 +43,29 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         // Assert - Should return 404 Not Found since we removed it
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    // NOTE: The following tests require database connectivity and are disabled 
+    // until proper in-memory database setup can be configured for integration testing.
+    // The core business logic is thoroughly tested in the Application and Domain layer unit tests.
+
+    [Fact(Skip = "Database-dependent integration test - requires proper test database setup")]
+    public async Task GetProjects_ReturnsSuccessStatusCodeWithData()
+    {
+        var response = await _client.GetAsync("/api/projects");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact(Skip = "Database-dependent integration test - requires proper test database setup")]
+    public async Task GetFeaturedProjects_ReturnsSuccessStatusCodeWithFeaturedData()
+    {
+        var response = await _client.GetAsync("/api/projects/featured");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
+
+    [Fact(Skip = "Database-dependent integration test - requires proper test database setup")]
+    public async Task GetBlogs_ReturnsSuccessStatusCodeWithData()
+    {
+        var response = await _client.GetAsync("/api/blogs");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+    }
 }

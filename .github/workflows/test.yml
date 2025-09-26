@@ -22,10 +22,13 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install .NET Aspire workload
+        run: dotnet workload install aspire
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v1
         with:
-          versionSpec: '6.x'
+          versionSpec: '6.0.x'
 
       - name: Determine Version
         uses: gittools/actions/gitversion/execute@v1
@@ -39,7 +42,7 @@ jobs:
 
       - name: Test .NET projects from /tests/
         run: |
-          dotnet test tests/**/*.csproj --no-build --configuration Release --verbosity normal \
+          dotnet test --no-build --configuration Release --verbosity normal \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Upload coverage to Codecov
@@ -59,14 +62,23 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '23'
-          cache: 'pnpm'
-          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
 
       - name: Install pnpm
         run: npm install -g pnpm@10.12.4
 
-      - name: Install dependencies
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'pnpm'
+          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
+
+      - name: Install dependencies for main app
         working-directory: ./src/ClercqIt.Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Install dependencies for tests
+        working-directory: ./tests/ClercqIt.Web.Tests
         run: pnpm install --frozen-lockfile
 
       - name: Run linter
@@ -77,6 +89,6 @@ jobs:
         working-directory: ./src/ClercqIt.Web
         run: pnpm run build
 
-      - name: Run tests
-        working-directory: ./src/ClercqIt.Web
+      - name: Run frontend tests
+        working-directory: ./tests/ClercqIt.Web.Tests
         run: pnpm run test --passWithNoTests
