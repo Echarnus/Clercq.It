@@ -42,7 +42,7 @@ jobs:
 
       - name: Test .NET projects from /tests/
         run: |
-          dotnet test tests/**/*.csproj --no-build --configuration Release --verbosity normal \
+          dotnet test --no-build --configuration Release --verbosity normal \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
 
       - name: Upload coverage to Codecov
