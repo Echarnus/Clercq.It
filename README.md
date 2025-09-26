@@ -5,7 +5,30 @@
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
-A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines.
+A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
+
+## 🚀 Tech Stack
+
+### Backend
+- **.NET 9.0** - Modern C# web API with minimal APIs
+- **ASP.NET Core** - High-performance web framework
+- **OpenAPI/Swagger** - API documentation and testing
+
+### Frontend  
+- **Next.js 15** - React framework with App Router
+- **React 19** - Latest React with concurrent features
+- **TypeScript** - Type-safe JavaScript development
+- **Tailwind CSS** - Utility-first CSS framework
+- **Radix UI** - Accessible component primitives
+
+### Infrastructure
+- **Docker** - Multi-stage containerization
+- **Nginx** - Reverse proxy and load balancing
+- **GitHub Actions** - CI/CD automation
+- **GitVersion** - Semantic versioning
+- **Scaleway** - Cloud hosting platform
+- **Docker Hub** - Container registry
+- **Terraform** - Infrastructure as Code
 
 ## 🏗️ Architecture
 
@@ -53,6 +76,7 @@ All technical documentation is available in the [`/docs`](./docs) folder:
 
 API available at `https://localhost:7000/swagger` • Web at `http://localhost:3000`
 
+<<<<<<< HEAD
 ## 🧪 Testing
 
 ```bash
@@ -62,6 +86,18 @@ dotnet test
 # With coverage
 dotnet test --collect:"XPlat Code Coverage"
 ```
+=======
+#### 🏗️ Infrastructure Pipeline (`infrastructure.yml`)
+- Triggered on infrastructure changes or manual dispatch
+- **Infrastructure as Code**: Terraform-based Scaleway provisioning
+- **Serverless Architecture**: Auto-scaling database and container
+- **Cost Optimized**: Scales to zero when not in use
+
+### Version Management
+- **GitVersion** automatically calculates semantic versions
+- **Branch-based Versioning**: Different strategies per branch type
+- **Docker Tags**: Multiple tags for flexible deployment options
+>>>>>>> main
 
 ## 🐳 Docker
 
@@ -69,6 +105,127 @@ dotnet test --collect:"XPlat Code Coverage"
 # Build and run
 docker build -t clercq-it ./src
 docker run -p 80:80 clercq-it
+<<<<<<< HEAD
+=======
+
+# Or use Docker Compose (if available)
+docker-compose up --build
+```
+
+## 🛠️ Development
+
+### Prerequisites
+- .NET 9.0 SDK
+- Node.js 23+  
+- pnpm 10.12.4+
+- Docker
+
+### Local Development Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/Echarnus/Clercq.It.git
+cd Clercq.It
+
+# Backend Development
+cd src/ClercqIt.Api
+dotnet restore
+dotnet run
+
+# Frontend Development (new terminal)
+cd src/ClercqIt.Web  
+pnpm install
+pnpm dev
+```
+
+### Running Tests
+
+```bash
+# .NET Tests
+dotnet test
+
+# Frontend Tests  
+cd src/ClercqIt.Web
+pnpm test
+
+# All Tests via GitHub Actions locally
+act -j test
+```
+
+### Code Quality
+
+```bash
+# .NET Code Analysis
+dotnet build --verbosity normal
+
+# Frontend Linting
+cd src/ClercqIt.Web
+pnpm lint
+```
+
+## 🏗️ Infrastructure
+
+The application uses a **serverless-first architecture** on Scaleway with automatic scaling and cost optimization:
+
+### Scaleway Infrastructure
+- **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
+- **Serverless SQL**: PostgreSQL database with minimal resource allocation
+- **Organization**: ClercqIt with Portfolio namespace
+- **Cost Optimization**: Infrastructure scales to zero when not in use
+
+### Infrastructure Management
+- **Terraform**: Infrastructure as Code in `/infrastructure/terraform/`
+- **GitHub Actions**: Automated provisioning via `infrastructure.yml` workflow
+- **Environment Protection**: Production deployments require approval
+- **State Management**: Terraform state with proper gitignore patterns
+
+### Quick Infrastructure Setup
+
+```bash
+# Navigate to infrastructure directory
+cd infrastructure/terraform
+
+# Copy and configure variables
+cp terraform.tfvars.example terraform.tfvars
+# Edit terraform.tfvars with your Scaleway credentials
+
+# Initialize and deploy
+terraform init
+terraform plan
+terraform apply
+```
+
+For detailed infrastructure documentation, see [`infrastructure/README.md`](infrastructure/README.md).
+
+## 📊 Monitoring & Observability
+
+- **Build Status**: GitHub Actions workflow badges
+- **Test Coverage**: Codecov integration
+- **Container Health**: Docker health checks
+- **Deployment Status**: Automated status reporting
+
+## 🔒 Security
+
+- **Container Security**: Non-root execution, minimal attack surface
+- **Build Attestation**: Signed build provenance  
+- **Secret Management**: GitHub Secrets for sensitive data
+- **Dependency Scanning**: Automated vulnerability detection
+
+## 🚀 Deployment
+
+The application is automatically deployed to **Scaleway** on every push to the `main` branch. The deployment process:
+
+1. **Version Calculation**: GitVersion determines the release version
+2. **Image Build**: Multi-platform Docker image built and pushed to Docker Hub
+3. **Health Validation**: Ensures the new version is healthy before deployment
+4. **Automatic Rollout**: Zero-downtime deployment with health monitoring
+
+### Manual Deployment
+
+```bash
+# Deploy specific version
+gh workflow run deploy.yml -f version=1.0.0
+>>>>>>> main
 ```
 
 ## 🤝 Contributing
