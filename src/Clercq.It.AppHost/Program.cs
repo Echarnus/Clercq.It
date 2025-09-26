@@ -11,4 +11,11 @@ var database = postgres.AddDatabase("ClercqItDb");
 var api = builder.AddProject<Projects.ClercqIt_Api>("clercqit-api")
     .WithReference(database);
 
+// Add the Next.js frontend
+var web = builder.AddNodeApp("clercqit-web", "../ClercqIt.Web")
+    .WithReference(api)
+    .WithHttpEndpoint(env: "PORT")
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
+
 builder.Build().Run();

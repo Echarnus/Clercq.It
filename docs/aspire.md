@@ -40,6 +40,16 @@ The Aspire orchestration consists of two projects:
   - Database connection via Aspire service binding
   - Health checks and telemetry
 
+### Next.js Frontend
+- **Service Name**: `clercqit-web`
+- **Project**: `ClercqIt.Web`
+- **Features**:
+  - Node.js application hosting
+  - Automatic API service discovery
+  - Environment variable injection
+  - External HTTP endpoints for public access
+  - Docker containerization support
+
 ## Running with Aspire
 
 ### Prerequisites
@@ -59,7 +69,8 @@ This will:
 1. Start the Aspire Dashboard (typically at `http://localhost:15888`)
 2. Launch PostgreSQL with pgAdmin
 3. Start the API service with automatic database connection
-4. Provide comprehensive observability and monitoring
+4. Launch the Next.js frontend with automatic API service discovery
+5. Provide comprehensive observability and monitoring
 
 ### Aspire Dashboard Features
 - **Service Overview**: Monitor all running services
@@ -108,6 +119,13 @@ var database = postgres.AddDatabase("ClercqItDb");
 // API service with database reference
 var api = builder.AddProject<Projects.ClercqIt_Api>("clercqit-api")
     .WithReference(database);
+
+// Next.js frontend with API reference
+var web = builder.AddNodeApp("clercqit-web", "../ClercqIt.Web")
+    .WithReference(api)
+    .WithHttpEndpoint(env: "PORT")
+    .WithExternalHttpEndpoints()
+    .PublishAsDockerFile();
 ```
 
 ### Service Defaults Integration
