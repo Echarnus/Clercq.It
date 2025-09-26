@@ -37,7 +37,7 @@ jobs:
         if: github.event_name == 'workflow_run'
         uses: gittools/actions/gitversion/setup@v1
         with:
-          versionSpec: '6.x'
+          versionSpec: '6.0.x'
 
       - name: Determine Version
         if: github.event_name == 'workflow_run'

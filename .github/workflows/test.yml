@@ -22,10 +22,13 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
+      - name: Install .NET Aspire workload
+        run: dotnet workload install aspire
+
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v1
         with:
-          versionSpec: '6.x'
+          versionSpec: '6.0.x'
 
       - name: Determine Version
         uses: gittools/actions/gitversion/execute@v1
@@ -59,11 +62,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '23'
-          cache: 'pnpm'
-          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
 
       - name: Install pnpm
         run: npm install -g pnpm@10.12.4
+
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'pnpm'
+          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
 
       - name: Install dependencies
         working-directory: ./src/ClercqIt.Web
