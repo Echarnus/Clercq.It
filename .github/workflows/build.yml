@@ -4,8 +4,6 @@ name: build
 "on":
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
     inputs:
       branch:
@@ -20,90 +18,13 @@ env:
   IMAGE_NAME: echarnus/clercq-it
 
 jobs:
-  test-dotnet:
-    name: Test .NET API
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Install .NET Aspire workload
-        run: dotnet workload install aspire
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v1
-        with:
-          versionSpec: '6.0.x'
-
-      - name: Determine Version
-        uses: gittools/actions/gitversion/execute@v1
-        id: gitversion
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
-
-      - name: Test .NET projects from /tests/
-        run: |
-          dotnet test --no-build --configuration Release --verbosity normal \
-            --collect:"XPlat Code Coverage" --results-directory ./coverage
-
-  test-frontend:
-    name: Test Next.js Frontend
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '23'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.12.4
-
-      - name: Setup pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '23'
-          cache: 'pnpm'
-          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
-
-      - name: Install dependencies for main app
-        working-directory: ./src/ClercqIt.Web
-        run: pnpm install --frozen-lockfile
-
-      - name: Install dependencies for tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: pnpm install --frozen-lockfile
-
-      - name: Run linter
-        working-directory: ./src/ClercqIt.Web
-        run: pnpm run lint
-
-      - name: Build Next.js
-        working-directory: ./src/ClercqIt.Web
-        run: pnpm run build
-
-      - name: Run frontend tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: pnpm run test --passWithNoTests
+  test:
+    uses: ./.github/workflows/test.yml
 
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
-    needs: [test-dotnet, test-frontend]
-    if: github.event_name != 'pull_request'
+    needs: [test]
     permissions:
       contents: read
       packages: write
