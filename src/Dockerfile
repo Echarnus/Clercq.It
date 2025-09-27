@@ -6,10 +6,7 @@ WORKDIR /src
 ENV NUGET_XMLDOC_MODE=skip
 RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org || true
 
-# Install required workloads (with fallback for network issues)
-RUN dotnet workload install aspire || echo "Warning: Aspire workload installation failed - continuing without it"
-
-# Copy all project files first to enable restore with dependencies
+# Copy all project files first to enable restore with dependencies (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
 COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/
 COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastructure/
@@ -19,7 +16,7 @@ COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
 # Restore all dependencies
 RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
 
-# Copy all source code
+# Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
 COPY Clercq.It.Application/ Clercq.It.Application/
 COPY Clercq.It.Infrastructure/ Clercq.It.Infrastructure/
