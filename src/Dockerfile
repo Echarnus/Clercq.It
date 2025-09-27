@@ -15,12 +15,11 @@ COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastr
 COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
 
-# Restore dependencies with fallback for SSL issues in Docker
-RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel || \
-    (echo "SSL issues detected - configuring insecure restore for CI/CD environments" && \
-     apt-get update && apt-get install -y ca-certificates && update-ca-certificates && \
-     export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 && \
-     dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --ignore-failed-sources)
+# Restore dependencies with retry for network issues
+RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache || \
+    (echo "Network issues detected - retrying with different configuration..." && \
+     sleep 5 && \
+     dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache)
 
 # Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
