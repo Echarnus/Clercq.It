@@ -28,7 +28,7 @@ export class ProjectsService {
     try {
       const st = await fs.stat(p);
       return st.isDirectory();
-    } catch (e) {
+    } catch {
       return false;
     }
   }
@@ -37,7 +37,7 @@ export class ProjectsService {
     let files: string[] = [];
     try {
       files = await fs.readdir(dir);
-    } catch (err) {
+    } catch {
       return [];
     }
 
