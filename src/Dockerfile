@@ -2,6 +2,9 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
 WORKDIR /src
 
+# Install required workloads
+RUN dotnet workload install aspire
+
 # Copy all project files first to enable restore with dependencies
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
 COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/
