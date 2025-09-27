@@ -2,21 +2,25 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
 WORKDIR /src
 
-# Configure NuGet to handle SSL issues in restricted environments
+# Configure environment for production builds
 ENV NUGET_XMLDOC_MODE=skip
+ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
+ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
-RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org || true
 
-# Copy all project files first to enable restore with dependencies (excluding AppHost - not needed for production)
+# Copy project files and restore dependencies
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
 COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/
 COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastructure/
 COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
 
-# Restore all dependencies with retry logic for SSL issues
+# Restore dependencies with fallback for SSL issues in Docker
 RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel || \
-    (echo "Retrying restore..." && dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache)
+    (echo "SSL issues detected - configuring insecure restore for CI/CD environments" && \
+     apt-get update && apt-get install -y ca-certificates && update-ca-certificates && \
+     export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 && \
+     dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --ignore-failed-sources)
 
 # Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
