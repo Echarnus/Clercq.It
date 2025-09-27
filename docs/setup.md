@@ -40,9 +40,11 @@ git clone https://github.com/Echarnus/Clercq.It.git
 cd Clercq.It
 ```
 
-### 2. Option A: Run with Aspire (Recommended)
+### 2. Option A: Run with Aspire (Local Development Only)
 
-The easiest way to run the entire application stack is using .NET Aspire orchestration:
+The easiest way to run the entire application stack for local development is using .NET Aspire orchestration:
+
+> **Note**: Aspire is only for local development. Production deployments use Docker containers without Aspire components.
 
 #### Prerequisites
 - .NET 9.0 SDK

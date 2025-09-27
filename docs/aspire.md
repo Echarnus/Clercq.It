@@ -1,6 +1,8 @@
-# Aspire Orchestration Guide
+# Aspire Local Development Orchestration
 
-This guide covers the .NET Aspire orchestration setup for the Clercq.It project.
+> **⚠️ Important**: Aspire is **only used for local development**. Production deployments use Docker containers without Aspire components.
+
+This guide covers the .NET Aspire orchestration setup for local development of the Clercq.It project.
 
 ## Project Structure
 
@@ -138,9 +140,25 @@ builder.AddServiceDefaults();
 app.MapDefaultEndpoints();
 ```
 
+## Local Development vs Production
+
+### Local Development with Aspire
+- **Purpose**: Simplifies local development with orchestration
+- **Components**: AppHost orchestration, ServiceDefaults, and Aspire Dashboard
+- **Database**: Containerized PostgreSQL with pgAdmin
+- **Features**: Hot reload, centralized logging, distributed tracing
+
+### Production Deployment
+- **Architecture**: Single Docker container with nginx reverse proxy
+- **Components**: Only API, frontend, and nginx (no Aspire components)
+- **Database**: Managed PostgreSQL service (Scaleway, Azure, AWS, etc.)
+- **Features**: Optimized for performance, security, and scalability
+
+> **Key Point**: The `Clercq.It.AppHost` project and Aspire workload are **excluded from production Docker builds** to keep containers lightweight and focused on runtime requirements.
+
 ## Production Considerations
 
-### Container Orchestration
+> **Note**: These considerations apply only if you choose to use Aspire for production (not recommended for this project).
 - Aspire can generate Docker Compose files for production deployment
 - Kubernetes manifests can be generated for cloud-native deployments
 - Service mesh integration for advanced networking scenarios
