@@ -51,39 +51,38 @@ COPY --from=node-deps /app/node_modules ./node_modules
 COPY ClercqIt.Web/ .
 RUN pnpm run build || npm run build
 
-# Final runtime stage with nginx
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
+# Final runtime stage starting from nginx
+FROM nginx:1.25-bookworm AS final
 WORKDIR /app
 
-# Install nginx and Node.js using Debian packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    nginx \
-    nodejs \
-    npm \
-    && rm -rf /var/lib/apt/lists/*
+# Copy .NET runtime from Microsoft's runtime image
+COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/share/dotnet /usr/share/dotnet
+COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/bin/dotnet /usr/bin/dotnet
 
-# Create nginx user and directories
-RUN mkdir -p /etc/nginx/conf.d /var/log/nginx /var/cache/nginx/client_temp \
-    && chown -R www-data:www-data /var/log/nginx /var/cache/nginx 2>/dev/null || true
+# Copy Node.js from Node.js image  
+COPY --from=node:23-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:23-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-# Create non-root users
-RUN groupadd -g 1001 nodejs || true \
-    && useradd -r -u 1001 -g nodejs nextjs || true \
-    && groupadd -g 1002 dotnet || true \
-    && useradd -r -u 1002 -g dotnet dotnetuser || true
+# Create symlinks for npm and npx
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
+
+# Create non-root users for running services (simple approach)
+RUN useradd --uid 1001 nextjs 2>/dev/null || true \
+    && useradd --uid 1002 dotnetuser 2>/dev/null || true
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy .NET API
-COPY --from=dotnet-build --chown=dotnetuser:dotnet /app/publish /app/api
+COPY --from=dotnet-build --chown=1002:1002 /app/publish /app/api
 
 # Copy Next.js application
-COPY --from=node-builder --chown=nextjs:nodejs /app/public /app/frontend/public
-COPY --from=node-builder --chown=nextjs:nodejs /app/.next/standalone /app/frontend/
-COPY --from=node-builder --chown=nextjs:nodejs /app/.next/static /app/frontend/.next/static
+COPY --from=node-builder --chown=1001:1001 /app/public /app/frontend/public
+COPY --from=node-builder --chown=1001:1001 /app/.next/standalone /app/frontend/
+COPY --from=node-builder --chown=1001:1001 /app/.next/static /app/frontend/.next/static
 
-# Create startup script
+# Create startup script that starts all services
 RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start .NET API in background' >> /app/start.sh && \
