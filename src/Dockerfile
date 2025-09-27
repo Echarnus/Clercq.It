@@ -4,22 +4,21 @@ WORKDIR /src
 
 # Configure NuGet to handle SSL issues in restricted environments
 ENV NUGET_XMLDOC_MODE=skip
+ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
 RUN dotnet nuget add source https://api.nuget.org/v3/index.json --name nuget.org || true
 
-# Install required workloads (with fallback for network issues)
-RUN dotnet workload install aspire || echo "Warning: Aspire workload installation failed - continuing without it"
-
-# Copy all project files first to enable restore with dependencies
+# Copy all project files first to enable restore with dependencies (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
 COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/
 COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastructure/
 COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
 
-# Restore all dependencies
-RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+# Restore all dependencies with retry logic for SSL issues
+RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel || \
+    (echo "Retrying restore..." && dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache)
 
-# Copy all source code
+# Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
 COPY Clercq.It.Application/ Clercq.It.Application/
 COPY Clercq.It.Infrastructure/ Clercq.It.Infrastructure/

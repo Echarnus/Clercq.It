@@ -54,7 +54,7 @@ Built with Clean Architecture principles and Domain-Driven Design:
 - **FluentValidation** - Request validation
 - **Next.js 15** - React framework with TypeScript
 - **Docker** - Containerization with multi-stage builds
-- **Aspire** - Orchestration and development experience
+- **Aspire** - Local development orchestration and tooling
 
 ## 📚 Documentation
 
@@ -101,16 +101,20 @@ dotnet test --collect:"XPlat Code Coverage"
 
 ## 🐳 Docker
 
+The production Docker container is optimized for deployment and excludes development-only components:
+
 ```bash
-# Build and run
+# Build and run production container
 docker build -t clercq-it ./src
 docker run -p 80:80 clercq-it
-<<<<<<< HEAD
-=======
-
-# Or use Docker Compose (if available)
-docker-compose up --build
 ```
+
+### Container Architecture
+- **Included**: API, frontend (Next.js), nginx reverse proxy, runtime dependencies
+- **Excluded**: Aspire AppHost, development orchestration, unnecessary workloads  
+- **Result**: Single optimized container for production deployment
+
+> **Note**: Aspire components (`Clercq.It.AppHost`) are excluded from Docker builds as they're only needed for local development orchestration.
 
 ## 🛠️ Development
 
