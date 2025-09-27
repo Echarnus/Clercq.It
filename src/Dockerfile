@@ -1,22 +1,44 @@
 # Build stage for .NET API
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
 WORKDIR /src
+
+# Install required workloads
+RUN dotnet workload install aspire
+
+# Copy all project files first to enable restore with dependencies
+COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
+COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/
+COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastructure/
+COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
+
+# Restore all dependencies
 RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+
+# Copy all source code
+COPY Clercq.It.Domain/ Clercq.It.Domain/
+COPY Clercq.It.Application/ Clercq.It.Application/
+COPY Clercq.It.Infrastructure/ Clercq.It.Infrastructure/
+COPY Clercq.It.ServiceDefaults/ Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ ClercqIt.Api/
+
+# Build and publish
 RUN dotnet build ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/build
 RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
 FROM node:23-alpine AS node-base
-RUN npm install -g pnpm@10.12.4
+RUN apk add --no-cache libc6-compat
+RUN npm config set registry https://registry.npmjs.org/ && \
+    npm config set timeout 300000 && \
+    npm install -g pnpm@10.12.4
 
 # Install dependencies for Next.js
 FROM node-base AS node-deps
-RUN apk add --no-cache libc6-compat
 WORKDIR /app
 COPY ClercqIt.Web/package.json ClercqIt.Web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set registry https://registry.npmjs.org/ && \
+    pnpm install --frozen-lockfile --network-timeout 300000
 
 # Build Next.js application
 FROM node-base AS node-builder
@@ -26,18 +48,17 @@ COPY ClercqIt.Web/ .
 RUN pnpm run build
 
 # Final runtime stage with nginx
-FROM nginx:alpine AS final
+FROM mcr.microsoft.com/dotnet/aspnet:9.0-alpine AS final
 WORKDIR /app
 
-# Install .NET runtime for the API
-RUN apk add --no-cache ca-certificates wget \
-    && wget https://packages.microsoft.com/config/alpine/3.19/packages-microsoft-prod.deb -O packages-microsoft-prod.deb \
-    || echo "Using alternative method for .NET installation" \
-    && apk add --no-cache dotnet9-runtime aspnetcore9-runtime || \
-    apk add --no-cache libgcc libssl3 libstdc++ zlib icu-libs krb5-libs libintl
+# Install nginx and Node.js
+RUN apk add --no-cache nginx nodejs npm
 
-# Install Node.js for the frontend
-RUN apk add --no-cache nodejs npm
+# Create nginx user and directories
+RUN addgroup -g 1003 -S nginx || true \
+    && adduser -S nginx -u 1003 -G nginx || true \
+    && mkdir -p /etc/nginx/conf.d /var/log/nginx /var/cache/nginx/client_temp \
+    && chown -R nginx:nginx /var/log/nginx /var/cache/nginx 2>/dev/null || true
 
 # Create non-root users
 RUN addgroup -g 1001 -S nodejs \
