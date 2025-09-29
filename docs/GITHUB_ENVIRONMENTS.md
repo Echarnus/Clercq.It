@@ -163,7 +163,7 @@ Test environment configuration:
 
 ```bash
 # Check workflow syntax
-gh workflow view infrastructure.yml
+gh workflow view infra.yml
 
 # List environments
 gh api repos/:owner/:repo/environments
@@ -182,8 +182,8 @@ The infrastructure pipeline integrates with existing workflows:
 # Typical workflow sequence
 1. Code Changes → test.yml (Unit Tests)
 2. Code Changes → build.yml (Docker Build)
-3. Infrastructure Changes → infrastructure.yml (Plan)
-4. PR Approval → infrastructure.yml (Apply)
+3. Infrastructure Changes → infra.yml (Plan)
+4. PR Approval → infra.yml (Apply)
 5. New Container → deploy.yml (Application Deploy)
 ```
 

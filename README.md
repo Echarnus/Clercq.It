@@ -3,7 +3,7 @@
 [![Test](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml)
 [![Build](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml)
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
-[![Infrastructure](https://github.com/Echarnus/Clercq.It/actions/workflows/infrastructure.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infrastructure.yml)
+[![Infra](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
 A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
@@ -77,7 +77,6 @@ All technical documentation is available in the [`/docs`](./docs) folder:
 
 API available at `https://localhost:7000/swagger` • Web at `http://localhost:3000`
 
-<<<<<<< HEAD
 ## 🧪 Testing
 
 ```bash
@@ -87,8 +86,8 @@ dotnet test
 # With coverage
 dotnet test --collect:"XPlat Code Coverage"
 ```
-=======
-#### 🏗️ Infrastructure Pipeline (`infrastructure.yml`)
+
+#### 🏗️ Infra Pipeline (`infra.yml`)
 - Triggered on infrastructure changes or manual dispatch
 - **Infrastructure as Code**: Terraform-based Scaleway provisioning
 - **Serverless Architecture**: Auto-scaling database and container
@@ -98,7 +97,6 @@ dotnet test --collect:"XPlat Code Coverage"
 - **GitVersion** automatically calculates semantic versions
 - **Branch-based Versioning**: Different strategies per branch type
 - **Docker Tags**: Multiple tags for flexible deployment options
->>>>>>> main
 
 ## 🐳 Docker
 

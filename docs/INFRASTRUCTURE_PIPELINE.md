@@ -4,7 +4,7 @@ This document provides a comprehensive overview of the infrastructure pipeline i
 
 ## Pipeline Architecture
 
-### Workflow: `infrastructure.yml`
+### Workflow: `infra.yml`
 
 The infrastructure pipeline is implemented as a GitHub Actions workflow that automates Terraform-based infrastructure management on Scaleway.
 
@@ -205,13 +205,13 @@ git push origin feature/add-redis-cache
 
 ```bash
 # Plan infrastructure changes
-gh workflow run infrastructure.yml -f action=plan
+gh workflow run infra.yml -f action=plan
 
 # Apply infrastructure changes
-gh workflow run infrastructure.yml -f action=apply
+gh workflow run infra.yml -f action=apply
 
 # Destroy infrastructure (emergency)
-gh workflow run infrastructure.yml -f action=destroy
+gh workflow run infra.yml -f action=destroy
 ```
 
 ## Monitoring and Alerting
@@ -277,8 +277,8 @@ terraform validate
 terraform plan
 
 # GitHub workflow triggers
-gh workflow run infrastructure.yml -f action=plan
-gh workflow run infrastructure.yml -f action=apply
+gh workflow run infra.yml -f action=plan
+gh workflow run infra.yml -f action=apply
 ```
 
 ### Key URLs

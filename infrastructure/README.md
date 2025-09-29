@@ -146,7 +146,7 @@ terraform destroy
 This infrastructure is designed to integrate with the existing GitHub Actions workflows:
 - `build.yml`: Builds and pushes container images
 - `deploy.yml`: Can be extended to deploy to this infrastructure
-- `infrastructure.yml`: Manages infrastructure deployment and updates
+- `infra.yml`: Manages infrastructure deployment and updates
 
 ### Pull Request Configuration
 

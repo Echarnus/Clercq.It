@@ -37,7 +37,7 @@ Navigate to **Settings → Secrets and Variables → Actions → Variables** for
 
 ### 1. Infrastructure Changes Detection
 
-The infrastructure pipeline (`infrastructure.yml`) automatically triggers when:
+The infrastructure pipeline (`infra.yml`) automatically triggers when:
 
 - **Push to main**: Changes in `infrastructure/**` path
 - **Pull Request**: Changes in `infrastructure/**` path  
