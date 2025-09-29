@@ -146,7 +146,17 @@ terraform destroy
 This infrastructure is designed to integrate with the existing GitHub Actions workflows:
 - `build.yml`: Builds and pushes container images
 - `deploy.yml`: Can be extended to deploy to this infrastructure
-- `infrastructure.yml`: New workflow for infrastructure management
+- `infrastructure.yml`: Manages infrastructure deployment and updates
+
+### Pull Request Configuration
+
+For detailed guidance on configuring pull requests with infrastructure changes, see the [Infrastructure PR Configuration Guide](../docs/INFRASTRUCTURE_PR_GUIDE.md).
+
+Key requirements for infrastructure PRs:
+- All required Scaleway secrets must be configured
+- Terraform configuration must be validated
+- Infrastructure impact must be assessed
+- Changes require team review and approval
 
 ## Next Steps
 

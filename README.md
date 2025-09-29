@@ -3,6 +3,7 @@
 [![Test](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml)
 [![Build](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml)
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
+[![Infrastructure](https://github.com/Echarnus/Clercq.It/actions/workflows/infrastructure.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infrastructure.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
 A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
