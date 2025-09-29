@@ -7,6 +7,10 @@ ENV NUGET_XMLDOC_MODE=skip
 ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
 ENV DOTNET_CLI_TELEMETRY_OPTOUT=1
 ENV DOTNET_SYSTEM_NET_HTTP_USESOCKETSHTTPHANDLER=0
+ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
+
+# Copy nuget config first
+COPY nuget.config .
 
 # Copy project files and restore dependencies
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
@@ -15,11 +19,8 @@ COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastr
 COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/
 
-# Restore dependencies with retry for network issues
-RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache || \
-    (echo "Network issues detected - retrying with different configuration..." && \
-     sleep 5 && \
-     dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --no-cache)
+# Restore dependencies with SSL configuration
+RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --disable-parallel --verbosity minimal
 
 # Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
