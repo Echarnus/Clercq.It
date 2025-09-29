@@ -114,11 +114,21 @@ gh workflow run deploy.yml -f version=latest
 - `SCALEWAY_ACCESS_KEY`: Scaleway API access key
 - `SCALEWAY_SECRET_KEY`: Scaleway API secret key
 - `SCALEWAY_ORGANIZATION_ID`: Scaleway organization ID
+- `DATABASE_PASSWORD`: Secure PostgreSQL database password
 
 ### Environment Variables
 
 - `REGISTRY`: Docker registry (docker.io)
 - `IMAGE_NAME`: Docker image name (echarnus/clercq-it)
+- `CONTAINER_IMAGE`: Container image tag for deployment (optional)
+- `CUSTOM_DOMAIN`: Custom domain for Scaleway deployment (optional)
+
+### Infrastructure-Specific Configuration
+
+For detailed infrastructure setup and PR configuration, see:
+- [Infrastructure PR Configuration Guide](./INFRASTRUCTURE_PR_GUIDE.md)
+- [GitHub Environments Setup](./GITHUB_ENVIRONMENTS.md)
+- [Infrastructure Secrets Documentation](../infrastructure/SECRETS.md)
 
 ## Deployment Process
 
