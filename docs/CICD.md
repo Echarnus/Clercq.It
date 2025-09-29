@@ -232,9 +232,72 @@ gh secret list
 3. Use least-privilege access for secrets
 4. Review build logs for suspicious activity
 
+## Troubleshooting
+
+### Common Pipeline Issues
+
+#### Build Pipeline (`build.yml`)
+
+**Issue**: Docker Hub push fails with "Username and password required"
+- **Cause**: Missing `DOCKER_USERNAME` or `DOCKER_PASSWORD` secrets
+- **Solution**: Configure Docker Hub credentials in repository secrets, or the pipeline will build locally without pushing
+
+**Issue**: Tests fail during build
+- **Cause**: Code compilation or test errors
+- **Solution**: Run tests locally first with `dotnet test` and `pnpm test`
+
+#### Infrastructure Pipeline (`infra.yml`)
+
+**Issue**: Terraform fails with "Invalid index" for load_balancer
+- **Cause**: Using incorrect Scaleway RDB instance attributes
+- **Solution**: This has been fixed to use `endpoint_ip` and `endpoint_port`
+
+**Issue**: Scaleway authentication fails
+- **Cause**: Missing or incorrect Scaleway credentials
+- **Solution**: Verify `SCALEWAY_ACCESS_KEY`, `SCALEWAY_SECRET_KEY`, and `SCALEWAY_ORGANIZATION_ID` secrets
+
+#### Deploy Pipeline (`deploy.yml`)
+
+**Issue**: Deploy workflow not triggering
+- **Cause**: Workflow name mismatch in trigger configuration
+- **Solution**: This has been fixed to use correct workflow names: `build` and `Deploy Infra`
+
+**Issue**: Deploy fails due to missing Docker image
+- **Cause**: Build pipeline didn't push to Docker Hub
+- **Solution**: Ensure Docker Hub credentials are configured
+
+### Debugging Commands
+
+```bash
+# View workflow runs
+gh run list
+
+# View specific run details
+gh run view <run-id>
+
+# Check workflow logs
+gh run view <run-id> --log
+
+# Re-run failed workflow
+gh run rerun <run-id>
+
+# Check repository secrets (names only)
+gh secret list
+```
+
+### Pipeline Status
+
+Current pipeline status and known issues:
+
+- ✅ **Test Pipeline**: Working correctly
+- ✅ **Build Pipeline**: Fixed to handle missing Docker credentials gracefully
+- ✅ **Infrastructure Pipeline**: Fixed Terraform configuration issues
+- ✅ **Deploy Pipeline**: Fixed workflow name references
+
 ## Resources
 
 - [GitHub Flow Documentation](https://docs.github.com/en/get-started/quickstart/github-flow)
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Scaleway Container Documentation](https://www.scaleway.com/en/docs/serverless/containers/)
+- [Secrets Setup Guide](./SECRETS_SETUP.md) - How to configure required secrets

@@ -8,6 +8,17 @@
 
 A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
 
+## 📊 Pipeline Status
+
+All CI/CD pipelines have been fixed and are operational:
+
+- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components
+- ✅ **Build Pipeline**: Builds Docker images (requires Docker Hub credentials for push)  
+- ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
+- ✅ **Deploy Pipeline**: Orchestrates application deployment to production
+
+> **Note**: Some pipelines require [repository secrets](./docs/SECRETS_SETUP.md) to be configured for full functionality. See the [troubleshooting guide](./docs/CICD.md#troubleshooting) for common issues.
+
 ## 🚀 Tech Stack
 
 ### Backend
