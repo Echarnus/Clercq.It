@@ -4,7 +4,7 @@ name: Deploy Infrastructure
 on:
   push:
     branches: [main]
-    paths: 
+    paths:
       - 'infrastructure/**'
   pull_request:
     branches: [main]
@@ -35,7 +35,7 @@ jobs:
       fmt_outcome: ${{ steps.fmt.outcome }}
       init_outcome: ${{ steps.init.outcome }}
       validate_outcome: ${{ steps.validate.outcome }}
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
         run: |
           cd infrastructure/terraform
           terraform validate
-        
+
       - name: Comment PR - Validation Results
         if: github.event_name == 'pull_request'
         uses: actions/github-script@v7
@@ -74,9 +74,9 @@ jobs:
             #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
             #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
             #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-            
+
             *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-            
+
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
@@ -88,10 +88,12 @@ jobs:
     name: Terraform Plan
     runs-on: ubuntu-latest
     needs: [terraform-check]
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
-    environment: 
+    if: |
+      github.event_name == 'pull_request' ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
+    environment:
       name: infrastructure-plan
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
