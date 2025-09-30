@@ -189,8 +189,11 @@ jobs:
         run: |
           cd infrastructure/terraform
           echo "🚀 Starting infrastructure deployment..."
+          set -o pipefail
           terraform apply -auto-approve -no-color 2>&1 | tee apply.log
-          echo "TERRAFORM_APPLY_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+          APPLY_EXIT_CODE=$?
+          echo "TERRAFORM_APPLY_EXIT_CODE=${APPLY_EXIT_CODE}" >> $GITHUB_ENV
+          exit ${APPLY_EXIT_CODE}
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -214,7 +217,17 @@ jobs:
         if: always()
         run: |
           cd infrastructure/terraform
-          if [ "${TERRAFORM_APPLY_EXIT_CODE:-1}" = "0" ]; then
+          # Check if TERRAFORM_APPLY_EXIT_CODE is set, otherwise use the step outcome
+          if [ -z "${TERRAFORM_APPLY_EXIT_CODE}" ]; then
+            # If not set, check if apply step succeeded
+            if [ "${{ steps.apply.outcome }}" = "success" ]; then
+              TERRAFORM_APPLY_EXIT_CODE=0
+            else
+              TERRAFORM_APPLY_EXIT_CODE=1
+            fi
+          fi
+          
+          if [ "${TERRAFORM_APPLY_EXIT_CODE}" = "0" ]; then
             echo "✅ Infrastructure deployment successful"
             echo "DEPLOYMENT_STATUS=success" >> $GITHUB_ENV
             
@@ -268,8 +281,11 @@ jobs:
         run: |
           cd infrastructure/terraform
           echo "🗑️ Starting infrastructure destruction..."
+          set -o pipefail
           terraform destroy -auto-approve -no-color 2>&1 | tee destroy.log
-          echo "TERRAFORM_DESTROY_EXIT_CODE=${PIPESTATUS[0]}" >> $GITHUB_ENV
+          DESTROY_EXIT_CODE=$?
+          echo "TERRAFORM_DESTROY_EXIT_CODE=${DESTROY_EXIT_CODE}" >> $GITHUB_ENV
+          exit ${DESTROY_EXIT_CODE}
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -281,7 +297,17 @@ jobs:
       - name: Destroy Status
         if: always()
         run: |
-          if [ "${TERRAFORM_DESTROY_EXIT_CODE:-1}" = "0" ]; then
+          # Check if TERRAFORM_DESTROY_EXIT_CODE is set, otherwise use the step outcome
+          if [ -z "${TERRAFORM_DESTROY_EXIT_CODE}" ]; then
+            # If not set, check if destroy step succeeded
+            if [ "${{ steps.destroy.outcome }}" = "success" ]; then
+              TERRAFORM_DESTROY_EXIT_CODE=0
+            else
+              TERRAFORM_DESTROY_EXIT_CODE=1
+            fi
+          fi
+          
+          if [ "${TERRAFORM_DESTROY_EXIT_CODE}" = "0" ]; then
             echo "🗑️ Infrastructure destroyed successfully"
             echo "DESTROY_STATUS=success" >> $GITHUB_ENV
             echo "## 🗑️ Infrastructure Destruction Complete" >> $GITHUB_STEP_SUMMARY
