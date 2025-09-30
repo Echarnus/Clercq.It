@@ -96,11 +96,26 @@ jobs:
 
       - name: Output build information
         run: |
+          echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [[ "${{ github.event_name }}" != "pull_request" && "${{ secrets.DOCKER_USERNAME }}" != "" && "${{ secrets.DOCKER_PASSWORD }}" != "" ]]; then
             echo "🎉 Docker image built and pushed successfully!"
+            echo "- **Status**: ✅ Built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
+            echo "- **Registry**: Docker Hub" >> $GITHUB_STEP_SUMMARY
           else
             echo "🏗️ Docker image built successfully (push skipped - no credentials or PR)"
+            echo "- **Status**: ✅ Built locally (push skipped)" >> $GITHUB_STEP_SUMMARY
+            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+              echo "- **Reason**: Pull request - images not pushed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- **Reason**: Missing Docker Hub credentials" >> $GITHUB_STEP_SUMMARY
+            fi
           fi
           echo "📦 Image: ${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}"
           echo "🏷️ Version: ${{ steps.gitversion.outputs.semVer }}"
           echo "🔖 Tags: ${{ steps.meta.outputs.tags }}"
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: \`${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **SHA**: \`${{ steps.gitversion.outputs.shortSha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY

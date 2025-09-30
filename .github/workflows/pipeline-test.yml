@@ -1,0 +1,107 @@
+---
+name: Pipeline Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: 'What to test'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - build-only
+          - test-only
+
+jobs:
+  test-pipeline:
+    name: Test Pipeline Components
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Test Build Components
+        if: github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'build-only'
+        run: |
+          echo "🧪 Testing build pipeline components..."
+          
+          # Test .NET setup
+          echo "Testing .NET setup..."
+          if command -v dotnet &> /dev/null; then
+            echo "✅ .NET SDK is available"
+            dotnet --version
+          else
+            echo "❌ .NET SDK not found"
+            exit 1
+          fi
+          
+          # Test Node.js setup  
+          echo "Testing Node.js setup..."
+          if command -v node &> /dev/null; then
+            echo "✅ Node.js is available"
+            node --version
+          else
+            echo "❌ Node.js not found"
+            exit 1
+          fi
+          
+          echo "## 🧪 Pipeline Component Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ .NET SDK: $(dotnet --version)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Node.js: $(node --version)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Test Workflow Syntax
+        if: github.event.inputs.test_scope == 'all' || github.event.inputs.test_scope == 'test-only'
+        run: |
+          echo "🔍 Validating workflow YAML syntax..."
+          
+          # Test that all workflow files are valid YAML
+          python3 -c "
+          import yaml
+          import sys
+          
+          workflows = [
+              '.github/workflows/test.yml',
+              '.github/workflows/build.yml', 
+              '.github/workflows/deploy.yml',
+              '.github/workflows/infra.yml'
+          ]
+          
+          all_valid = True
+          
+          for workflow in workflows:
+              try:
+                  with open(workflow, 'r') as f:
+                      yaml.safe_load(f)
+                  print(f'✅ {workflow}: Valid YAML')
+              except yaml.YAMLError as e:
+                  print(f'❌ {workflow}: YAML Error - {e}')
+                  all_valid = False
+              except Exception as e:
+                  print(f'❌ {workflow}: Error - {e}')
+                  all_valid = False
+          
+          if all_valid:
+              print('\n🎉 All workflow files have valid YAML syntax!')
+              sys.exit(0)
+          else:
+              print('\n❌ Some workflow files have YAML syntax errors!')
+              sys.exit(1)
+          "
+
+      - name: Generate Test Summary
+        if: always()
+        run: |
+          echo "## 📊 Pipeline Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Scope: ${{ github.event.inputs.test_scope }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Status: ${{ job.status == 'success' && '✅ All tests passed' || '❌ Some tests failed' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY
+          echo "- Run the main build pipeline to test full functionality" >> $GITHUB_STEP_SUMMARY
+          echo "- Ensure Docker Hub and Scaleway credentials are configured for deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- Check infrastructure pipeline if Terraform resources need updates" >> $GITHUB_STEP_SUMMARY

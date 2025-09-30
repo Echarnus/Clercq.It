@@ -287,12 +287,27 @@ gh secret list
 
 ### Pipeline Status
 
-Current pipeline status and known issues:
+Current pipeline status and recent improvements:
 
-- ✅ **Test Pipeline**: Working correctly
-- ✅ **Build Pipeline**: Fixed to handle missing Docker credentials gracefully
-- ✅ **Infrastructure Pipeline**: Fixed Terraform configuration issues
-- ✅ **Deploy Pipeline**: Fixed workflow name references
+- ✅ **Test Pipeline**: Enhanced with detailed build summaries and error reporting
+- ✅ **Build Pipeline**: Improved with comprehensive status reporting and Docker push handling
+- ✅ **Infrastructure Pipeline**: Fully functional with Terraform automation
+- ✅ **Deploy Pipeline**: **COMPLETED** - Now includes actual Scaleway deployment with health checks
+
+### Recent Pipeline Improvements (Latest Update)
+
+#### ✨ New Features Added
+- **Complete Scaleway deployment implementation** in deploy.yml
+- **Comprehensive error handling** and status reporting across all workflows
+- **Detailed build summaries** with links and metadata in GitHub Actions
+- **Real health checks** with endpoint testing and retry logic
+- **Enhanced credential validation** with helpful error messages
+
+#### 🔧 Enhanced Error Handling
+- Better feedback when Docker Hub credentials are missing
+- Clear guidance when Scaleway credentials are not configured
+- Improved workflow status reporting with actionable next steps
+- Automatic dependency installation (jq, curl) for deployment scripts
 
 ## Resources
 
