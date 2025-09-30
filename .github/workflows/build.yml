@@ -4,8 +4,6 @@ name: build
 "on":
   push:
     branches: [main]
-  pull_request:
-    branches: [main, develop]
   workflow_dispatch:
     inputs:
       branch:
@@ -65,9 +63,7 @@ jobs:
           tags: |
             type=raw,value=${{ steps.gitversion.outputs.semVer }}
             type=raw,value=${{ steps.gitversion.outputs.shortSha }}
-            type=ref,event=branch
-            type=ref,event=pr
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
 
       - name: Build and push Docker image
         id: build
@@ -76,7 +72,7 @@ jobs:
           context: ./src
           file: ./src/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != '' }}
+          push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: |
             ${{ steps.meta.outputs.labels }}
@@ -88,7 +84,6 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation
-        if: github.event_name != 'pull_request' && steps.build.outputs.digest != ''
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.IMAGE_NAME }}
@@ -99,23 +94,8 @@ jobs:
         run: |
           echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          if [[ "${{ github.event_name }}" != "pull_request" && "${{ secrets.DOCKER_USERNAME }}" != "" && "${{ secrets.DOCKER_PASSWORD }}" != "" ]]; then
-            echo "🎉 Docker image built and pushed successfully!"
-            echo "- **Status**: ✅ Built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
-            echo "- **Registry**: Docker Hub" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "🏗️ Docker image built successfully (push skipped - no credentials or PR)"
-            echo "- **Status**: ✅ Built locally (push skipped)" >> $GITHUB_STEP_SUMMARY
-            if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-              echo "- **Reason**: Pull request - images not pushed" >> $GITHUB_STEP_SUMMARY
-            else
-              echo "- **Reason**: Missing Docker Hub credentials" >> $GITHUB_STEP_SUMMARY
-            fi
-          fi
-          echo "📦 Image: ${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}"
-          echo "🏷️ Version: ${{ steps.gitversion.outputs.semVer }}"
-          echo "🔖 Tags: ${{ steps.meta.outputs.tags }}"
-          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
+          echo "- **Registry**: Docker Hub" >> $GITHUB_STEP_SUMMARY
           echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: \`${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.gitversion.outputs.shortSha }}\`" >> $GITHUB_STEP_SUMMARY
