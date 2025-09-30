@@ -28,7 +28,10 @@ jobs:
           dotnet-version: '9.0.x'
 
       - name: Install .NET Aspire workload
-        run: dotnet workload install aspire
+        run: |
+          echo "🔧 Installing .NET Aspire workload..."
+          dotnet workload install aspire
+          echo "✅ Aspire workload installed successfully"
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v1
@@ -43,12 +46,19 @@ jobs:
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: |
+          echo "🏗️ Building .NET solution..."
+          dotnet build --no-restore --configuration Release
+          echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- Built all projects in Release configuration" >> $GITHUB_STEP_SUMMARY
 
       - name: Test .NET projects from /tests/
         run: |
+          echo "🧪 Running .NET tests..."
           dotnet test --no-build --configuration Release --verbosity normal \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
+          echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -92,8 +102,16 @@ jobs:
 
       - name: Build Next.js
         working-directory: ./src/ClercqIt.Web
-        run: pnpm run build
+        run: |
+          echo "🏗️ Building Next.js application..."
+          pnpm run build
+          echo "## ✅ Next.js Build Successful" >> $GITHUB_STEP_SUMMARY
+          echo "- Production build completed successfully" >> $GITHUB_STEP_SUMMARY
 
       - name: Run frontend tests
         working-directory: ./tests/ClercqIt.Web.Tests
-        run: pnpm run test --passWithNoTests
+        run: |
+          echo "🧪 Running frontend tests..."
+          pnpm run test --passWithNoTests
+          echo "## ✅ Frontend Tests Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- All frontend unit tests executed" >> $GITHUB_STEP_SUMMARY
