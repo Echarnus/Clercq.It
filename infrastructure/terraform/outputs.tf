@@ -2,13 +2,13 @@
 
 output "database_endpoint" {
   description = "Database endpoint"
-  value       = scaleway_rdb_instance.portfolio_db.load_balancer[0].ip
+  value       = scaleway_rdb_instance.portfolio_db.endpoint_ip
   sensitive   = true
 }
 
 output "database_port" {
   description = "Database port"
-  value       = scaleway_rdb_instance.portfolio_db.load_balancer[0].port
+  value       = scaleway_rdb_instance.portfolio_db.endpoint_port
 }
 
 output "database_name" {
@@ -41,7 +41,7 @@ output "infrastructure_summary" {
   value = {
     database = {
       name     = scaleway_rdb_instance.portfolio_db.name
-      endpoint = "${scaleway_rdb_instance.portfolio_db.load_balancer[0].ip}:${scaleway_rdb_instance.portfolio_db.load_balancer[0].port}"
+      endpoint = "${scaleway_rdb_instance.portfolio_db.endpoint_ip}:${scaleway_rdb_instance.portfolio_db.endpoint_port}"
       type     = scaleway_rdb_instance.portfolio_db.node_type
     }
     container = {
