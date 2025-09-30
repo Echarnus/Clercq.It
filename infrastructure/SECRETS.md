@@ -29,6 +29,15 @@ Navigate to your GitHub repository → Settings → Secrets and Variables → Ac
   2. Click on your organization name in the top-left corner
   3. Copy the Organization ID from the organization settings
 
+#### `SCALEWAY_PROJECT_ID`
+- **Description**: Your Scaleway project ID
+- **How to get**:
+  1. Go to [Scaleway Console](https://console.scaleway.com/)
+  2. Navigate to your project (or create a new one)
+  3. Click on "Project settings" in the left menu
+  4. Copy the Project ID
+- **Note**: Each Scaleway project belongs to an organization. Make sure to use a project within your ClercqIt organization.
+
 ### Application Secrets
 
 #### `DATABASE_PASSWORD`
@@ -74,9 +83,11 @@ After setting up secrets, you can test the configuration by:
 ### Common Issues
 
 - **Invalid Organization ID**: Ensure you're using the correct ClercqIt organization ID
+- **Invalid Project ID**: Ensure you're using a valid project ID within your organization
 - **API Key Permissions**: Make sure API keys have sufficient permissions for RDB and Container services
 - **Region/Zone Mismatch**: Verify region and zone settings match your Scaleway setup
 - **Resource Quotas**: Check if you have reached Scaleway resource limits
+- **403 Forbidden Errors**: Verify that your API keys and project ID have the correct permissions
 
 ### Getting Help
 
