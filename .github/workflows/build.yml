@@ -88,7 +88,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Generate artifact attestation
-        if: github.event_name != 'pull_request' && secrets.DOCKER_USERNAME != '' && secrets.DOCKER_PASSWORD != ''
+        if: github.event_name != 'pull_request' && steps.build.outputs.digest != ''
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.IMAGE_NAME }}
