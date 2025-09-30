@@ -27,6 +27,7 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   disable_backup    = false
   volume_type       = "bssd"
   volume_size_in_gb = 5
+  project_id        = var.scaleway_project_id
 
   settings = {
     # Configure for minimal resource usage with scaling capabilities
@@ -59,6 +60,7 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
 resource "scaleway_container_namespace" "portfolio" {
   name        = "portfolio"
   description = "Container namespace for Clercq.It Portfolio applications"
+  project_id  = var.scaleway_project_id
 
   environment_variables = {
     "ASPNETCORE_ENVIRONMENT" = "Production"
