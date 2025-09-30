@@ -32,9 +32,10 @@ This directory contains Terraform configurations for deploying the Clercq.It Por
 ## Prerequisites
 
 1. **Scaleway Account**: Access to Scaleway with ClercqIt organization
-2. **Terraform**: Version 1.0 or higher
-3. **Scaleway Credentials**: Access key and secret key
-4. **Container Image**: Docker image pushed to a registry (Docker Hub)
+2. **Scaleway Project**: A project created within the ClercqIt organization
+3. **Terraform**: Version 1.0 or higher
+4. **Scaleway Credentials**: Access key and secret key
+5. **Container Image**: Docker image pushed to a registry (Docker Hub)
 
 ## Setup Instructions
 
@@ -47,6 +48,7 @@ cp terraform.tfvars.example terraform.tfvars
 
 Edit `terraform.tfvars` with your actual values:
 - `scaleway_organization_id`: Your ClercqIt organization ID
+- `scaleway_project_id`: Your Scaleway project ID (within the organization)
 - `database_password`: Secure password for the database user
 - `container_image`: Docker image tag (e.g., `echarnus/clercq-it:v1.0.0`)
 - `custom_domain`: Optional custom domain

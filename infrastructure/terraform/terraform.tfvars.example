@@ -4,6 +4,7 @@
 
 # Scaleway Configuration
 scaleway_organization_id = "your-scaleway-organization-id"
+scaleway_project_id      = "your-scaleway-project-id"
 scaleway_zone            = "fr-par-1"
 scaleway_region          = "fr-par"
 

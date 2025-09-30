@@ -6,6 +6,12 @@ variable "scaleway_organization_id" {
   sensitive   = true
 }
 
+variable "scaleway_project_id" {
+  description = "Scaleway project ID"
+  type        = string
+  sensitive   = true
+}
+
 variable "scaleway_zone" {
   description = "Scaleway zone"
   type        = string
