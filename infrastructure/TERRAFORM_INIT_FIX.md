@@ -53,10 +53,11 @@ Added the complete set of SCW environment variables to all Terraform Init steps:
 
 ### Jobs Updated
 
-1. **terraform-check** (line ~53) - Added SCW variables to init step
-2. **terraform-plan** (line ~107) - Added SCW variables to init step
-3. **terraform-apply** (line ~186) - Added SCW variables to init step
-4. **terraform-destroy** (line ~284) - Added SCW variables to init step
+The workflow has been simplified to two jobs:
+1. **terraform-plan** - Runs on PRs, validates and shows plan with SCW variables
+2. **terraform-deploy** - Runs on push to main, always deploys with SCW variables
+
+All Terraform Init and Apply steps now include the complete set of SCW environment variables.
 
 ## Why This Matters
 
