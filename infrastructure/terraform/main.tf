@@ -25,7 +25,7 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   engine            = "PostgreSQL-15"
   is_ha_cluster     = false
   disable_backup    = false
-  volume_type       = "bssd"
+  volume_type       = "sbs" # Updated from deprecated bssd to sbs
   volume_size_in_gb = 5
   project_id        = var.scaleway_project_id
 
