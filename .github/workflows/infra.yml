@@ -154,6 +154,13 @@ jobs:
           cd infrastructure/terraform
           echo "🔍 Checking for existing Scaleway resources..."
           
+          # Check if RDB instance is in state with old settings
+          if terraform state show scaleway_rdb_instance.portfolio_db 2>/dev/null | grep -q "shared_buffers"; then
+            echo "⚠️  RDB instance in state has old shared_buffers setting"
+            echo "🗑️  Removing from state to allow recreation with new settings..."
+            terraform state rm scaleway_rdb_instance.portfolio_db || true
+          fi
+          
           # Check if namespace is already in state
           if terraform state show scaleway_container_namespace.portfolio 2>/dev/null; then
             echo "✅ Namespace already in Terraform state, skipping import"
