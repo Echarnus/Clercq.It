@@ -4,37 +4,27 @@ name: Deploy Infra
 on:
   push:
     branches: [main]
-    paths:
-      - 'infrastructure/**'
   pull_request:
     branches: [main]
     paths:
       - 'infrastructure/**'
   workflow_dispatch:
-    inputs:
-      action:
-        description: 'Infrastructure action to perform'
-        required: true
-        default: 'plan'
-        type: choice
-        options:
-          - plan
-          - apply
-          - destroy
 
 env:
   TERRAFORM_VERSION: '1.6.0'
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
-  terraform-check:
-    name: Terraform Validation
+  terraform-plan:
+    name: Terraform Plan
     runs-on: ubuntu-latest
-    outputs:
-      fmt_outcome: ${{ steps.fmt.outcome }}
-      init_outcome: ${{ steps.init.outcome }}
-      validate_outcome: ${{ steps.validate.outcome }}
+    if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout repository
@@ -51,11 +41,16 @@ jobs:
         continue-on-error: true
 
       - name: Terraform Init
-        id: init
         run: |
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
@@ -65,53 +60,6 @@ jobs:
         run: |
           cd infrastructure/terraform
           terraform validate
-
-      - name: Comment PR - Validation Results
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const output = `
-            #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
-            #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
-            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
-
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
-
-            github.rest.issues.createComment({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              body: output
-            })
-
-  terraform-plan:
-    name: Terraform Plan
-    runs-on: ubuntu-latest
-    needs: [terraform-check]
-    if: |
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'plan')
-    environment:
-      name: infrastructure-plan
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Terraform Init
-        run: |
-          cd infrastructure/terraform
-          terraform init
-        env:
-          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Terraform Plan
         id: plan
@@ -131,8 +79,8 @@ jobs:
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
           TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
 
-      - name: Comment PR - Plan Results
-        if: github.event_name == 'pull_request'
+      - name: Comment PR
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
@@ -145,7 +93,9 @@ jobs:
             }
             
             const output = `
-            #### Terraform Plan 📋
+            #### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+            #### Terraform Plan 📋\`${{ steps.plan.outcome }}\`
             
             <details><summary>Show Plan</summary>
             
@@ -155,7 +105,7 @@ jobs:
             
             </details>
             
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            *Pushed by: @${{ github.actor }}*`;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -164,13 +114,13 @@ jobs:
               body: output
             })
 
-  terraform-apply:
+  terraform-deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
-    needs: [terraform-check]
     if: |
-      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'apply')
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'workflow_dispatch'
     environment: 
       name: production
     
@@ -188,6 +138,56 @@ jobs:
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Import Existing Resources
+        continue-on-error: true
+        run: |
+          cd infrastructure/terraform
+          echo "🔍 Checking for existing Scaleway resources..."
+          
+          # Check if RDB instance is in state with old settings
+          if terraform state show scaleway_rdb_instance.portfolio_db 2>/dev/null | grep -q "shared_buffers"; then
+            echo "⚠️  RDB instance in state has old shared_buffers setting"
+            echo "🗑️  Removing from state to allow recreation with new settings..."
+            terraform state rm scaleway_rdb_instance.portfolio_db || true
+          fi
+          
+          # Check if namespace is already in state
+          if terraform state show scaleway_container_namespace.portfolio 2>/dev/null; then
+            echo "✅ Namespace already in Terraform state, skipping import"
+          else
+            # Try to import the container namespace if it exists
+            # Get all namespaces and find the portfolio namespace ID
+            NAMESPACE_ID=$(curl -s -H "X-Auth-Token: $SCW_SECRET_KEY" \
+              "https://api.scaleway.com/containers/v1beta1/regions/fr-par/namespaces" \
+              | grep -A 10 '"name":"portfolio"' \
+              | grep -oP '"id":"\K[^"]+' \
+              | head -1)
+            
+            if [ ! -z "$NAMESPACE_ID" ]; then
+              echo "📦 Found existing namespace with ID: $NAMESPACE_ID"
+              echo "📥 Attempting to import into Terraform state..."
+              terraform import scaleway_container_namespace.portfolio "$NAMESPACE_ID" || true
+            else
+              echo "ℹ️ No existing namespace found, will create new one"
+            fi
+          fi
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
@@ -197,11 +197,7 @@ jobs:
         run: |
           cd infrastructure/terraform
           echo "🚀 Starting infrastructure deployment..."
-          set -o pipefail
-          terraform apply -auto-approve -no-color 2>&1 | tee apply.log
-          APPLY_EXIT_CODE=$?
-          echo "TERRAFORM_APPLY_EXIT_CODE=${APPLY_EXIT_CODE}" >> $GITHUB_ENV
-          exit ${APPLY_EXIT_CODE}
+          terraform apply -auto-approve -no-color
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -216,127 +212,12 @@ jobs:
           TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
 
       - name: Terraform Output
-        id: output
+        if: success()
         run: |
           cd infrastructure/terraform
-          echo "## Infrastructure Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           terraform output -json >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
-
-      - name: Update Infrastructure Status
-        if: always()
-        run: |
-          cd infrastructure/terraform
-          # Check if TERRAFORM_APPLY_EXIT_CODE is set, otherwise use the step outcome
-          if [ -z "${TERRAFORM_APPLY_EXIT_CODE}" ]; then
-            # If not set, check if apply step succeeded
-            if [ "${{ steps.apply.outcome }}" = "success" ]; then
-              TERRAFORM_APPLY_EXIT_CODE=0
-            else
-              TERRAFORM_APPLY_EXIT_CODE=1
-            fi
-          fi
-          
-          if [ "${TERRAFORM_APPLY_EXIT_CODE}" = "0" ]; then
-            echo "✅ Infrastructure deployment successful"
-            echo "DEPLOYMENT_STATUS=success" >> $GITHUB_ENV
-            
-            # Get infrastructure outputs
-            echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "### 📊 Deployment Summary:" >> $GITHUB_STEP_SUMMARY
-            terraform output -json infrastructure_summary 2>/dev/null | jq -r '
-              "- **Database**: " + .database.name + " (" + .database.type + ")",
-              "- **Container**: " + .container.name + " (URL: " + .container.url + ")",
-              "- **Scaling**: " + (.container.min_scale|tostring) + "-" + (.container.max_scale|tostring) + " instances",
-              "- **Resources**: " + .container.memory + " memory, " + .container.cpu + " CPU",
-              "- **Namespace**: " + .namespace.name
-            ' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "- Infrastructure details available in Terraform outputs" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Infrastructure deployment failed"
-            echo "DEPLOYMENT_STATUS=failure" >> $GITHUB_ENV
-            echo "## ❌ Infrastructure Deployment Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Please check the logs above for detailed error information." >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi
-
-  terraform-destroy:
-    name: Destroy Infrastructure
-    runs-on: ubuntu-latest
-    needs: [terraform-check]
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'destroy'
-    environment: 
-      name: production
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: ${{ env.TERRAFORM_VERSION }}
-
-      - name: Terraform Init
-        run: |
-          cd infrastructure/terraform
-          terraform init
-        env:
-          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
-
-      - name: Terraform Destroy
-        id: destroy
-        run: |
-          cd infrastructure/terraform
-          echo "🗑️ Starting infrastructure destruction..."
-          set -o pipefail
-          terraform destroy -auto-approve -no-color 2>&1 | tee destroy.log
-          DESTROY_EXIT_CODE=$?
-          echo "TERRAFORM_DESTROY_EXIT_CODE=${DESTROY_EXIT_CODE}" >> $GITHUB_ENV
-          exit ${DESTROY_EXIT_CODE}
-        env:
-          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
-          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
-          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          SCW_DEFAULT_REGION: fr-par
-          SCW_DEFAULT_ZONE: fr-par-1
-          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
-          TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
-          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
-
-      - name: Destroy Status
-        if: always()
-        run: |
-          # Check if TERRAFORM_DESTROY_EXIT_CODE is set, otherwise use the step outcome
-          if [ -z "${TERRAFORM_DESTROY_EXIT_CODE}" ]; then
-            # If not set, check if destroy step succeeded
-            if [ "${{ steps.destroy.outcome }}" = "success" ]; then
-              TERRAFORM_DESTROY_EXIT_CODE=0
-            else
-              TERRAFORM_DESTROY_EXIT_CODE=1
-            fi
-          fi
-          
-          if [ "${TERRAFORM_DESTROY_EXIT_CODE}" = "0" ]; then
-            echo "🗑️ Infrastructure destroyed successfully"
-            echo "DESTROY_STATUS=success" >> $GITHUB_ENV
-            echo "## 🗑️ Infrastructure Destruction Complete" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "All Scaleway resources have been successfully removed." >> $GITHUB_STEP_SUMMARY
-          else
-            echo "❌ Infrastructure destruction failed"
-            echo "DESTROY_STATUS=failure" >> $GITHUB_ENV
-            echo "## ❌ Infrastructure Destruction Failed" >> $GITHUB_STEP_SUMMARY
-            echo "" >> $GITHUB_STEP_SUMMARY
-            echo "Some resources may still exist. Please check Scaleway console and logs above." >> $GITHUB_STEP_SUMMARY
-            exit 1
-          fi

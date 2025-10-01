@@ -25,14 +25,13 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   engine            = "PostgreSQL-15"
   is_ha_cluster     = false
   disable_backup    = false
-  volume_type       = "bssd"
+  volume_type       = "sbs_5k" # SBS 5k IOPS volume type
   volume_size_in_gb = 5
   project_id        = var.scaleway_project_id
 
   settings = {
     # Configure for minimal resource usage with scaling capabilities
     "max_connections" = "20"
-    "shared_buffers"  = "32MB"
   }
 
   tags = [
