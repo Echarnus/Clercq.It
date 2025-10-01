@@ -154,20 +154,25 @@ jobs:
           cd infrastructure/terraform
           echo "🔍 Checking for existing Scaleway resources..."
           
-          # Try to import the container namespace if it exists
-          # Get all namespaces and find the portfolio namespace ID
-          NAMESPACE_ID=$(curl -s -H "X-Auth-Token: $SCW_SECRET_KEY" \
-            "https://api.scaleway.com/containers/v1beta1/regions/fr-par/namespaces" \
-            | grep -A 10 '"name":"portfolio"' \
-            | grep -oP '"id":"\K[^"]+' \
-            | head -1)
-          
-          if [ ! -z "$NAMESPACE_ID" ]; then
-            echo "📦 Found existing namespace with ID: $NAMESPACE_ID"
-            echo "📥 Attempting to import into Terraform state..."
-            terraform import scaleway_container_namespace.portfolio "$NAMESPACE_ID" || true
+          # Check if namespace is already in state
+          if terraform state show scaleway_container_namespace.portfolio 2>/dev/null; then
+            echo "✅ Namespace already in Terraform state, skipping import"
           else
-            echo "ℹ️ No existing namespace found, will create new one"
+            # Try to import the container namespace if it exists
+            # Get all namespaces and find the portfolio namespace ID
+            NAMESPACE_ID=$(curl -s -H "X-Auth-Token: $SCW_SECRET_KEY" \
+              "https://api.scaleway.com/containers/v1beta1/regions/fr-par/namespaces" \
+              | grep -A 10 '"name":"portfolio"' \
+              | grep -oP '"id":"\K[^"]+' \
+              | head -1)
+            
+            if [ ! -z "$NAMESPACE_ID" ]; then
+              echo "📦 Found existing namespace with ID: $NAMESPACE_ID"
+              echo "📥 Attempting to import into Terraform state..."
+              terraform import scaleway_container_namespace.portfolio "$NAMESPACE_ID" || true
+            else
+              echo "ℹ️ No existing namespace found, will create new one"
+            fi
           fi
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}

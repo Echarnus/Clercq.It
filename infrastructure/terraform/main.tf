@@ -32,7 +32,6 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   settings = {
     # Configure for minimal resource usage with scaling capabilities
     "max_connections" = "20"
-    "shared_buffers"  = "32MB"
   }
 
   tags = [
