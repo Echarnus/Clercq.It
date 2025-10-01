@@ -17,6 +17,11 @@ env:
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
 jobs:
   terraform-plan:
     name: Terraform Plan
@@ -77,6 +82,7 @@ jobs:
           TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
 
       - name: Comment PR
+        continue-on-error: true
         uses: actions/github-script@v7
         with:
           script: |
