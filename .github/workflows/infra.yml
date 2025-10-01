@@ -56,6 +56,12 @@ jobs:
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
@@ -109,6 +115,12 @@ jobs:
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
@@ -188,6 +200,12 @@ jobs:
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
@@ -286,6 +304,12 @@ jobs:
           cd infrastructure/terraform
           terraform init
         env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
