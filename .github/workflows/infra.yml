@@ -4,8 +4,6 @@ name: Deploy Infra
 on:
   push:
     branches: [main]
-    paths:
-      - 'infrastructure/**'
   pull_request:
     branches: [main]
     paths:
@@ -120,7 +118,7 @@ jobs:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
     if: |
-      github.event_name == 'push' && github.ref == 'refs/heads/main' ||
+      github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch'
     environment: 
       name: production
