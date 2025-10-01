@@ -78,6 +78,21 @@ After setting up secrets, you can test the configuration by:
 2. **PR Test**: Create a PR with infrastructure changes to see validation results
 3. **Deployment**: Merge to main branch to trigger automatic infrastructure deployment
 
+## How the Workflow Uses These Secrets
+
+The GitHub Actions workflow (`.github/workflows/infra.yml`) uses these secrets in two ways:
+
+1. **Terraform Variables** (TF_VAR_*):
+   - Used by Terraform to configure the provider
+   - Example: `TF_VAR_scaleway_project_id` → `var.scaleway_project_id` in Terraform
+
+2. **Scaleway SDK Environment Variables** (SCW_*):
+   - Used by the Scaleway SDK when making API calls
+   - Required: `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`
+   - Recommended: `SCW_DEFAULT_ORGANIZATION_ID`, `SCW_DEFAULT_PROJECT_ID`, `SCW_DEFAULT_REGION`, `SCW_DEFAULT_ZONE`
+
+Both are needed for proper authentication and authorization. See [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) for detailed explanation.
+
 ## Troubleshooting
 
 ### Common Issues
@@ -87,7 +102,7 @@ After setting up secrets, you can test the configuration by:
 - **API Key Permissions**: Make sure API keys have sufficient permissions for RDB and Container services
 - **Region/Zone Mismatch**: Verify region and zone settings match your Scaleway setup
 - **Resource Quotas**: Check if you have reached Scaleway resource limits
-- **403 Forbidden Errors**: Verify that your API keys and project ID have the correct permissions
+- **403 Forbidden Errors**: This usually means the SCW_DEFAULT_* environment variables are missing or incorrect. The workflow now sets these automatically from your secrets. See [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) for details.
 
 ### Getting Help
 
@@ -96,3 +111,4 @@ If you encounter issues:
 2. Review GitHub Actions logs for detailed error information  
 3. Verify all secrets are correctly set in GitHub
 4. Consult [Scaleway API documentation](https://developers.scaleway.com/)
+5. See [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) for common 403 Forbidden error resolution

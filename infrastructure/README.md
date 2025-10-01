@@ -129,6 +129,14 @@ Infrastructure includes proper tagging for:
 2. **Resource Limits**: Check Scaleway quotas if deployment fails
 3. **Container Image**: Verify the Docker image is accessible and working
 4. **Database Connection**: Check network connectivity and credentials
+5. **403 Forbidden Errors**: See [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) for details on required environment variables
+
+### Documentation
+
+- [SECRETS.md](./SECRETS.md) - GitHub secrets configuration guide
+- [PROJECT_ID_FIX.md](./PROJECT_ID_FIX.md) - Fix for explicit project_id in resources
+- [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) - Fix for Scaleway SDK environment variables
+- [FIX_SUMMARY.md](./FIX_SUMMARY.md) - Fix for endpoint_ip vs load_balancer issue
 
 ### Useful Commands
 
