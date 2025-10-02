@@ -183,10 +183,8 @@ This infrastructure is designed to integrate with the existing GitHub Actions wo
 
 ### Pull Request Configuration
 
-For detailed guidance on configuring pull requests with infrastructure changes, see the [Infrastructure PR Configuration Guide](../docs/INFRASTRUCTURE_PR_GUIDE.md).
-
 Key requirements for infrastructure PRs:
-- All required Scaleway secrets must be configured
+- All required Scaleway secrets must be configured (see [DevOps guide](../docs/devops.md#required-secrets))
 - Terraform configuration must be validated
 - Infrastructure impact must be assessed
 - Changes require team review and approval

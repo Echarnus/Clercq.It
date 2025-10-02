@@ -314,8 +314,6 @@ gh secret list
 - Requires manual approval from designated reviewers
 - Protected with deployment protection rules
 
-For detailed environment configuration, see the [GitHub Environments Guide](./GITHUB_ENVIRONMENTS.md).
-
 ## Resources
 
 - [GitHub Flow Documentation](https://docs.github.com/en/get-started/quickstart/github-flow)
