@@ -235,4 +235,4 @@ Error: State file conflicts
 For more detailed information, see:
 - [Infrastructure README](../infrastructure/README.md)
 - [Secrets Configuration](../infrastructure/SECRETS.md)
-- [CI/CD Documentation](./CICD.md)
+- [DevOps Documentation](./devops.md)

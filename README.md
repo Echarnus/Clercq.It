@@ -17,7 +17,7 @@ All CI/CD pipelines have been fixed and are operational:
 - ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
 - ✅ **Deploy Pipeline**: Orchestrates application deployment to production
 
-> **Note**: Some pipelines require [repository secrets](./docs/SECRETS_SETUP.md) to be configured for full functionality. See the [troubleshooting guide](./docs/CICD.md#troubleshooting) for common issues.
+> **Note**: Some pipelines require [repository secrets](./docs/SECRETS_SETUP.md) to be configured for full functionality. See the [DevOps guide](./docs/devops.md#troubleshooting) for common issues.
 
 ## 🚀 Tech Stack
 
@@ -70,12 +70,12 @@ Built with Clean Architecture principles and Domain-Driven Design:
 
 ## 📚 Documentation
 
-All technical documentation is available in the [`/docs`](./docs) folder:
+Comprehensive technical documentation is available in the [`/docs`](./docs) folder:
 
-- **[Setup Guide](./docs/setup.md)** - Development environment setup
-- **[Architecture](./docs/architecture.md)** - Detailed architecture documentation  
-- **[API Reference](./docs/api.md)** - Endpoint documentation *(coming soon)*
-- **[Deployment](./docs/deployment.md)** - Production deployment guide *(coming soon)*
+- **[Architecture](./docs/architecture.md)** - Architecture overview, design patterns, and layer structure
+- **[Development](./docs/development.md)** - Local development setup with Aspire orchestration
+- **[Versioning](./docs/versioning.md)** - GitVersion configuration and branching strategy
+- **[DevOps](./docs/devops.md)** - CI/CD pipelines, testing, and deployment workflows
 
 ## 🚀 Quick Start
 
