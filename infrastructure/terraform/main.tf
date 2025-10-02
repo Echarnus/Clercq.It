@@ -86,35 +86,17 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
   is_admin    = false
 }
 
-# Serverless Container Namespace
-resource "scaleway_container_namespace" "portfolio" {
-  name        = "portfolio"
-  description = "Container namespace for Clercq.It Portfolio applications"
-  project_id  = var.scaleway_project_id
-
-  environment_variables = {
-    "ASPNETCORE_ENVIRONMENT" = "Production"
-    "NODE_ENV"               = "production"
-  }
-
-  tags = [
-    "project=clercq-it",
-    "environment=portfolio",
-    "namespace=Portfolio"
-  ]
-
-  lifecycle {
-    # Prevent accidental deletion of the namespace
-    prevent_destroy = false
-    # Ignore changes to description to avoid unnecessary updates
-    ignore_changes = [description]
-  }
+# Reference the existing Serverless Container Namespace
+# The namespace already exists in Scaleway and is managed outside of Terraform
+# Using a data source prevents "409 Conflict: Namespace already exists" errors
+data "scaleway_container_namespace" "portfolio" {
+  name = "portfolio"
 }
 
 # Serverless Container for the application
 resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
-  namespace_id   = scaleway_container_namespace.portfolio.id
+  namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
   port           = 80
 
