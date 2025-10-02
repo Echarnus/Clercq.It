@@ -161,6 +161,21 @@ terraform output
 terraform destroy
 ```
 
+### Manual Backend Setup (Optional)
+
+If you need to manually create or verify the S3 backend bucket, a setup script is available:
+
+```bash
+export SCW_ACCESS_KEY="your-access-key"
+export SCW_SECRET_KEY="your-secret-key"
+export SCW_DEFAULT_PROJECT_ID="your-project-id"
+
+cd infrastructure
+bash scripts/setup-backend.sh
+```
+
+**Note**: This is typically not needed as the bucket should already exist and Terraform will handle state automatically.
+
 ## Integration with CI/CD
 
 This infrastructure is designed to integrate with the existing GitHub Actions workflows:
