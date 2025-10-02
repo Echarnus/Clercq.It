@@ -16,6 +16,12 @@ output "database_name" {
   value       = scaleway_rdb_database.portfolio_app_db.name
 }
 
+output "database_password" {
+  description = "Generated database password"
+  value       = random_password.db_password.result
+  sensitive   = true
+}
+
 output "container_url" {
   description = "Container application URL"
   value       = scaleway_container.portfolio_app.domain_name

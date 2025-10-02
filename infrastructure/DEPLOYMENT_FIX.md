@@ -4,7 +4,52 @@
 
 This document explains the fixes applied to resolve the infrastructure deployment failures.
 
-### 1. max_connections Constraint Error
+### 1. Database Password Validation Error
+
+**Error:**
+```
+Error: scaleway-sdk-go: invalid argument(s): password does not respect constraint, password must be between 8 and 128 characters, contain at least one digit, one uppercase, one lowercase and one special character
+```
+
+**Root Cause:**
+The database password provided as a GitHub secret may not always meet Scaleway's strict requirements. The requirements are:
+- Between 8 and 128 characters
+- At least one digit
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one special character
+
+**Fix Applied:**
+Added automatic password generation using Terraform's `random` provider:
+
+```hcl
+resource "random_password" "db_password" {
+  length           = 24
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+  min_lower        = 1
+  min_upper        = 1
+  min_numeric      = 1
+  min_special      = 1
+}
+
+resource "scaleway_rdb_user" "portfolio_app_user" {
+  instance_id = scaleway_rdb_instance.portfolio_db.id
+  name        = "clercqit_user"
+  password    = random_password.db_password.result
+  is_admin    = false
+}
+```
+
+**Benefits:**
+- Password is always generated securely and meets all requirements
+- No need to manually configure DATABASE_PASSWORD secret in GitHub
+- Password is stored in Terraform state and can be retrieved when needed
+- Eliminates human error in password creation
+
+---
+
+### 2. max_connections Constraint Error
 
 **Error:**
 ```
@@ -32,7 +77,7 @@ settings = {
 
 ---
 
-### 2. Namespace Already Exists Error
+### 3. Namespace Already Exists Error
 
 **Error:**
 ```
@@ -80,7 +125,7 @@ The `.github/workflows/infra.yml` includes a step that automatically imports exi
 
 ---
 
-### 3. Deprecated endpoint_ip Warnings
+### 4. Deprecated endpoint_ip Warnings
 
 **Warnings:**
 ```
@@ -175,6 +220,7 @@ Expected behavior after these fixes:
 
 | Issue | Status | Fix Applied |
 |-------|--------|-------------|
+| Database password validation error | ✅ Fixed | Auto-generate secure password with Terraform random provider |
 | max_connections < 50 | ✅ Fixed | Changed to 50 |
 | Namespace already exists | ✅ Fixed | Added lifecycle rules + import logic |
 | endpoint_ip deprecated warnings | ⚠️ Expected | Acceptable for non-HA instances |
