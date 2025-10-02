@@ -12,6 +12,18 @@ terraform {
       version = "~> 3.6"
     }
   }
+
+  # Backend configuration for remote state storage
+  # This ensures state persists between workflow runs
+  backend "s3" {
+    bucket                      = "clercq-it-terraform-state"
+    key                         = "portfolio/terraform.tfstate"
+    region                      = "fr-par"
+    endpoint                    = "https://s3.fr-par.scw.cloud"
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_requesting_account_id  = true
+  }
 }
 
 # Configure the Scaleway Provider

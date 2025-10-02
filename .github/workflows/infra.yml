@@ -35,6 +35,16 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup Backend Bucket
+        run: |
+          cd infrastructure
+          # Run the setup script to ensure backend bucket exists
+          bash scripts/setup-backend.sh
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+
       - name: Terraform Format Check
         id: fmt
         run: terraform fmt -check -recursive infrastructure/terraform/
@@ -43,7 +53,9 @@ jobs:
       - name: Terraform Init
         run: |
           cd infrastructure/terraform
-          terraform init
+          terraform init \
+            -backend-config="access_key=$SCW_ACCESS_KEY" \
+            -backend-config="secret_key=$SCW_SECRET_KEY"
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -131,10 +143,22 @@ jobs:
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
+      - name: Setup Backend Bucket
+        run: |
+          cd infrastructure
+          # Run the setup script to ensure backend bucket exists
+          bash scripts/setup-backend.sh
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+
       - name: Terraform Init
         run: |
           cd infrastructure/terraform
-          terraform init
+          terraform init \
+            -backend-config="access_key=$SCW_ACCESS_KEY" \
+            -backend-config="secret_key=$SCW_SECRET_KEY"
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
@@ -151,33 +175,44 @@ jobs:
           cd infrastructure/terraform
           echo "🔍 Checking for existing Scaleway resources..."
           
-          # Check if RDB instance is in state with old settings
-          if terraform state show scaleway_rdb_instance.portfolio_db 2>/dev/null | grep -q "shared_buffers"; then
-            echo "⚠️  RDB instance in state has old shared_buffers setting"
-            echo "🗑️  Removing from state to allow recreation with new settings..."
-            terraform state rm scaleway_rdb_instance.portfolio_db || true
-          fi
+          # Initialize state if needed
+          terraform state list > /dev/null 2>&1 || echo "State is empty or doesn't exist"
           
           # Check if namespace is already in state
-          if terraform state show scaleway_container_namespace.portfolio 2>/dev/null; then
+          if terraform state show scaleway_container_namespace.portfolio > /dev/null 2>&1; then
             echo "✅ Namespace already in Terraform state, skipping import"
           else
+            echo "📦 Namespace not in state, checking if it exists in Scaleway..."
+            
             # Try to import the container namespace if it exists
-            # Get all namespaces and find the portfolio namespace ID
+            # Using jq for better JSON parsing (more reliable than grep)
             NAMESPACE_ID=$(curl -s -H "X-Auth-Token: $SCW_SECRET_KEY" \
               "https://api.scaleway.com/containers/v1beta1/regions/fr-par/namespaces" \
-              | grep -A 10 '"name":"portfolio"' \
-              | grep -oP '"id":"\K[^"]+' \
-              | head -1)
+              | python3 -c "import sys, json; data = json.load(sys.stdin); print(next((ns['id'] for ns in data.get('namespaces', []) if ns['name'] == 'portfolio'), ''))" 2>/dev/null || echo "")
             
-            if [ ! -z "$NAMESPACE_ID" ]; then
+            if [ ! -z "$NAMESPACE_ID" ] && [ "$NAMESPACE_ID" != "" ]; then
               echo "📦 Found existing namespace with ID: $NAMESPACE_ID"
               echo "📥 Attempting to import into Terraform state..."
-              terraform import scaleway_container_namespace.portfolio "$NAMESPACE_ID" || true
+              if terraform import "scaleway_container_namespace.portfolio" "$NAMESPACE_ID"; then
+                echo "✅ Successfully imported namespace"
+              else
+                echo "⚠️ Import failed, but continuing (might not exist or already imported)"
+              fi
             else
               echo "ℹ️ No existing namespace found, will create new one"
             fi
           fi
+          
+          # Check if container is already in state
+          if terraform state show scaleway_container.portfolio_app > /dev/null 2>&1; then
+            echo "✅ Container already in Terraform state"
+          else
+            echo "📦 Container not in state, it will be created/imported during apply"
+          fi
+          
+          echo ""
+          echo "📊 Current Terraform state:"
+          terraform state list || echo "State is empty"
         env:
           SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
