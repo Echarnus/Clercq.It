@@ -31,7 +31,8 @@ resource "scaleway_rdb_instance" "portfolio_db" {
 
   settings = {
     # Configure for minimal resource usage with scaling capabilities
-    "max_connections" = "20"
+    # Note: Scaleway requires max_connections >= 50
+    "max_connections" = "50"
   }
 
   tags = [
@@ -71,6 +72,13 @@ resource "scaleway_container_namespace" "portfolio" {
     "environment=portfolio",
     "namespace=Portfolio"
   ]
+
+  lifecycle {
+    # Prevent accidental deletion of the namespace
+    prevent_destroy = false
+    # Ignore changes to description to avoid unnecessary updates
+    ignore_changes = [description]
+  }
 }
 
 # Serverless Container for the application

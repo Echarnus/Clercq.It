@@ -133,6 +133,7 @@ Infrastructure includes proper tagging for:
 
 ### Documentation
 
+- [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) - **Latest fix for deployment issues (max_connections, namespace conflicts)**
 - [SECRETS.md](./SECRETS.md) - GitHub secrets configuration guide
 - [PROJECT_ID_FIX.md](./PROJECT_ID_FIX.md) - Fix for explicit project_id in resources
 - [SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md) - Fix for Scaleway SDK environment variables
