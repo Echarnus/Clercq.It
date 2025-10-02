@@ -41,3 +41,9 @@ variable "environment" {
   type        = string
   default     = "portfolio"
 }
+
+variable "database_password" {
+  description = "Database password for the application user"
+  type        = string
+  sensitive   = true
+}

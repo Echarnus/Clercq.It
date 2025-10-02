@@ -154,7 +154,8 @@ Infrastructure includes proper tagging for:
 
 ### Documentation
 
-- [NAMESPACE_DATA_SOURCE_FIX.md](./NAMESPACE_DATA_SOURCE_FIX.md) - **Latest: Using data source to reference existing namespace**
+- [DATABASE_DATA_SOURCE_FIX.md](./DATABASE_DATA_SOURCE_FIX.md) - **Latest: Using data sources for existing database and namespace**
+- [NAMESPACE_DATA_SOURCE_FIX.md](./NAMESPACE_DATA_SOURCE_FIX.md) - Using data source to reference existing namespace
 - [BACKEND_STATE_FIX.md](./BACKEND_STATE_FIX.md) - Remote state backend to fix namespace conflicts
 - [DEPLOYMENT_FIX.md](./DEPLOYMENT_FIX.md) - Previous deployment fixes (max_connections, namespace conflicts)
 - [SECRETS.md](./SECRETS.md) - GitHub secrets configuration guide
