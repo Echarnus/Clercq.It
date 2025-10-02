@@ -12,9 +12,9 @@ terraform {
   # Backend configuration for remote state storage
   # This ensures state persists between workflow runs
   backend "s3" {
-    bucket                      = "clercq-it-terraform-state"
-    key                         = "portfolio/terraform.tfstate"
-    region                      = "fr-par"
+    bucket = "clercq-it-terraform-state"
+    key    = "portfolio/terraform.tfstate"
+    region = "fr-par"
     endpoints = {
       s3 = "https://s3.fr-par.scw.cloud"
     }
