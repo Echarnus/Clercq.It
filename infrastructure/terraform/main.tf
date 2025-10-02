@@ -55,7 +55,7 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
 # The namespace already exists in Scaleway and is managed outside of Terraform
 # Using a data source prevents "409 Conflict: Namespace already exists" errors
 data "scaleway_container_namespace" "portfolio" {
-  name = "portfolio"
+  name = "cae-portfolio"
 }
 
 # Serverless Container for the application

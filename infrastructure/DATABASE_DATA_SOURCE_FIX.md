@@ -4,7 +4,7 @@
 
 The infrastructure deployment had multiple issues:
 
-1. **409 Conflict: Namespace already exists** - Namespace "portfolio" already exists in Scaleway
+1. **409 Conflict: Namespace already exists** - Namespace already exists in Scaleway (currently named "cae-portfolio")
 2. **Multiple databases created** - Each deployment was creating a new database instance instead of using the existing one
 3. **Random password generation** - Password was being randomly generated instead of using the configured secret
 
@@ -33,7 +33,7 @@ resource "scaleway_container_namespace" "portfolio" {
 **After (Data Source - 3 lines):**
 ```hcl
 data "scaleway_container_namespace" "portfolio" {
-  name = "portfolio"
+  name = "cae-portfolio"
 }
 ```
 
@@ -131,7 +131,7 @@ Since we no longer generate random passwords, removed the `random` provider from
 
 ### What Terraform References (Data Sources):
 - ✅ `data.scaleway_rdb_instance.portfolio_db` - The DB-DEV-S PostgreSQL-16 server
-- ✅ `data.scaleway_container_namespace.portfolio` - The container namespace
+- ✅ `data.scaleway_container_namespace.portfolio` - The container namespace (named "cae-portfolio" in Scaleway)
 
 This separation ensures:
 - Pre-existing infrastructure is never accidentally created or deleted
@@ -154,7 +154,7 @@ After this fix, deployments will:
 
 1. **Terraform Init** - Connect to Scaleway Object Storage backend and load state
 2. **Data Source Reads**:
-   - Query Scaleway API: "Does namespace 'portfolio' exist?" → YES ✅
+   - Query Scaleway API: "Does namespace 'cae-portfolio' exist?" → YES ✅
    - Query Scaleway API: "Does database instance 'DB-DEV-S' exist?" → YES ✅
 3. **Terraform Apply** - Create/update managed resources only:
    - Database `clercqit_portfolio` (if not exists)
