@@ -17,7 +17,7 @@ All CI/CD pipelines have been fixed and are operational:
 - ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
 - ✅ **Deploy Pipeline**: Orchestrates application deployment to production
 
-> **Note**: Some pipelines require [repository secrets](./docs/SECRETS_SETUP.md) to be configured for full functionality. See the [troubleshooting guide](./docs/CICD.md#troubleshooting) for common issues.
+> **Note**: Some pipelines require [repository secrets](./docs/SECRETS_SETUP.md) to be configured for full functionality. See the [DevOps guide](./docs/devops.md#troubleshooting) for common issues.
 
 ## 🚀 Tech Stack
 

@@ -189,7 +189,7 @@ gh workflow list
 1. Check the logs for specific error messages
 2. Verify all prerequisites are met (secrets, environments, etc.)
 3. Test components locally before running in CI
-4. Review the pipeline documentation in `/docs/CICD.md`
+4. Review the pipeline documentation in `/docs/devops.md`
 
 ## 🔄 Pipeline Dependencies
 
