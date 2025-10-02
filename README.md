@@ -70,12 +70,12 @@ Built with Clean Architecture principles and Domain-Driven Design:
 
 ## 📚 Documentation
 
-All technical documentation is available in the [`/docs`](./docs) folder:
+Comprehensive technical documentation is available in the [`/docs`](./docs) folder:
 
-- **[Setup Guide](./docs/setup.md)** - Development environment setup
-- **[Architecture](./docs/architecture.md)** - Detailed architecture documentation  
-- **[API Reference](./docs/api.md)** - Endpoint documentation *(coming soon)*
-- **[Deployment](./docs/deployment.md)** - Production deployment guide *(coming soon)*
+- **[Architecture](./docs/architecture.md)** - Architecture overview, design patterns, and layer structure
+- **[Development](./docs/development.md)** - Local development setup with Aspire orchestration
+- **[Versioning](./docs/versioning.md)** - GitVersion configuration and branching strategy
+- **[DevOps](./docs/devops.md)** - CI/CD pipelines, testing, and deployment workflows
 
 ## 🚀 Quick Start
 
