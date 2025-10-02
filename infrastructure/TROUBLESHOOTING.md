@@ -9,15 +9,19 @@
 Error: scaleway-sdk-go: http error 409 Conflict: Namespace already exist
 ```
 
-**Root Cause:** Terraform state not persisting between runs.
+**Root Cause:** Attempting to create a namespace that already exists in Scaleway.
 
-**Solution:** ✅ **FIXED** by adding S3 backend (see `BACKEND_STATE_FIX.md`)
+**Solution:** ✅ **FIXED** by using data source instead of resource (see `NAMESPACE_DATA_SOURCE_FIX.md`)
 
-**If still happening:**
-1. Check if S3 bucket exists: https://console.scaleway.com/object-storage/buckets
-2. Verify workflow has "Setup Backend Bucket" step
-3. Check backend configuration in `main.tf`
-4. Manually run: `bash infrastructure/scripts/setup-backend.sh`
+**What Changed:**
+- Changed from `resource "scaleway_container_namespace"` to `data "scaleway_container_namespace"`
+- Data sources reference existing infrastructure without trying to create it
+- Removed import logic from workflow (no longer needed)
+
+**Previous Solutions (if you're on an older version):**
+1. S3 backend for state persistence (see `BACKEND_STATE_FIX.md`)
+2. Import logic in workflow
+3. Check if S3 bucket exists: https://console.scaleway.com/object-storage/buckets
 
 ---
 
@@ -231,6 +235,7 @@ After deployment, verify:
 
 ### 📚 Related Documentation
 
+- [NAMESPACE_DATA_SOURCE_FIX.md](./NAMESPACE_DATA_SOURCE_FIX.md) - Latest fix using data sources
 - [BACKEND_STATE_FIX.md](./BACKEND_STATE_FIX.md) - Complete backend fix explanation
 - [STATE_MANAGEMENT_FLOW.md](./STATE_MANAGEMENT_FLOW.md) - Visual flow diagrams
 - [FIX_SUMMARY_BACKEND.md](./FIX_SUMMARY_BACKEND.md) - Quick summary

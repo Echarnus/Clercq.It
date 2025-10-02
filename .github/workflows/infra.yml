@@ -88,6 +88,7 @@ jobs:
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
           TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Comment PR
         continue-on-error: true
@@ -169,60 +170,6 @@ jobs:
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
 
-      - name: Import Existing Resources
-        continue-on-error: true
-        run: |
-          cd infrastructure/terraform
-          echo "🔍 Checking for existing Scaleway resources..."
-          
-          # Initialize state if needed
-          terraform state list > /dev/null 2>&1 || echo "State is empty or doesn't exist"
-          
-          # Check if namespace is already in state
-          if terraform state show scaleway_container_namespace.portfolio > /dev/null 2>&1; then
-            echo "✅ Namespace already in Terraform state, skipping import"
-          else
-            echo "📦 Namespace not in state, checking if it exists in Scaleway..."
-            
-            # Try to import the container namespace if it exists
-            # Using jq for better JSON parsing (more reliable than grep)
-            NAMESPACE_ID=$(curl -s -H "X-Auth-Token: $SCW_SECRET_KEY" \
-              "https://api.scaleway.com/containers/v1beta1/regions/fr-par/namespaces" \
-              | python3 -c "import sys, json; data = json.load(sys.stdin); print(next((ns['id'] for ns in data.get('namespaces', []) if ns['name'] == 'portfolio'), ''))" 2>/dev/null || echo "")
-            
-            if [ ! -z "$NAMESPACE_ID" ] && [ "$NAMESPACE_ID" != "" ]; then
-              echo "📦 Found existing namespace with ID: $NAMESPACE_ID"
-              echo "📥 Attempting to import into Terraform state..."
-              if terraform import "scaleway_container_namespace.portfolio" "$NAMESPACE_ID"; then
-                echo "✅ Successfully imported namespace"
-              else
-                echo "⚠️ Import failed, but continuing (might not exist or already imported)"
-              fi
-            else
-              echo "ℹ️ No existing namespace found, will create new one"
-            fi
-          fi
-          
-          # Check if container is already in state
-          if terraform state show scaleway_container.portfolio_app > /dev/null 2>&1; then
-            echo "✅ Container already in Terraform state"
-          else
-            echo "📦 Container not in state, it will be created/imported during apply"
-          fi
-          
-          echo ""
-          echo "📊 Current Terraform state:"
-          terraform state list || echo "State is empty"
-        env:
-          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
-          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
-          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
-          SCW_DEFAULT_REGION: fr-par
-          SCW_DEFAULT_ZONE: fr-par-1
-          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
-          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
-
       - name: Terraform Apply
         id: apply
         run: |
@@ -240,6 +187,7 @@ jobs:
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
           TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Terraform Output
         if: success()

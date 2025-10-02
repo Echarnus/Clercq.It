@@ -2,24 +2,18 @@
 
 output "database_endpoint" {
   description = "Database endpoint"
-  value       = scaleway_rdb_instance.portfolio_db.endpoint_ip
+  value       = data.scaleway_rdb_instance.portfolio_db.endpoint_ip
   sensitive   = true
 }
 
 output "database_port" {
   description = "Database port"
-  value       = scaleway_rdb_instance.portfolio_db.endpoint_port
+  value       = data.scaleway_rdb_instance.portfolio_db.endpoint_port
 }
 
 output "database_name" {
   description = "Database name"
   value       = scaleway_rdb_database.portfolio_app_db.name
-}
-
-output "database_password" {
-  description = "Generated database password"
-  value       = random_password.db_password.result
-  sensitive   = true
 }
 
 output "container_url" {
@@ -29,7 +23,7 @@ output "container_url" {
 
 output "container_namespace_id" {
   description = "Container namespace ID"
-  value       = scaleway_container_namespace.portfolio.id
+  value       = data.scaleway_container_namespace.portfolio.id
 }
 
 output "container_id" {
@@ -46,9 +40,9 @@ output "infrastructure_summary" {
   description = "Summary of deployed infrastructure"
   value = {
     database = {
-      name     = scaleway_rdb_instance.portfolio_db.name
-      endpoint = "${scaleway_rdb_instance.portfolio_db.endpoint_ip}:${scaleway_rdb_instance.portfolio_db.endpoint_port}"
-      type     = scaleway_rdb_instance.portfolio_db.node_type
+      name     = data.scaleway_rdb_instance.portfolio_db.name
+      endpoint = "${data.scaleway_rdb_instance.portfolio_db.endpoint_ip}:${data.scaleway_rdb_instance.portfolio_db.endpoint_port}"
+      type     = data.scaleway_rdb_instance.portfolio_db.node_type
     }
     container = {
       name      = scaleway_container.portfolio_app.name
@@ -59,8 +53,8 @@ output "infrastructure_summary" {
       cpu       = "${scaleway_container.portfolio_app.cpu_limit}m"
     }
     namespace = {
-      name = scaleway_container_namespace.portfolio.name
-      id   = scaleway_container_namespace.portfolio.id
+      name = data.scaleway_container_namespace.portfolio.name
+      id   = data.scaleway_container_namespace.portfolio.id
     }
   }
 }

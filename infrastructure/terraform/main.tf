@@ -7,10 +7,6 @@ terraform {
       source  = "scaleway/scaleway"
       version = "~> 2.0"
     }
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.6"
-    }
   }
 
   # Backend configuration for remote state storage
@@ -34,87 +30,38 @@ provider "scaleway" {
   project_id      = var.scaleway_project_id
 }
 
-# Generate a secure random password for the database user
-# This password meets Scaleway's requirements:
-# - 8-128 characters
-# - At least one digit, uppercase, lowercase, and special character
-resource "random_password" "db_password" {
-  length           = 24
-  special          = true
-  override_special = "!#$%&*()-_=+[]{}<>:?"
-  min_lower        = 1
-  min_upper        = 1
-  min_numeric      = 1
-  min_special      = 1
+# Reference the existing PostgreSQL Database Instance
+# The database instance already exists in Scaleway and is managed outside of Terraform
+# Using a data source prevents creating duplicate database instances
+data "scaleway_rdb_instance" "portfolio_db" {
+  name = "DB-DEV-S"
 }
 
-# Serverless SQL Database
-resource "scaleway_rdb_instance" "portfolio_db" {
-  name              = "portfolio-database"
-  node_type         = "db-dev-s" # Smallest instance for serverless-like behavior
-  engine            = "PostgreSQL-15"
-  is_ha_cluster     = false
-  disable_backup    = false
-  volume_type       = "sbs_5k" # SBS 5k IOPS volume type
-  volume_size_in_gb = 5
-  project_id        = var.scaleway_project_id
-
-  settings = {
-    # Configure for minimal resource usage with scaling capabilities
-    # Note: Scaleway requires max_connections >= 50
-    "max_connections" = "50"
-  }
-
-  tags = [
-    "project=clercq-it",
-    "environment=portfolio",
-    "namespace=Portfolio"
-  ]
-}
-
-# Database for the application
+# Database for the application (managed by Terraform)
 resource "scaleway_rdb_database" "portfolio_app_db" {
-  instance_id = scaleway_rdb_instance.portfolio_db.id
+  instance_id = data.scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_portfolio"
 }
 
-# Database user for the application
+# Database user for the application (managed by Terraform)
 resource "scaleway_rdb_user" "portfolio_app_user" {
-  instance_id = scaleway_rdb_instance.portfolio_db.id
+  instance_id = data.scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
-  password    = random_password.db_password.result
+  password    = var.database_password
   is_admin    = false
 }
 
-# Serverless Container Namespace
-resource "scaleway_container_namespace" "portfolio" {
-  name        = "portfolio"
-  description = "Container namespace for Clercq.It Portfolio applications"
-  project_id  = var.scaleway_project_id
-
-  environment_variables = {
-    "ASPNETCORE_ENVIRONMENT" = "Production"
-    "NODE_ENV"               = "production"
-  }
-
-  tags = [
-    "project=clercq-it",
-    "environment=portfolio",
-    "namespace=Portfolio"
-  ]
-
-  lifecycle {
-    # Prevent accidental deletion of the namespace
-    prevent_destroy = false
-    # Ignore changes to description to avoid unnecessary updates
-    ignore_changes = [description]
-  }
+# Reference the existing Serverless Container Namespace
+# The namespace already exists in Scaleway and is managed outside of Terraform
+# Using a data source prevents "409 Conflict: Namespace already exists" errors
+data "scaleway_container_namespace" "portfolio" {
+  name = "cae-portfolio"
 }
 
 # Serverless Container for the application
 resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
-  namespace_id   = scaleway_container_namespace.portfolio.id
+  namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
   port           = 80
 
@@ -130,7 +77,7 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
-    "DATABASE_CONNECTION_STRING" = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${random_password.db_password.result}"
+    "DATABASE_CONNECTION_STRING" = "Host=${data.scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${data.scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"     = "Production"
     "NODE_ENV"                   = "production"
   }
