@@ -74,22 +74,25 @@ resource "scaleway_container" "portfolio_app" {
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
   port           = 8080
-
+  protocol       = "http2"
 
   min_scale = 0
   max_scale = 1
 
   # Resource limits
-  memory_limit = 1024  # 1024MB
+  memory_limit = 1024 # 1024MB
   cpu_limit    = 1000 # 1 vCPU (1000m)
 
   # Request limits for efficient scaling
   timeout = 30
 
   environment_variables = {
-    "DATABASE_CONNECTION_STRING" = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
-    "ASPNETCORE_ENVIRONMENT"     = "Production"
-    "NODE_ENV"                   = "production"
+    "DATABASE_CONNECTION_STRING"  = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
+    "ASPNETCORE_ENVIRONMENT"      = "Production"
+    "NODE_ENV"                    = "production"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
   }
 
   tags = [
@@ -104,4 +107,22 @@ resource "scaleway_container_domain" "portfolio_domain" {
   count        = var.custom_domain != "" ? 1 : 0
   container_id = scaleway_container.portfolio_app.id
   hostname     = var.custom_domain
+}
+
+# Scaleway Cockpit for centralized logging and monitoring
+resource "scaleway_cockpit" "portfolio_cockpit" {
+  project_id = var.scaleway_project_id
+}
+
+# Cockpit token for container logs and metrics
+resource "scaleway_cockpit_token" "portfolio_logs_token" {
+  project_id = var.scaleway_project_id
+  name       = "portfolio-container-logs"
+
+  scopes {
+    query_logs    = true
+    write_logs    = true
+    query_metrics = true
+    write_metrics = true
+  }
 }

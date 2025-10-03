@@ -56,5 +56,24 @@ output "infrastructure_summary" {
       name = data.scaleway_container_namespace.portfolio.name
       id   = data.scaleway_container_namespace.portfolio.id
     }
+    cockpit = {
+      project_id = scaleway_cockpit.portfolio_cockpit.project_id
+      endpoints  = scaleway_cockpit.portfolio_cockpit.endpoints
+    }
   }
+}
+
+output "cockpit_grafana_url" {
+  description = "Scaleway Cockpit Grafana dashboard URL"
+  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].grafana_url
+}
+
+output "cockpit_logs_url" {
+  description = "Scaleway Cockpit Logs URL"
+  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].logs_url
+}
+
+output "cockpit_metrics_url" {
+  description = "Scaleway Cockpit Metrics URL"
+  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].metrics_url
 }

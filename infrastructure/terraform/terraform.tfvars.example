@@ -11,5 +11,5 @@ scaleway_region          = "fr-par"
 # Application Configuration
 container_image     = "echarnus/clercq-it:latest"
 database_password   = "your-secure-database-password"
-custom_domain       = "portfolio.clercq.it"  # Optional
+custom_domain       = "www.clercq.it"  # Custom domain for the web application
 environment         = "portfolio"
