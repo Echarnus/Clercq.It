@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  TERRAFORM_VERSION: '1.6.0'
+  TERRAFORM_VERSION: '1.6.1'
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
