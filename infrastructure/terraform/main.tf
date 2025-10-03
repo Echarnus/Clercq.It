@@ -14,14 +14,14 @@ terraform {
   backend "s3" {
     bucket = "clercq-it-terraform-state"
     key    = "portfolio/terraform.tfstate"
-    region = "fr-par"
+    region = "us-east-1"
     endpoints = {
       s3 = "https://s3.fr-par.scw.cloud"
     }
     skip_credentials_validation = true
     skip_region_validation      = true
     skip_metadata_api_check     = true
-    force_path_style            = true
+    use_path_style              = true
   }
 }
 
