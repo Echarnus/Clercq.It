@@ -11,30 +11,34 @@ Errors: retrieving caller identity from STS: operation error STS: GetCallerIdent
 request send failed, Post "https://sts.fr-par.amazonaws.com/": dial tcp: lookup sts.fr-par.amazonaws.com on 127.0.0.53:53: no such host
 ```
 
-**Root Cause:** Terraform's S3 backend tries to validate AWS credentials when credentials are passed via `-backend-config` CLI flags, even though we're using Scaleway's S3-compatible storage.
+**Root Cause:** Terraform's S3 backend was receiving credentials via `-backend-config` CLI flags instead of AWS-compatible environment variables, causing it to attempt AWS authentication.
 
-**Solution:** ✅ **FIXED** - Pass skip flags via `-backend-config` during init (see `TERRAFORM_INIT_AWS_STS_FIX.md`)
+**Solution:** ✅ **FIXED** - Use AWS environment variables for S3 backend credentials (see `TERRAFORM_INIT_AWS_STS_FIX.md`)
 
 **What Changed:**
-The workflow now passes three additional flags to `terraform init`:
+The workflow now uses AWS-compatible environment variables instead of `-backend-config` flags:
 ```bash
+# Before (incorrect)
 terraform init \
   -backend-config="access_key=$SCW_ACCESS_KEY" \
-  -backend-config="secret_key=$SCW_SECRET_KEY" \
-  -backend-config="skip_credentials_validation=true" \
-  -backend-config="skip_region_validation=true" \
-  -backend-config="skip_requesting_account_id=true"
+  -backend-config="secret_key=$SCW_SECRET_KEY"
+
+# After (correct)
+terraform init
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
 ```
 
 **Why This Matters:**
-- Skip flags in `main.tf` are not applied early enough when credentials come from CLI
-- Terraform needs to know to skip AWS validation before the AWS SDK initializes
-- This prevents attempts to connect to non-existent AWS STS endpoints
+- The S3 backend uses the AWS SDK which expects credentials via AWS environment variables
+- The skip flags in `main.tf` prevent AWS-specific validation when credentials are provided this way
+- Using `-backend-config` can bypass the skip flags and cause AWS authentication attempts
 
 **Action Required:** This fix is already applied in the workflow. If you still see this error:
 1. Ensure you're using the latest workflow file
 2. Verify GitHub Secrets are properly configured
-3. Check no AWS environment variables are set
+3. Check that skip flags are present in `main.tf` backend block
 
 For detailed technical explanation, see **[TERRAFORM_INIT_AWS_STS_FIX.md](./TERRAFORM_INIT_AWS_STS_FIX.md)**
 

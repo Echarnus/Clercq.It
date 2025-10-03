@@ -5,7 +5,7 @@
 #
 # Prerequisites:
 # 1. Create a Scaleway Object Storage bucket named "clercq-it-terraform-state"
-# 2. Set up access credentials via environment variables or AWS credentials file
+# 2. Set up access credentials via AWS-compatible environment variables
 #
 # Environment variables required:
 # - AWS_ACCESS_KEY_ID (set to Scaleway access key)
@@ -15,4 +15,12 @@
 # and there's no dedicated Scaleway backend provider.
 #
 # To initialize this backend:
-#   terraform init -backend-config="access_key=$SCW_ACCESS_KEY" -backend-config="secret_key=$SCW_SECRET_KEY"
+#   export AWS_ACCESS_KEY_ID="your-scaleway-access-key"
+#   export AWS_SECRET_ACCESS_KEY="your-scaleway-secret-key"
+#   terraform init
+#
+# The backend configuration in main.tf includes:
+# - endpoints block pointing to Scaleway's S3-compatible storage
+# - skip_credentials_validation, skip_region_validation, skip_requesting_account_id
+#   flags to prevent AWS-specific validation when using Scaleway credentials
+
