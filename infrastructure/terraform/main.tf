@@ -39,7 +39,8 @@ provider "scaleway" {
 # The database instance already exists in Scaleway and is managed outside of Terraform
 # Using a data source prevents creating duplicate database instances
 data "scaleway_rdb_instance" "portfolio_db" {
-  name = "DB-DEV-S"
+  name   = "DB-DEV-S"
+  region = var.scaleway_region
 }
 
 # Database for the application (managed by Terraform)
