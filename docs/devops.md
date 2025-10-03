@@ -297,6 +297,10 @@ Each deployment provides detailed status information:
 - **Cause**: Missing or incorrect Scaleway credentials
 - **Solution**: Verify `SCALEWAY_ACCESS_KEY`, `SCALEWAY_SECRET_KEY`, and `SCALEWAY_ORGANIZATION_ID` secrets
 
+**Issue**: Terraform output fails with "No valid credential sources found"
+- **Cause**: The `terraform output` command needs AWS credentials to access the S3 backend, but environment variables are not set
+- **Solution**: Ensure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are set for any Terraform command that accesses the state (init, plan, apply, output, etc.)
+
 #### Deploy Pipeline
 
 **Issue**: Deploy workflow not triggering
