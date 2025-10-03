@@ -12,10 +12,12 @@ terraform {
 
 # Configure the Scaleway Provider
 provider "scaleway" {
+  access_key      = var.access_key
+  secret_key      = var.secret_key
+  organization_id = var.organization_id
+  project_id      = var.project_id
   zone            = var.scaleway_zone
   region          = var.scaleway_region
-  organization_id = var.scaleway_organization_id
-  project_id      = var.scaleway_project_id
 }
 
 # Serverless SQL Database
@@ -25,9 +27,9 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   engine            = "PostgreSQL-15"
   is_ha_cluster     = false
   disable_backup    = false
-  volume_type       = "bssd"
+  volume_type       = "sbs"
   volume_size_in_gb = 5
-  project_id        = var.scaleway_project_id
+  project_id        = var.project_id
 
   settings = {
     # Configure for minimal resource usage with scaling capabilities
@@ -60,7 +62,7 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
 resource "scaleway_container_namespace" "portfolio" {
   name        = "portfolio"
   description = "Container namespace for Clercq.It Portfolio applications"
-  project_id  = var.scaleway_project_id
+  project_id  = var.project_id
 
   environment_variables = {
     "ASPNETCORE_ENVIRONMENT" = "Production"
@@ -86,7 +88,7 @@ resource "scaleway_container" "portfolio_app" {
   max_scale = 1
 
   # Resource limits
-  memory_limit = 128  # 128MB
+  memory_limit = 1024  # 128MB
   cpu_limit    = 1000 # 1 vCPU (1000m)
 
   # Request limits for efficient scaling

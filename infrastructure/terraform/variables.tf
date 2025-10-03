@@ -1,12 +1,24 @@
 # Scaleway Configuration Variables
 
-variable "scaleway_organization_id" {
+variable "access_key" {
+  description = "Scaleway access key"
+  type        = string
+  sensitive   = true
+}
+
+variable "secret_key" {
+  description = "Scaleway secret key"
+  type        = string
+  sensitive   = true
+}
+
+variable "organization_id" {
   description = "Scaleway organization ID (ClercqIt)"
   type        = string
   sensitive   = true
 }
 
-variable "scaleway_project_id" {
+variable "project_id" {
   description = "Scaleway project ID"
   type        = string
   sensitive   = true
