@@ -1,7 +1,7 @@
 # Scaleway Infrastructure Configuration for Clercq.It Portfolio
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.6.1"
   required_providers {
     scaleway = {
       source  = "scaleway/scaleway"
@@ -9,19 +9,21 @@ terraform {
     }
   }
 
-  # Backend configuration for remote state storage
-  # This ensures state persists between workflow runs
+  # Backend configuration for remote state storage using Scaleway Object Storage
+  # Credentials are provided via AWS-compatible environment variables:
+  # - AWS_ACCESS_KEY_ID (set to SCW_ACCESS_KEY)
+  # - AWS_SECRET_ACCESS_KEY (set to SCW_SECRET_KEY)
+  # See: https://registry.terraform.io/providers/scaleway/scaleway/latest/docs/guides/backend_guide
   backend "s3" {
     bucket                      = "clercq-it-terraform-state"
     key                         = "portfolio/terraform.tfstate"
     region                      = "fr-par"
-    endpoints = {
-      s3 = "https://s3.fr-par.scw.cloud"
-    }
+    endpoint                    = "https://s3.fr-par.scw.cloud"
     skip_credentials_validation = true
     skip_region_validation      = true
     skip_metadata_api_check     = true
-    skip_s3_checksum            = true
+    skip_requesting_account_id  = true
+    force_path_style            = true
   }
 }
 

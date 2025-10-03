@@ -115,6 +115,29 @@ gh workflow run build.yml
 - **Organization**: ClercqIt with Portfolio namespace
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
+### Terraform Backend Configuration
+
+The infrastructure uses Scaleway Object Storage as a Terraform backend for state management:
+
+- **Backend Type**: S3-compatible (Scaleway Object Storage)
+- **Bucket**: `clercq-it-terraform-state`
+- **Region**: `fr-par` (Paris)
+- **State File**: `portfolio/terraform.tfstate`
+
+**Important**: This backend does not support state locking. Avoid concurrent Terraform operations.
+
+**Credentials**: The backend uses AWS-compatible environment variables:
+```bash
+AWS_ACCESS_KEY_ID=$SCW_ACCESS_KEY
+AWS_SECRET_ACCESS_KEY=$SCW_SECRET_KEY
+```
+
+These are automatically set in the GitHub Actions workflow using repository secrets.
+
+**References**:
+- [Scaleway Backend Guide](https://registry.terraform.io/providers/scaleway/scaleway/latest/docs/guides/backend_guide)
+- [Terraform S3 Backend Documentation](https://developer.hashicorp.com/terraform/language/backend/s3)
+
 ### Example
 
 ```bash
@@ -164,9 +187,10 @@ The pipeline includes comprehensive health checks:
 - `DOCKER_PASSWORD`: Docker Hub password or token
 
 ### Scaleway
-- `SCALEWAY_ACCESS_KEY`: Scaleway API access key
-- `SCALEWAY_SECRET_KEY`: Scaleway API secret key
+- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for S3 backend)
+- `SCALEWAY_SECRET_KEY`: Scaleway API secret key (also used as AWS_SECRET_ACCESS_KEY for S3 backend)
 - `SCALEWAY_ORGANIZATION_ID`: Scaleway organization ID
+- `SCALEWAY_PROJECT_ID`: Scaleway project ID
 - `DATABASE_PASSWORD`: Secure PostgreSQL database password
 
 ### Environment Variables
