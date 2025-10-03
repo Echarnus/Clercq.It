@@ -35,23 +35,27 @@ provider "scaleway" {
   project_id      = var.scaleway_project_id
 }
 
-# Reference the existing PostgreSQL Database Instance
-# The database instance already exists in Scaleway and is managed outside of Terraform
-# Using a data source prevents creating duplicate database instances
-data "scaleway_rdb_instance" "portfolio_db" {
-  name   = "DB-DEV-S"
-  region = var.scaleway_region
+# PostgreSQL Database Instance (managed by Terraform)
+resource "scaleway_rdb_instance" "portfolio_db" {
+  name           = "portfolio-db"
+  node_type      = "DB-DEV-S"
+  engine         = "PostgreSQL-16"
+  is_ha_cluster  = false
+  disable_backup = false
+  user_name      = "clercqit_admin"
+  password       = var.database_password
+  region         = var.scaleway_region
 }
 
 # Database for the application (managed by Terraform)
 resource "scaleway_rdb_database" "portfolio_app_db" {
-  instance_id = data.scaleway_rdb_instance.portfolio_db.id
+  instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_portfolio"
 }
 
 # Database user for the application (managed by Terraform)
 resource "scaleway_rdb_user" "portfolio_app_user" {
-  instance_id = data.scaleway_rdb_instance.portfolio_db.id
+  instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
   password    = var.database_password
   is_admin    = false
@@ -83,7 +87,7 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
-    "DATABASE_CONNECTION_STRING" = "Host=${data.scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${data.scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
+    "DATABASE_CONNECTION_STRING" = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"     = "Production"
     "NODE_ENV"                   = "production"
   }
