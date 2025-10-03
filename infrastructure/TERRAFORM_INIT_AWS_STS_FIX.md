@@ -16,7 +16,7 @@ api error InvalidClientTokenId: The security token included in the request is in
 
 This occurred even though:
 - The backend configuration in `main.tf` uses Scaleway's S3-compatible endpoint
-- The `skip_requesting_account_id`, `skip_credentials_validation`, and `skip_region_validation` flags are set in the backend block
+- The `skip_metadata_api_check`, `skip_credentials_validation`, and `skip_region_validation` flags are set in the backend block
 - The `endpoints` block correctly points to Scaleway's Object Storage
 
 ## Root Cause
@@ -98,7 +98,7 @@ backend "s3" {
   }
   skip_credentials_validation = true  # ← Prevents AWS credential validation
   skip_region_validation      = true  # ← Prevents AWS region validation
-  skip_requesting_account_id  = true  # ← Prevents AWS STS calls
+  skip_metadata_api_check  = true  # ← Prevents AWS STS calls
 }
 ```
 
@@ -203,7 +203,7 @@ env:
 ```bash
 # This will fail with "Invalid backend configuration argument"
 terraform init \
-  -backend-config="skip_requesting_account_id=true"
+  -backend-config="skip_metadata_api_check=true"
 ```
 
 **✅ Skip flags must be in the backend block in main.tf**
@@ -212,7 +212,7 @@ terraform init \
 backend "s3" {
   skip_credentials_validation = true
   skip_region_validation      = true
-  skip_requesting_account_id  = true
+  skip_metadata_api_check  = true
 }
 ```
 

@@ -21,6 +21,6 @@
 #
 # The backend configuration in main.tf includes:
 # - endpoints block pointing to Scaleway's S3-compatible storage
-# - skip_credentials_validation, skip_region_validation, skip_requesting_account_id
+# - skip_credentials_validation, skip_region_validation, skip_metadata_api_check
 #   flags to prevent AWS-specific validation when using Scaleway credentials
 
