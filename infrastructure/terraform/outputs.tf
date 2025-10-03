@@ -23,7 +23,7 @@ output "container_url" {
 
 output "container_namespace_id" {
   description = "Container namespace ID"
-  value       = scaleway_container_namespace.portfolio.id
+  value       = data.scaleway_container_namespace.portfolio.id
 }
 
 output "container_id" {
@@ -53,8 +53,8 @@ output "infrastructure_summary" {
       cpu       = "${scaleway_container.portfolio_app.cpu_limit}m"
     }
     namespace = {
-      name = scaleway_container_namespace.portfolio.name
-      id   = scaleway_container_namespace.portfolio.id
+      name = data.scaleway_container_namespace.portfolio.name
+      id   = data.scaleway_container_namespace.portfolio.id
     }
   }
 }

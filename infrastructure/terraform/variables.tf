@@ -42,12 +42,6 @@ variable "container_image" {
   default     = "echarnus/clercq-it:latest"
 }
 
-variable "database_password" {
-  description = "Password for the database user"
-  type        = string
-  sensitive   = true
-}
-
 variable "custom_domain" {
   description = "Custom domain for the application (optional)"
   type        = string
@@ -58,4 +52,10 @@ variable "environment" {
   description = "Environment name"
   type        = string
   default     = "portfolio"
+}
+
+variable "database_password" {
+  description = "Database password for the application user"
+  type        = string
+  sensitive   = true
 }

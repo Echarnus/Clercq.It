@@ -1,6 +1,6 @@
-# Development Setup Guide
+# Local Development Guide
 
-This guide will help you set up the development environment for the Clercq.It project.
+This guide covers local development setup and workflows for the Clercq.It project, including both manual setup and Aspire orchestration.
 
 ## Prerequisites
 
@@ -24,53 +24,99 @@ Clercq.It/
 │   ├── ClercqIt.Api/            # ASP.NET Core API
 │   ├── ClercqIt.Web/            # Next.js frontend
 │   ├── Clercq.It.Domain/        # Domain layer
-│   ├── Clercq.It.Application/   # Application layer  
-│   └── Clercq.It.Infrastructure/ # Infrastructure layer
+│   ├── Clercq.It.Application/   # Application layer
+│   ├── Clercq.It.Infrastructure/ # Infrastructure layer
+│   ├── Clercq.It.AppHost/       # Aspire orchestration (dev only)
+│   └── Clercq.It.ServiceDefaults/ # Aspire service defaults (dev only)
 ├── tests/                       # Test projects
 │   └── ClercqIt.Api.Tests/      # API unit tests
 ├── docs/                        # Documentation
 └── .github/                     # GitHub workflows & config
 ```
 
-## Local Development Setup
+## Getting Started
 
 ### 1. Clone the Repository
+
 ```bash
 git clone https://github.com/Echarnus/Clercq.It.git
 cd Clercq.It
 ```
 
-### 2. Option A: Run with Aspire (Local Development Only)
+### 2. Choose Your Development Approach
 
-The easiest way to run the entire application stack for local development is using .NET Aspire orchestration:
+You can develop using either **Aspire orchestration** (recommended) or **manual setup**.
 
-> **Note**: Aspire is only for local development. Production deployments use Docker containers without Aspire components.
+## Option A: Aspire Orchestration (Recommended)
 
-#### Prerequisites
+> **⚠️ Important**: Aspire is **only for local development**. Production deployments use Docker containers without Aspire components.
+
+### What is Aspire?
+
+.NET Aspire is a development orchestration tool that simplifies running the entire application stack locally with enhanced observability.
+
+### Prerequisites
 - .NET 9.0 SDK
 - Docker Desktop
 
-#### Start the Application
+### Start the Application
+
 ```bash
 cd src/Clercq.It.AppHost
 dotnet run
 ```
 
 This will automatically:
-- Launch the Aspire Dashboard at `http://localhost:15888` 
+- Launch the Aspire Dashboard at `http://localhost:15888`
 - Start PostgreSQL with pgAdmin web interface
 - Launch the API with automatic database connection and migrations
+- Start the Next.js frontend (if configured)
 - Provide comprehensive observability, logging, and monitoring
 
-The Aspire Dashboard provides a unified view of all services, logs, traces, and metrics.
+### Aspire Dashboard Features
 
-### 2. Option B: Manual Setup
+The Aspire Dashboard provides:
+- **Service Overview**: Monitor all running services
+- **Logs**: Centralized logging from all services
+- **Traces**: Distributed tracing across services
+- **Metrics**: Performance metrics and health status
+- **Configuration**: Service configuration and connection strings
+
+### Services Available
+
+When running with Aspire, the following services are available:
+
+- **PostgreSQL Database**: `postgres` service with pgAdmin
+- **API Service**: `clercqit-api` at `https://localhost:7000`
+- **Next.js Frontend**: `clercqit-web` (if configured)
+
+### Development Benefits
+
+- **Automatic Service Discovery**: No manual connection string configuration
+- **Enhanced Observability**: Distributed tracing and structured logging out-of-the-box
+- **Simplified Workflow**: Single command starts entire application stack
+- **Integrated Database Management**: pgAdmin web interface for database operations
+- **Hot Reload**: Development-optimized configurations
+
+### Aspire vs Production
+
+| Aspect | Local Development (Aspire) | Production |
+|--------|---------------------------|------------|
+| Architecture | AppHost orchestration | Single Docker container |
+| Components | AppHost, ServiceDefaults, Dashboard | API, frontend, nginx only |
+| Database | Containerized PostgreSQL + pgAdmin | Managed PostgreSQL (Scaleway, etc.) |
+| Features | Hot reload, tracing, metrics | Optimized for performance |
+
+> **Key Point**: The `Clercq.It.AppHost` and `Clercq.It.ServiceDefaults` projects are **excluded from production Docker builds**.
+
+## Option B: Manual Setup
 
 If you prefer to run services manually or don't want to use Aspire:
 
-#### Database Setup
+### Database Setup
 
-#### Option A: Docker (Recommended)
+#### Using Docker (Recommended)
+
 ```bash
 # Start PostgreSQL container
 docker run -d --name clercq-postgres \
@@ -84,16 +130,18 @@ docker run -d --name clercq-postgres \
 docker ps
 ```
 
-#### Option B: Local PostgreSQL Installation
+#### Using Local PostgreSQL Installation
+
 1. Install PostgreSQL 16+
 2. Create database and user:
+
 ```sql
 CREATE DATABASE "ClercqItDb";
 CREATE USER clercq_user WITH PASSWORD 'clercq_pass';
 GRANT ALL PRIVILEGES ON DATABASE "ClercqItDb" TO clercq_user;
 ```
 
-### 3. Backend Setup (.NET API)
+### Backend Setup (.NET API)
 
 ```bash
 # Navigate to solution root
@@ -117,7 +165,8 @@ dotnet build
 dotnet test
 ```
 
-### 4. Run the API
+### Run the API
+
 ```bash
 cd src/ClercqIt.Api
 dotnet run
@@ -127,8 +176,9 @@ The API will be available at:
 - HTTPS: `https://localhost:7000`
 - HTTP: `http://localhost:5000`
 - Swagger UI: `https://localhost:7000/swagger`
+- Scalar UI: `https://localhost:7000/scalar/v1`
 
-### 5. Frontend Setup (Next.js)
+### Frontend Setup (Next.js)
 
 ```bash
 # Navigate to web project
@@ -148,6 +198,7 @@ The web application will be available at `http://localhost:3000`
 ### Connection Strings
 
 The API uses the following connection string by default:
+
 ```json
 {
   "ConnectionStrings": {
@@ -158,12 +209,13 @@ The API uses the following connection string by default:
 
 For different environments, create:
 - `appsettings.Development.json`
-- `appsettings.Staging.json`  
+- `appsettings.Staging.json`
 - `appsettings.Production.json`
 
 ### Environment Variables
 
 You can override settings using environment variables:
+
 ```bash
 # Database connection
 export ConnectionStrings__DefaultConnection="Host=localhost;Port=5432;Database=ClercqItDb;Username=clercq_user;Password=clercq_pass;"
@@ -174,7 +226,8 @@ export Logging__LogLevel__Default="Information"
 
 ## Development Workflow
 
-### 1. Database Changes
+### Making Database Changes
+
 When modifying domain entities:
 
 ```bash
@@ -190,16 +243,16 @@ dotnet ef database update --startup-project ../ClercqIt.Api
 dotnet ef migrations script --startup-project ../ClercqIt.Api
 ```
 
-### 2. Adding New Features
+### Adding New Features
 
 Follow Clean Architecture patterns:
 
-1. **Domain**: Add entities, value objects, repository interfaces
-2. **Application**: Add queries/commands, handlers, DTOs, validators
-3. **Infrastructure**: Add repository implementations, entity configurations
-4. **API**: Add minimal API endpoints in feature folders
+1. **Domain**: Add entities, value objects, repository interfaces in `Clercq.It.Domain`
+2. **Application**: Add queries/commands, handlers, DTOs, validators in `Clercq.It.Application`
+3. **Infrastructure**: Add repository implementations, entity configurations in `Clercq.It.Infrastructure`
+4. **API**: Add minimal API endpoints in feature folders in `ClercqIt.Api`
 
-### 3. Testing
+### Running Tests
 
 ```bash
 # Run all tests
@@ -215,7 +268,7 @@ dotnet test tests/ClercqIt.Api.Tests/
 dotnet test --verbosity normal
 ```
 
-### 4. Building and Running
+### Building and Running
 
 ```bash
 # Build entire solution
@@ -231,6 +284,7 @@ dotnet watch run --project src/ClercqIt.Api/
 ## Docker Development
 
 ### Build and Run with Docker
+
 ```bash
 # Build Docker image
 docker build -t clercq-it ./src
@@ -241,39 +295,14 @@ docker run -p 80:80 \
   clercq-it
 ```
 
-### Docker Compose (Future)
-```yaml
-version: '3.8'
-services:
-  api:
-    build: ./src
-    ports:
-      - "80:80"
-    depends_on:
-      - postgres
-    environment:
-      - ConnectionStrings__DefaultConnection=Host=postgres;Port=5432;Database=ClercqItDb;Username=clercq_user;Password=clercq_pass;
-  
-  postgres:
-    image: postgres:16
-    environment:
-      - POSTGRES_DB=ClercqItDb
-      - POSTGRES_USER=clercq_user  
-      - POSTGRES_PASSWORD=clercq_pass
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
-volumes:
-  postgres_data:
-```
+The application will be available at `http://localhost`
 
 ## Troubleshooting
 
 ### Common Issues
 
-#### 1. Port Already in Use
+#### Port Already in Use
+
 ```bash
 # Find process using port 5000/7000
 lsof -i :5000
@@ -283,12 +312,14 @@ lsof -i :7000
 kill -9 <PID>
 ```
 
-#### 2. Database Connection Failed
+#### Database Connection Failed
+
 - Verify PostgreSQL is running: `docker ps` or check local service
 - Check connection string in `appsettings.json`
 - Verify firewall settings allow port 5432
 
-#### 3. Migration Issues
+#### Migration Issues
+
 ```bash
 # Reset migrations (CAUTION: drops all data)
 dotnet ef database drop --startup-project ../ClercqIt.Api
@@ -297,25 +328,36 @@ dotnet ef migrations add InitialCreate --startup-project ../ClercqIt.Api
 dotnet ef database update --startup-project ../ClercqIt.Api
 ```
 
-#### 4. Build Errors
+#### Build Errors
+
 ```bash
 # Clean and rebuild
 dotnet clean
-dotnet restore  
+dotnet restore
 dotnet build
 ```
 
-#### 5. Package Version Conflicts
-The project may show warnings about EntityFrameworkCore.Relational version conflicts. These are harmless and will be resolved in future updates.
+#### Aspire Dashboard Not Starting
+
+1. **Port Conflicts**: Aspire Dashboard typically uses port 15888
+2. **Docker Requirements**: PostgreSQL requires Docker Desktop to be running
+3. **Network Connectivity**: Ensure Docker networks allow inter-container communication
+
+### Debugging
+
+- Check Aspire Dashboard logs for service startup issues
+- Verify PostgreSQL container is running: `docker ps`
+- Test API health endpoint: `https://localhost:7000/health`
 
 ## IDE Configuration
 
 ### Visual Studio 2022
 - Install ASP.NET Core workload
 - Install Entity Framework Core tools
-- Set ClercqIt.Api as startup project
+- Set ClercqIt.Api as startup project (or Clercq.It.AppHost for Aspire)
 
 ### VS Code
+
 Install recommended extensions:
 - C# for Visual Studio Code
 - .NET Extension Pack
@@ -325,13 +367,22 @@ Install recommended extensions:
 ### Rider
 - Enable .NET Core support
 - Configure database connection
-- Set run configuration for ClercqIt.Api
+- Set run configuration for ClercqIt.Api (or Clercq.It.AppHost for Aspire)
 
 ## Next Steps
 
 Once your development environment is set up:
+
 1. Review the [Architecture Documentation](./architecture.md)
-2. Learn about [Aspire Orchestration](./aspire.md) for enhanced development experience
-3. Explore the API endpoints at `https://localhost:7000/swagger` or `https://localhost:7000/scalar/v1`
-4. Check the test coverage with `dotnet test --collect:"XPlat Code Coverage"`
-5. Start developing new features following Clean Architecture patterns
+2. Understand [Versioning and Branching](./versioning.md)
+3. Learn about [CI/CD Pipelines](./devops.md)
+4. Explore the API endpoints at `https://localhost:7000/swagger` or `https://localhost:7000/scalar/v1`
+5. Check the test coverage with `dotnet test --collect:"XPlat Code Coverage"`
+6. Start developing new features following Clean Architecture patterns
+
+## Additional Resources
+
+- [Aspire Documentation](https://learn.microsoft.com/en-us/dotnet/aspire/)
+- [Entity Framework Core Documentation](https://learn.microsoft.com/en-us/ef/core/)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)

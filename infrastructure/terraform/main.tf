@@ -1,12 +1,29 @@
 # Scaleway Infrastructure Configuration for Clercq.It Portfolio
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.6.1"
   required_providers {
     scaleway = {
       source  = "scaleway/scaleway"
       version = "~> 2.0"
     }
+  }
+
+  # Backend configuration for remote state storage using Scaleway Object Storage
+  # Credentials are provided via AWS-compatible environment variables:
+  # - AWS_ACCESS_KEY_ID (set to SCW_ACCESS_KEY)
+  # - AWS_SECRET_ACCESS_KEY (set to SCW_SECRET_KEY)
+  # See: https://registry.terraform.io/providers/scaleway/scaleway/latest/docs/guides/backend_guide
+  backend "s3" {
+    bucket                      = "clercq-it-terraform-state"
+    key                         = "portfolio/terraform.tfstate"
+    region                      = "fr-par"
+    endpoint                    = "https://s3.fr-par.scw.cloud"
+    skip_credentials_validation = true
+    skip_region_validation      = true
+    skip_metadata_api_check     = true
+    skip_requesting_account_id  = true
+    force_path_style            = true
   }
 }
 
@@ -20,37 +37,25 @@ provider "scaleway" {
   region          = var.scaleway_region
 }
 
-# Serverless SQL Database
+# PostgreSQL Database Instance (managed by Terraform)
 resource "scaleway_rdb_instance" "portfolio_db" {
-  name              = "portfolio-database"
-  node_type         = "db-dev-s" # Smallest instance for serverless-like behavior
-  engine            = "PostgreSQL-15"
-  is_ha_cluster     = false
-  disable_backup    = false
-  volume_type       = "sbs"
-  volume_size_in_gb = 5
-  project_id        = var.project_id
-
-  settings = {
-    # Configure for minimal resource usage with scaling capabilities
-    "max_connections" = "20"
-    "shared_buffers"  = "32MB"
-  }
-
-  tags = [
-    "project=clercq-it",
-    "environment=portfolio",
-    "namespace=Portfolio"
-  ]
+  name           = "portfolio-db"
+  node_type      = "DB-DEV-S"
+  engine         = "PostgreSQL-16"
+  is_ha_cluster  = false
+  disable_backup = false
+  user_name      = "clercqit_admin"
+  password       = var.database_password
+  region         = var.scaleway_region
 }
 
-# Database for the application
+# Database for the application (managed by Terraform)
 resource "scaleway_rdb_database" "portfolio_app_db" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_portfolio"
 }
 
-# Database user for the application
+# Database user for the application (managed by Terraform)
 resource "scaleway_rdb_user" "portfolio_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
@@ -58,28 +63,17 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
   is_admin    = false
 }
 
-# Serverless Container Namespace
-resource "scaleway_container_namespace" "portfolio" {
-  name        = "portfolio"
-  description = "Container namespace for Clercq.It Portfolio applications"
-  project_id  = var.project_id
-
-  environment_variables = {
-    "ASPNETCORE_ENVIRONMENT" = "Production"
-    "NODE_ENV"               = "production"
-  }
-
-  tags = [
-    "project=clercq-it",
-    "environment=portfolio",
-    "namespace=Portfolio"
-  ]
+# Reference the existing Serverless Container Namespace
+# The namespace already exists in Scaleway and is managed outside of Terraform
+# Using a data source prevents "409 Conflict: Namespace already exists" errors
+data "scaleway_container_namespace" "portfolio" {
+  name = "portfolio"
 }
 
 # Serverless Container for the application
 resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
-  namespace_id   = scaleway_container_namespace.portfolio.id
+  namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
   port           = 80
 

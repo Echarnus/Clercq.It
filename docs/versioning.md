@@ -1,18 +1,37 @@
-# GitVersion Configuration
+# Versioning & Branching Strategy
 
-This document explains the GitVersion configuration used in the Clercq.It project.
+This document describes the versioning strategy and branching workflow used in the Clercq.It project.
 
 ## Overview
 
-GitVersion automatically calculates semantic version numbers based on Git history and branch naming conventions. The project uses **GitHub Flow** with **Continuous Deployment** mode.
+The project uses **GitVersion** for automatic semantic versioning based on Git history and branch naming conventions. We follow **GitHub Flow** with **Continuous Deployment** mode.
 
-## Configuration File
+## Branching Strategy (GitHub Flow)
 
-The GitVersion configuration is stored in `GitVersion.yml` at the repository root.
+### Branch Types
 
-## Branch Configuration
+- **`main`** - Production branch, triggers deployment
+- **`develop`** - Development branch for feature integration
+- **`feature/*`** - Feature branches merged via Pull Requests
+- **`hotfix/*`** - Hotfix branches for urgent production fixes
 
-### Main Branch
+### Workflow
+
+1. Create feature branches from `main` or `develop`
+2. Develop and test features locally
+3. Create Pull Request to `main` or `develop`
+4. Automated tests run on PR
+5. After approval and merge, automated deployment occurs (if merging to `main`)
+
+## GitVersion Configuration
+
+### Configuration File
+
+The GitVersion configuration is stored in `GitVersion.yml` at the repository root with mode set to `ContinuousDeployment`.
+
+### Branch Configuration
+
+#### Main Branch
 
 ```yaml
 main:
@@ -30,7 +49,7 @@ main:
 - **Tag**: None (clean version)
 - **Purpose**: Production releases
 
-### Develop Branch
+#### Develop Branch
 
 ```yaml
 develop:
@@ -46,7 +65,7 @@ develop:
 - **Tag**: alpha
 - **Purpose**: Development integration
 
-### Feature Branches
+#### Feature Branches
 
 ```yaml
 feature:
@@ -61,7 +80,7 @@ feature:
 - **Tag**: feature (e.g., 1.0.1-feature.my-feature.1)
 - **Naming**: `feature/my-feature` or `features/my-feature`
 
-### Hotfix Branches
+#### Hotfix Branches
 
 ```yaml
 hotfix:
@@ -76,7 +95,7 @@ hotfix:
 - **Tag**: beta
 - **Naming**: `hotfix/urgent-fix` or `hotfixes/urgent-fix`
 
-### Pull Request Branches
+#### Pull Request Branches
 
 ```yaml
 pull-request:
@@ -91,7 +110,7 @@ pull-request:
 - **Tag**: pr (e.g., 1.0.1-pr.123.1)
 - **Purpose**: Pull request validation
 
-### Release Branches
+#### Release Branches
 
 ```yaml
 release:
@@ -203,37 +222,40 @@ dotnet gitversion /output json
   "Minor": 0,
   "Patch": 1,
   "PreReleaseTag": "",
-  "PreReleaseTagWithDash": "",
-  "PreReleaseLabel": "",
-  "PreReleaseLabelWithDash": "",
-  "PreReleaseNumber": null,
-  "WeightedPreReleaseNumber": 60000,
-  "BuildMetaData": "",
-  "BuildMetaDataPadded": "",
-  "FullBuildMetaData": "1.Branch.main.Sha.abc123",
-  "MajorMinorPatch": "1.0.1",
   "SemVer": "1.0.1",
-  "LegacySemVer": "1.0.1",
-  "LegacySemVerPadded": "1.0.1",
-  "AssemblySemVer": "1.0.0.0",
-  "AssemblySemFileVer": "1.0.1.0",
   "FullSemVer": "1.0.1",
   "InformationalVersion": "1.0.1+1.Branch.main.Sha.abc123",
   "BranchName": "main",
-  "EscapedBranchName": "main",
-  "Sha": "abc123456789...",
   "ShortSha": "abc1234",
-  "NuGetVersionV2": "1.0.1",
-  "NuGetVersion": "1.0.1",
-  "NuGetPreReleaseTagV2": "",
-  "NuGetPreReleaseTag": "",
-  "VersionSourceSha": "abc123456789...",
-  "CommitsSinceVersionSource": 0,
-  "CommitsSinceVersionSourcePadded": "0000",
-  "UncommittedChanges": 0,
   "CommitDate": "2024-01-15"
 }
 ```
+
+## Best Practices
+
+### Branch Naming
+
+Follow consistent naming conventions:
+- `feature/description`
+- `hotfix/issue-description`
+- `release/v1.0.0`
+
+### Tagging
+
+Use semantic version tags for releases:
+- `v1.0.0`, `v1.0.1`, `v2.0.0`
+
+### Merge Strategy
+
+Use merge commits to maintain history:
+- Avoid squash merges for version calculation
+- Use `--no-ff` for important merges
+
+### Documentation
+
+Keep version history clear:
+- Tag releases with meaningful messages
+- Maintain CHANGELOG.md for major releases
 
 ## Troubleshooting
 
@@ -268,24 +290,6 @@ dotnet gitversion /showvariable FullSemVer
 # Clear cache and recalculate
 dotnet gitversion /nocache
 ```
-
-## Best Practices
-
-1. **Branch Naming**: Follow consistent naming conventions
-   - `feature/description`
-   - `hotfix/issue-description`
-   - `release/v1.0.0`
-
-2. **Tagging**: Use semantic version tags for releases
-   - `v1.0.0`, `v1.0.1`, `v2.0.0`
-
-3. **Merge Strategy**: Use merge commits to maintain history
-   - Avoid squash merges for version calculation
-   - Use `--no-ff` for important merges
-
-4. **Documentation**: Keep version history clear
-   - Tag releases with meaningful messages
-   - Maintain CHANGELOG.md for major releases
 
 ## Migration Guide
 
