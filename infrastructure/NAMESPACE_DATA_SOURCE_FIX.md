@@ -135,7 +135,9 @@ If the namespace was previously managed by Terraform (in state):
 ```hcl
 backend "s3" {
   bucket   = "clercq-it-terraform-state"
-  endpoint = "https://s3.fr-par.scw.cloud"  # Scaleway endpoint!
+  endpoints = {
+    s3 = "https://s3.fr-par.scw.cloud"  # Scaleway endpoint!
+  }
   # ...
 }
 ```
