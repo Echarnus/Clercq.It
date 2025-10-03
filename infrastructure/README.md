@@ -196,4 +196,21 @@ Key requirements for infrastructure PRs:
 1. Set up the infrastructure deployment workflow in GitHub Actions
 2. Configure automated deployments to use this infrastructure
 3. Set up monitoring and alerting
+
+## Troubleshooting
+
+For common issues and solutions, see:
+
+- **[TROUBLESHOOTING.md](./TROUBLESHOOTING.md)** - Quick reference for common errors
+- **[TERRAFORM_INIT_AWS_STS_FIX.md](./TERRAFORM_INIT_AWS_STS_FIX.md)** - Fix for AWS STS authentication errors during init
+- **[S3_ENDPOINT_FIX.md](./S3_ENDPOINT_FIX.md)** - Fix for S3 backend endpoint configuration
+- **[TERRAFORM_INIT_FIX.md](./TERRAFORM_INIT_FIX.md)** - Fix for environment variables during init
+- **[SCW_ENV_VARS_FIX.md](./SCW_ENV_VARS_FIX.md)** - Complete Scaleway environment variables setup
+- **[STATE_SHARING_SETUP_GUIDE.md](./STATE_SHARING_SETUP_GUIDE.md)** - Guide for shared state configuration
+
+### Most Common Issues
+
+1. **AWS STS Error during Terraform Init**: See [TERRAFORM_INIT_AWS_STS_FIX.md](./TERRAFORM_INIT_AWS_STS_FIX.md)
+2. **Namespace Already Exists (409)**: Already fixed via data sources
+3. **403 Forbidden**: Verify Scaleway credentials and permissions
 4. Configure backup and disaster recovery procedures

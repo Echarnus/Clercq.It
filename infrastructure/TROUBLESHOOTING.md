@@ -2,6 +2,44 @@
 
 ## Common Issues and Solutions
 
+### ❌ Error: AWS STS Authentication Error During Terraform Init
+
+**Symptom:**
+```
+Error: Retrieving AWS account details: AWS account ID not previously found and failed retrieving via all available methods.
+Errors: retrieving caller identity from STS: operation error STS: GetCallerIdentity, 
+request send failed, Post "https://sts.fr-par.amazonaws.com/": dial tcp: lookup sts.fr-par.amazonaws.com on 127.0.0.53:53: no such host
+```
+
+**Root Cause:** Terraform's S3 backend tries to validate AWS credentials when credentials are passed via `-backend-config` CLI flags, even though we're using Scaleway's S3-compatible storage.
+
+**Solution:** ✅ **FIXED** - Pass skip flags via `-backend-config` during init (see `TERRAFORM_INIT_AWS_STS_FIX.md`)
+
+**What Changed:**
+The workflow now passes three additional flags to `terraform init`:
+```bash
+terraform init \
+  -backend-config="access_key=$SCW_ACCESS_KEY" \
+  -backend-config="secret_key=$SCW_SECRET_KEY" \
+  -backend-config="skip_credentials_validation=true" \
+  -backend-config="skip_region_validation=true" \
+  -backend-config="skip_requesting_account_id=true"
+```
+
+**Why This Matters:**
+- Skip flags in `main.tf` are not applied early enough when credentials come from CLI
+- Terraform needs to know to skip AWS validation before the AWS SDK initializes
+- This prevents attempts to connect to non-existent AWS STS endpoints
+
+**Action Required:** This fix is already applied in the workflow. If you still see this error:
+1. Ensure you're using the latest workflow file
+2. Verify GitHub Secrets are properly configured
+3. Check no AWS environment variables are set
+
+For detailed technical explanation, see **[TERRAFORM_INIT_AWS_STS_FIX.md](./TERRAFORM_INIT_AWS_STS_FIX.md)**
+
+---
+
 ### ❌ Error: "Namespace already exists" (409 Conflict)
 
 **Symptom:**
