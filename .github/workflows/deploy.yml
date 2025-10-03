@@ -1,30 +1,135 @@
 ---
-name: Deploy to Scaleway
+name: Deploy
 
 "on":
-  workflow_run:
-    workflows: ["build", "Deploy Infra"]
-    branches: [main]
-    types: [completed]
+  push:
+    branches: [main, 'release/**']
   workflow_dispatch:
     inputs:
       version:
         description: 'Docker image version to deploy (e.g., v1.0.1, latest)'
-        required: true
-        default: 'latest'
+        required: false
+        default: ''
         type: string
 
 env:
   REGISTRY: docker.io
   IMAGE_NAME: echarnus/clercq-it
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: read
+  id-token: write
+  attestations: write
+
 jobs:
-  deploy:
-    name: Deploy to Scaleway
+  # Step 1: Build the application
+  build:
+    name: Build Application
+    uses: ./.github/workflows/build.yml
+
+  # Step 2: Check for infrastructure changes
+  check-infra-changes:
+    name: Check Infrastructure Changes
     runs-on: ubuntu-latest
+    outputs:
+      infra-changed: ${{ steps.changes.outputs.infra }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check for infrastructure changes
+        id: changes
+        run: |
+          if git diff --name-only HEAD^ HEAD | grep -q '^infra/'; then
+            echo "infra=true" >> $GITHUB_OUTPUT
+            echo "Infrastructure files changed"
+          else
+            echo "infra=false" >> $GITHUB_OUTPUT
+            echo "No infrastructure files changed"
+          fi
+
+  # Step 3: Validate infrastructure (always runs)
+  validate-infra:
+    name: Validate Infrastructure
+    needs: [check-infra-changes]
+    uses: ./.github/workflows/infra.yml
+
+  # Step 4: Deploy infrastructure (only if changes occurred)
+  deploy-infra:
+    name: Deploy Infrastructure
+    runs-on: ubuntu-latest
+    needs: [build, validate-infra, check-infra-changes]
+    if: needs.check-infra-changes.outputs.infra-changed == 'true'
+    environment: production
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.6.0'
+
+      - name: Terraform Init
+        run: |
+          cd infra/terraform
+          terraform init \
+            -backend-config="access_key=$SCW_ACCESS_KEY" \
+            -backend-config="secret_key=$SCW_SECRET_KEY"
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
+
+      - name: Terraform Apply
+        run: |
+          cd infra/terraform
+          echo "🚀 Starting infrastructure deployment..."
+          terraform apply -auto-approve -no-color
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          SCW_DEFAULT_ORGANIZATION_ID: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          SCW_DEFAULT_REGION: fr-par
+          SCW_DEFAULT_ZONE: fr-par-1
+          TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+          TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
+          TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+          TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+
+      - name: Terraform Output
+        if: success()
+        run: |
+          cd infra/terraform
+          echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+          terraform output -json >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  # Step 5: Deploy application (runs after deploy-infra, even if skipped)
+  deploy-app:
+  # Step 5: Deploy application (runs after deploy-infra, even if skipped)
+  deploy-app:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    needs: [build, deploy-infra]
     if: |
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      github.event_name == 'workflow_dispatch'
+      always() &&
+      needs.build.result == 'success' &&
+      (needs.deploy-infra.result == 'success' || needs.deploy-infra.result == 'skipped')
     environment: production
 
     steps:
@@ -34,24 +139,24 @@ jobs:
           fetch-depth: 0
 
       - name: Install GitVersion
-        if: github.event_name == 'workflow_run'
+        if: github.event_name != 'workflow_dispatch' || inputs.version == ''
         uses: gittools/actions/gitversion/setup@v1
         with:
           versionSpec: '6.0.x'
 
       - name: Determine Version
-        if: github.event_name == 'workflow_run'
+        if: github.event_name != 'workflow_dispatch' || inputs.version == ''
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
       - name: Set deployment version
         id: version
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> $GITHUB_OUTPUT
             echo "source=manual" >> $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_OUTPUT
+            echo "version=${{ needs.build.outputs.version }}" >> $GITHUB_OUTPUT
             echo "source=automatic" >> $GITHUB_OUTPUT
           fi
 

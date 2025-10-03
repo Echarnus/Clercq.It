@@ -320,4 +320,4 @@ gh secret list
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Scaleway Container Documentation](https://www.scaleway.com/en/docs/serverless/containers/)
-- [Infrastructure Setup Guide](../infrastructure/README.md)
+- [Infrastructure Setup Guide](../infra/README.md)
