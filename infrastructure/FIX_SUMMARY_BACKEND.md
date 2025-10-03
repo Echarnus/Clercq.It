@@ -21,10 +21,10 @@ Added **remote state backend** using Scaleway Object Storage (S3-compatible):
 backend "s3" {
   bucket   = "clercq-it-terraform-state"
   key      = "portfolio/terraform.tfstate"
-  region   = "fr-par"
+  region = "fr-par"
   endpoints = {
-    s3 = "https://s3.fr-par.scw.cloud"
-  }
+      s3 = "https://s3.fr-par.scw.cloud"
+    }
   ...
 }
 ```

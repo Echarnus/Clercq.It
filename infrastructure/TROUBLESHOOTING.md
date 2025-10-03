@@ -2,6 +2,48 @@
 
 ## Common Issues and Solutions
 
+### ❌ Error: AWS STS Authentication Error During Terraform Init
+
+**Symptom:**
+```
+Error: Retrieving AWS account details: AWS account ID not previously found and failed retrieving via all available methods.
+Errors: retrieving caller identity from STS: operation error STS: GetCallerIdentity, 
+request send failed, Post "https://sts.fr-par.amazonaws.com/": dial tcp: lookup sts.fr-par.amazonaws.com on 127.0.0.53:53: no such host
+```
+
+**Root Cause:** Terraform's S3 backend was receiving credentials via `-backend-config` CLI flags instead of AWS-compatible environment variables, causing it to attempt AWS authentication.
+
+**Solution:** ✅ **FIXED** - Use AWS environment variables for S3 backend credentials (see `TERRAFORM_INIT_AWS_STS_FIX.md`)
+
+**What Changed:**
+The workflow now uses AWS-compatible environment variables instead of `-backend-config` flags:
+```bash
+# Before (incorrect)
+terraform init \
+  -backend-config="access_key=$SCW_ACCESS_KEY" \
+  -backend-config="secret_key=$SCW_SECRET_KEY"
+
+# After (correct)
+terraform init
+env:
+  AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+  AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+```
+
+**Why This Matters:**
+- The S3 backend uses the AWS SDK which expects credentials via AWS environment variables
+- The skip flags in `main.tf` prevent AWS-specific validation when credentials are provided this way
+- Using `-backend-config` can bypass the skip flags and cause AWS authentication attempts
+
+**Action Required:** This fix is already applied in the workflow. If you still see this error:
+1. Ensure you're using the latest workflow file
+2. Verify GitHub Secrets are properly configured
+3. Check that skip flags are present in `main.tf` backend block
+
+For detailed technical explanation, see **[TERRAFORM_INIT_AWS_STS_FIX.md](./TERRAFORM_INIT_AWS_STS_FIX.md)**
+
+---
+
 ### ❌ Error: "Namespace already exists" (409 Conflict)
 
 **Symptom:**
