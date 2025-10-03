@@ -83,7 +83,7 @@ jobs:
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
-          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || 'www.clercq.it' }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Comment PR
@@ -178,7 +178,7 @@ jobs:
           TF_VAR_scaleway_organization_id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
           TF_VAR_scaleway_project_id: ${{ secrets.SCALEWAY_PROJECT_ID }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
-          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || '' }}
+          TF_VAR_custom_domain: ${{ vars.CUSTOM_DOMAIN || 'www.clercq.it' }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 
       - name: Terraform Output
