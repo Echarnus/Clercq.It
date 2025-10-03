@@ -22,7 +22,9 @@ backend "s3" {
   bucket   = "clercq-it-terraform-state"
   key      = "portfolio/terraform.tfstate"
   region = "fr-par"
-  endpoint = "https://s3.fr-par.scw.cloud"
+  endpoints = {
+      s3 = "https://s3.fr-par.scw.cloud"
+    }
   ...
 }
 ```
