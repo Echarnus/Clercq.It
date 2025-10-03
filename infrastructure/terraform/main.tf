@@ -74,7 +74,8 @@ resource "scaleway_container" "portfolio_app" {
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
   port           = 8080
-  protocol       = "http2"
+  protocol       = "http1"
+  http_option    = "redirected"
 
   min_scale = 0
   max_scale = 1
