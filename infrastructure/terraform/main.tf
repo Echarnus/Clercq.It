@@ -75,12 +75,12 @@ resource "scaleway_container" "portfolio_app" {
   registry_image = var.container_image
   port           = 8080
 
-  # Configure scaling: 0-1 vCPU, 128MB memory
+
   min_scale = 0
   max_scale = 1
 
   # Resource limits
-  memory_limit = 1024  # 128MB
+  memory_limit = 1024  # 1024MB
   cpu_limit    = 1000 # 1 vCPU (1000m)
 
   # Request limits for efficient scaling
