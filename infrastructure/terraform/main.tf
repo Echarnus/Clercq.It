@@ -73,7 +73,7 @@ resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
-  port           = 80
+  port           = 8080
 
   # Configure scaling: 0-1 vCPU, 128MB memory
   min_scale = 0
