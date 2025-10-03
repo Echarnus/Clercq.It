@@ -33,7 +33,7 @@ variable "container_image" {
 variable "custom_domain" {
   description = "Custom domain for the application (optional)"
   type        = string
-  default     = ""
+  default     = "www.clercq.it"
 }
 
 variable "environment" {

@@ -113,6 +113,8 @@ gh workflow run build.yml
 - **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
 - **Serverless SQL**: PostgreSQL database with minimal resource allocation
 - **Organization**: ClercqIt with Portfolio namespace
+- **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
+- **Custom Domain**: www.clercq.it configured for the application
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
 ### Terraform Backend Configuration
@@ -220,6 +222,34 @@ The pipeline includes comprehensive health checks:
 4. Deployment proceeds with specified version
 
 ## Monitoring and Status
+
+### Scaleway Cockpit
+
+The application integrates with Scaleway Cockpit for centralized logging and monitoring:
+
+- **Logs**: Application logs are forwarded to Cockpit using OpenTelemetry (OTLP)
+- **Metrics**: Performance metrics are collected automatically
+- **Dashboards**: Access Grafana dashboards for visualization
+- **Traces**: Distributed tracing for request tracking
+
+After infrastructure deployment, Terraform outputs provide:
+- Grafana dashboard URL
+- Logs viewer URL  
+- Metrics endpoint URL
+
+Access the Cockpit dashboard via the Scaleway console or using the URLs from Terraform outputs:
+
+```bash
+cd infrastructure/terraform
+terraform output cockpit_grafana_url
+terraform output cockpit_logs_url
+terraform output cockpit_metrics_url
+```
+
+The container is configured to send telemetry data automatically via environment variables:
+- `OTEL_EXPORTER_OTLP_ENDPOINT`: Cockpit OTLP endpoint
+- `OTEL_EXPORTER_OTLP_PROTOCOL`: gRPC protocol
+- `OTEL_EXPORTER_OTLP_HEADERS`: Authentication token
 
 ### Build Status Badges
 
