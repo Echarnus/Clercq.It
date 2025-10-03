@@ -29,12 +29,10 @@ terraform {
 
 # Configure the Scaleway Provider
 provider "scaleway" {
-  access_key      = var.access_key
-  secret_key      = var.secret_key
-  organization_id = var.organization_id
-  project_id      = var.project_id
   zone            = var.scaleway_zone
   region          = var.scaleway_region
+  organization_id = var.scaleway_organization_id
+  project_id      = var.scaleway_project_id
 }
 
 # PostgreSQL Database Instance (managed by Terraform)
