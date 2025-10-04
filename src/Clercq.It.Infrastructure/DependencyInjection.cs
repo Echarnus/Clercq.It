@@ -14,11 +14,17 @@ public static class DependencyInjection
         if (useAspirePostgreSQL)
         {
             // This will be configured by Aspire's AddNpgsqlDataSource
+            // NOTE: MigrationsAssembly is configured for EF Core tooling (dotnet ef) only.
+            // Migrations are NEVER executed at runtime in production.
+            // Production migrations are applied via SQL scripts in the deployment pipeline.
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
         }
         else
         {
+            // NOTE: MigrationsAssembly is configured for EF Core tooling (dotnet ef) only.
+            // Migrations are NEVER executed at runtime in production.
+            // Production migrations are applied via SQL scripts in the deployment pipeline.
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
