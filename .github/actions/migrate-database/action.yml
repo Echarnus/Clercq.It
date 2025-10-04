@@ -1,0 +1,91 @@
+name: Migrate Database
+description: Executes database migrations
+
+inputs:
+  scaleway-access-key:
+    description: Scaleway access key
+    required: true
+  scaleway-secret-key:
+    description: Scaleway secret key
+    required: true
+  scaleway-organization-id:
+    description: Scaleway organization ID
+    required: true
+  scaleway-project-id:
+    description: Scaleway project ID
+    required: true
+  database-password:
+    description: Database password
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "📦 Installing deployment dependencies..."
+        sudo apt-get update -qq
+        sudo apt-get install -y jq curl postgresql-client
+
+    - name: Download migration script
+      uses: actions/download-artifact@v4
+      with:
+        name: migration-script
+
+    - name: Execute database migrations
+      shell: bash
+      run: |
+        echo "🗄️ Executing database migrations..."
+        
+        # Check if migration script exists
+        if [ ! -f "migration.sql" ]; then
+          echo "⚠️  Warning: Migration script not found, skipping database migration"
+          exit 0
+        fi
+        
+        echo "✅ Migration script found"
+        echo "📊 Migration script size: $(wc -l < migration.sql) lines"
+        
+        # Install Terraform CLI to query outputs
+        echo "⬇️ Installing Terraform CLI..."
+        wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+        echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+        sudo apt-get update -qq && sudo apt-get install -y terraform
+        
+        # Navigate to Terraform directory and get database connection details
+        cd infrastructure/terraform
+        
+        # Initialize Terraform backend
+        export AWS_ACCESS_KEY_ID="${{ inputs.scaleway-access-key }}"
+        export AWS_SECRET_ACCESS_KEY="${{ inputs.scaleway-secret-key }}"
+        export TF_VAR_scaleway_access_key="${{ inputs.scaleway-access-key }}"
+        export TF_VAR_scaleway_secret_key="${{ inputs.scaleway-secret-key }}"
+        export TF_VAR_scaleway_organization_id="${{ inputs.scaleway-organization-id }}"
+        export TF_VAR_scaleway_project_id="${{ inputs.scaleway-project-id }}"
+        export TF_VAR_database_password="${{ inputs.database-password }}"
+        
+        echo "🔧 Initializing Terraform..."
+        terraform init -input=false
+        
+        # Get database connection details from Terraform outputs
+        DB_HOST=$(terraform output -raw database_endpoint)
+        DB_PORT=$(terraform output -raw database_port)
+        DB_NAME=$(terraform output -raw database_name)
+        DB_USER="clercqit_user"
+        DB_PASSWORD="${{ inputs.database-password }}"
+        
+        cd ../..
+        
+        echo "📡 Connecting to database at $DB_HOST:$DB_PORT"
+        
+        # Execute migration script
+        echo "🚀 Executing migration script..."
+        PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f migration.sql -v ON_ERROR_STOP=1
+        
+        if [ $? -eq 0 ]; then
+          echo "✅ Database migrations executed successfully"
+        else
+          echo "❌ Failed to execute database migrations"
+          exit 1
+        fi

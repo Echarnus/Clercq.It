@@ -1,0 +1,53 @@
+name: Test .NET API
+description: Runs .NET tests for the API
+
+runs:
+  using: composite
+  steps:
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Install .NET Aspire workload
+      shell: bash
+      run: |
+        echo "🔧 Installing .NET Aspire workload..."
+        dotnet workload install aspire
+        echo "✅ Aspire workload installed successfully"
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v1
+      with:
+        versionSpec: '6.0.x'
+
+    - name: Determine Version
+      uses: gittools/actions/gitversion/execute@v1
+      id: gitversion
+
+    - name: Restore dependencies
+      shell: bash
+      run: dotnet restore
+
+    - name: Build
+      shell: bash
+      run: |
+        echo "🏗️ Building .NET solution..."
+        dotnet build --no-restore --configuration Release
+        echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
+        echo "- Built all projects in Release configuration" >> $GITHUB_STEP_SUMMARY
+
+    - name: Test .NET projects from /tests/
+      shell: bash
+      run: |
+        echo "🧪 Running .NET tests..."
+        dotnet test --no-build --configuration Release --verbosity normal \
+          --collect:"XPlat Code Coverage" --results-directory ./coverage
+        echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
+        echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v4
+      with:
+        directory: ./coverage
+        fail_ci_if_error: false

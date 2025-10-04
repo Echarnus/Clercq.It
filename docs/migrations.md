@@ -131,53 +131,54 @@ dotnet ef migrations script FromMigration ToMigration --startup-project ../Clerc
 
 ## CI/CD Deployment
 
-### Build Workflow (`build.yml`)
+### Deploy Workflow
 
-The build workflow generates an idempotent migration SQL script:
+The application uses a unified **Deploy** workflow that handles testing, building, infrastructure deployment, database migrations, and container deployment in a single pipeline.
 
-```yaml
-- name: Generate migration SQL script
-  run: |
-    cd src/Clercq.It.Infrastructure
-    dotnet ef migrations script --idempotent --output ../../migration.sql --startup-project ../ClercqIt.Api
+#### Workflow Structure
 
-- name: Upload migration script as artifact
-  uses: actions/upload-artifact@v4
-  with:
-    name: migration-script
-    path: migration.sql
-```
+The Deploy workflow consists of the following jobs:
 
-**Idempotent Scripts**: Can be safely run multiple times. Only applies migrations that haven't been executed yet.
+1. **Test**: Runs .NET and Next.js tests using reusable composite actions
+2. **Build**: Builds and pushes Docker image, generates migration script
+3. **Deploy Infrastructure**: Applies Terraform infrastructure changes
+4. **Migrate Database**: Executes database migrations using the generated script
+5. **Deploy Container**: Deploys the container to Scaleway
 
-### Deploy Workflow (`deploy.yml`)
+#### Migration Generation and Execution
 
-The deploy workflow executes the migration script on the production database:
+The build job generates an idempotent migration SQL script using the `build-docker` composite action:
 
 ```yaml
-- name: Download migration script
-  uses: dawidd6/action-download-artifact@v3
+- name: Build and push Docker image
+  uses: ./.github/actions/build-docker
   with:
-    name: migration-script
-    workflow: build.yml
-    workflow_conclusion: success
-    github_token: ${{ secrets.GITHUB_TOKEN }}
-    run_id: ${{ github.event.workflow_run.id }}
-
-- name: Execute database migrations
-  run: |
-    # Get database credentials from Terraform outputs
-    terraform init
-    DB_HOST=$(terraform output -raw database_endpoint)
-    DB_PORT=$(terraform output -raw database_port)
-    DB_NAME=$(terraform output -raw database_name)
-    
-    # Execute migration script
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
-      -U "$DB_USER" -d "$DB_NAME" -f migration.sql
+    docker-username: ${{ secrets.DOCKER_USERNAME }}
+    docker-password: ${{ secrets.DOCKER_PASSWORD }}
+    registry: docker.io
+    image-name: echarnus/clercq-it
+    sem-ver: ${{ steps.gitversion.outputs.semVer }}
+    short-sha: ${{ steps.gitversion.outputs.shortSha }}
 ```
 
-**Note:** The workflow uses `dawidd6/action-download-artifact@v3` to properly handle artifact downloads from `workflow_run` triggered deployments.
+The migration script is then applied by the `migrate-database` composite action:
+
+```yaml
+- name: Migrate database
+  uses: ./.github/actions/migrate-database
+  with:
+    scaleway-access-key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+    scaleway-secret-key: ${{ secrets.SCALEWAY_SECRET_KEY }}
+    scaleway-organization-id: ${{ secrets.SCALEWAY_ORGANIZATION_ID }}
+    scaleway-project-id: ${{ secrets.SCALEWAY_PROJECT_ID }}
+    database-password: ${{ secrets.DATABASE_PASSWORD }}
+```
+
+**Benefits of Unified Workflow:**
+- Artifacts are shared within the same workflow run (no cross-workflow artifact issues)
+- Clear dependency chain between jobs
+- Easier to trace the full deployment pipeline
+- Uses only official GitHub Actions
 
 ### Database Connection (Production)
 
@@ -292,15 +293,13 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 
 #### Migration Script Not Generated
 
-**Problem:** Deploy workflow can't find migration script artifact.
+**Problem:** Migration script artifact not found during deployment.
 
 **Solution:**
-1. Check build workflow completed successfully
-2. Verify "Generate migration SQL script" step succeeded
+1. Check the Build job completed successfully in the Deploy workflow
+2. Verify "Generate migration SQL script" step succeeded in the build-docker action
 3. Ensure artifact was uploaded (check workflow logs)
-4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
-
-**Note:** The deploy workflow uses `dawidd6/action-download-artifact@v3` instead of the standard `actions/download-artifact@v4` because it better handles downloading artifacts from `workflow_run` triggered workflows
+4. The unified Deploy workflow eliminates cross-workflow artifact issues since everything runs in a single workflow
 
 #### Migration Execution Failed
 
@@ -412,22 +411,37 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 │                     CI/CD Pipeline (Production)                  │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                   │
-│  build.yml                                                        │
+│  deploy.yml (Unified Pipeline)                                    │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Run tests                                              │  │
-│  │ 2. Generate idempotent migration SQL script              │  │
-│  │ 3. Upload migration script as artifact                   │  │
-│  │ 4. Build & push Docker image                             │  │
+│  │ Job 1: Test                                               │  │
+│  │   - Test .NET API (uses .github/actions/test-dotnet)     │  │
+│  │   - Test Next.js Frontend (uses test-frontend)           │  │
+│  │                                                            │  │
+│  │ Job 2: Build                                              │  │
+│  │   - Generate idempotent migration SQL script             │  │
+│  │   - Upload migration script as artifact                  │  │
+│  │   - Build & push Docker image (uses build-docker)        │  │
+│  │                                                            │  │
+│  │ Job 3: Deploy Infrastructure                             │  │
+│  │   - Apply Terraform (uses deploy-infra)                  │  │
+│  │                                                            │  │
+│  │ Job 4: Migrate Database                                  │  │
+│  │   - Download migration artifact                           │  │
+│  │   - Get DB credentials from Terraform outputs            │  │
+│  │   - Execute migration script (uses migrate-database)     │  │
+│  │                                                            │  │
+│  │ Job 5: Deploy Container                                  │  │
+│  │   - Deploy container to Scaleway (uses deploy-container) │  │
+│  │   - Run health checks                                     │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  deploy.yml                                                       │
-│  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Download migration script artifact                     │  │
-│  │ 2. Get DB credentials from Terraform outputs             │  │
-│  │ 3. Execute migration script on Scaleway PostgreSQL       │  │
-│  │ 4. Deploy container to Scaleway                          │  │
-│  │ 5. Run health checks                                     │  │
-│  └──────────────────────────────────────────────────────────┘  │
+│  Composite Actions (.github/actions/)                            │
+│  - test-dotnet       - Reusable .NET test logic                  │
+│  - test-frontend     - Reusable Next.js test logic               │
+│  - build-docker      - Build & push Docker image                 │
+│  - deploy-infra      - Deploy infrastructure with Terraform      │
+│  - migrate-database  - Execute database migrations               │
+│  - deploy-container  - Deploy container to Scaleway              │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘
 

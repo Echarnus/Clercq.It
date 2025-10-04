@@ -4,22 +4,31 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ## Overview
 
-The CI/CD pipeline is built using **GitHub Actions** and follows **GitHub Flow** with **continuous deployment** enabled. The pipeline uses GitVersion for automatic semantic versioning.
+The CI/CD pipeline is built using **GitHub Actions** and follows **GitHub Flow** with **continuous deployment** enabled. The pipeline uses GitVersion for automatic semantic versioning and composite actions for reusability.
 
 ## Pipeline Workflows
 
-The project uses four main workflows:
+The project uses two main workflows:
 
-1. **Test Pipeline** (`test.yml`) - Runs on every push and PR
-2. **Build Pipeline** (`build.yml`) - Builds and publishes Docker images
-3. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
-4. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+1. **Deploy Pipeline** (`deploy.yml`) - Unified pipeline for testing, building, infrastructure, and deployment
+2. **Test Pipeline** (`test.yml`) - Runs tests on pull requests
+
+## Composite Actions
+
+Reusable logic is organized into composite actions in `.github/actions/`:
+
+- **test-dotnet** - .NET API testing with xUnit and code coverage
+- **test-frontend** - Next.js frontend testing with Jest and ESLint
+- **build-docker** - Docker image building, migration script generation, and Docker Hub push
+- **deploy-infra** - Terraform infrastructure deployment
+- **migrate-database** - Database migration execution
+- **deploy-container** - Scaleway container deployment and health checks
 
 ## Test Pipeline (`test.yml`)
 
 ### Triggers
-- Push to `main`, `develop`, or `feature/*` branches
 - Pull requests to `main` or `develop`
+- Manual workflow dispatch
 
 ### Jobs
 
@@ -28,40 +37,73 @@ The project uses four main workflows:
 - Runs xUnit tests with code coverage
 - Uploads coverage to Codecov
 - Tests located in `/tests/` directory
+- Implemented via `.github/actions/test-dotnet` composite action
 
 #### test-frontend
 - Uses Node.js 23 and pnpm
 - Runs Jest tests and ESLint
 - Builds Next.js application to verify compilation
+- Implemented via `.github/actions/test-frontend` composite action
 
 ### Example
 
 ```bash
-# Runs automatically on push/PR
+# Runs automatically on PR
 # Or manually trigger with
 gh workflow run test.yml
 ```
 
-## Build Pipeline (`build.yml`)
+## Deploy Pipeline (`deploy.yml`)
 
 ### Triggers
-- Push to `main` branch only
-- Manual workflow dispatch with optional branch selection
-- Pull requests (test only, no build/push)
+- Push to `main` branch
+- Manual workflow dispatch with optional parameters:
+  - `version`: Specific version to deploy (skips build)
+  - `skip-tests`: Skip test execution (not recommended)
+  - `skip-infra`: Skip infrastructure deployment
 
 ### Jobs
 
-#### test
-- Calls the test pipeline to ensure all tests pass
+The Deploy workflow consists of five sequential jobs that form a complete deployment pipeline:
 
-#### build
-- Uses GitVersion for semantic versioning
-- Multi-platform build (AMD64/ARM64)
-- Publishes to Docker Hub with multiple tags:
+#### 1. Test
+- Runs .NET API tests using `test-dotnet` composite action
+- Runs Next.js frontend tests using `test-frontend` composite action
+- Can be skipped with `skip-tests` parameter (not recommended)
+
+#### 2. Build
+- Determines semantic version using GitVersion
+- Generates idempotent migration SQL script
+- Builds multi-platform Docker image (AMD64/ARM64)
+- Pushes to Docker Hub with multiple tags:
   - Semantic version (e.g., `1.0.1`)
   - Short SHA (e.g., `abc1234`)
-  - `latest` (for main branch)
+  - `latest`
 - Generates build attestation for security
+- Uses `build-docker` composite action
+- Skipped if manual version is specified
+
+#### 3. Deploy Infrastructure
+- Applies Terraform infrastructure changes
+- Creates/updates Scaleway resources (database, container, etc.)
+- Uses `deploy-infra` composite action
+- Can be skipped with `skip-infra` parameter
+- Requires `production` environment
+
+#### 4. Migrate Database
+- Downloads migration script artifact from build job
+- Connects to Scaleway RDB PostgreSQL
+- Executes idempotent migration script
+- Uses `migrate-database` composite action
+- Requires `production` environment
+
+#### 5. Deploy Container
+- Validates Docker image exists
+- Updates Scaleway container with new image
+- Deploys container to production
+- Runs post-deployment health checks
+- Uses `deploy-container` composite action
+- Requires `production` environment
 
 ### Docker Image Tags
 
@@ -75,36 +117,23 @@ echarnus/clercq-it:abc1234    # Short SHA
 
 ```bash
 # Runs automatically on push to main
-# Or manually trigger with
-gh workflow run build.yml
+gh workflow run deploy.yml
+
+# Deploy specific version manually
+gh workflow run deploy.yml -f version=1.0.1
+
+# Deploy with custom options
+gh workflow run deploy.yml -f skip-tests=true -f skip-infra=true
 ```
 
-## Infrastructure Pipeline (`infra.yml`)
+### Benefits of Unified Pipeline
 
-### Triggers
-- Push to `main` branch with infrastructure changes
-- Pull requests with infrastructure changes
-- Manual workflow dispatch
-
-### Jobs
-
-#### terraform-check
-- Validates Terraform formatting and configuration
-- Runs on all infrastructure changes
-
-#### terraform-plan
-- Creates Terraform execution plan
-- Runs on pull requests
-- Uses `infrastructure-plan` environment
-
-#### terraform-apply
-- Applies Terraform changes to production
-- Runs on main branch push
-- Uses `production` environment with manual approval
-- Requires reviewer approval before execution
-
-#### terraform-destroy
-- Manual workflow to destroy infrastructure
+- **Single workflow run**: All jobs share the same workflow context
+- **Artifact sharing**: No cross-workflow artifact issues
+- **Clear dependencies**: Jobs run in explicit order with `needs` declarations
+- **Official actions only**: Uses only GitHub official actions, no third-party dependencies
+- **Reusable logic**: Composite actions can be used in other workflows
+- **Easier debugging**: Full pipeline visible in single workflow run
 - Uses `production` environment with manual approval
 - Requires explicit confirmation
 
@@ -140,48 +169,6 @@ These are automatically set in the GitHub Actions workflow using repository secr
 - [Scaleway Backend Guide](https://registry.terraform.io/providers/scaleway/scaleway/latest/docs/guides/backend_guide)
 - [Terraform S3 Backend Documentation](https://developer.hashicorp.com/terraform/language/backend/s3)
 
-### Example
-
-```bash
-# View plan for PR changes
-gh pr view <pr-number> --comments
-
-# Manually apply (after merge to main, with approval)
-# Triggered automatically or via
-gh workflow run infra.yml
-```
-
-## Deploy Pipeline (`deploy.yml`)
-
-### Triggers
-- Automatic: When build pipeline completes successfully on `main` branch
-- Manual: Workflow dispatch with version parameter
-
-### Jobs
-
-#### deploy
-- Validates Docker image exists
-- Updates Scaleway container configuration
-- Performs health checks
-- Reports deployment status
-
-### Manual Deployment
-
-```bash
-# Deploy specific version
-gh workflow run deploy.yml -f version=1.0.1
-
-# Deploy latest version
-gh workflow run deploy.yml -f version=latest
-```
-
-### Health Checks
-
-The pipeline includes comprehensive health checks:
-- Endpoint availability testing
-- Retry logic with exponential backoff
-- Detailed error reporting
-
 ## Required Secrets
 
 ### Docker Hub
@@ -199,20 +186,20 @@ The pipeline includes comprehensive health checks:
 
 - `REGISTRY`: Docker registry (docker.io)
 - `IMAGE_NAME`: Docker image name (echarnus/clercq-it)
-- `CONTAINER_IMAGE`: Container image tag for deployment (optional)
-- `CUSTOM_DOMAIN`: Custom domain for Scaleway deployment (optional)
+- `CUSTOM_DOMAIN`: Custom domain for Scaleway deployment (optional, defaults to www.clercq.it)
 
 ## Deployment Process
 
 ### Automatic Deployment (Main Branch)
 
 1. Developer pushes to `main` branch
-2. Test pipeline runs automatically
-3. If tests pass, build pipeline starts
-4. Docker image is built with semantic version
-5. Image is pushed to Docker Hub
-6. Deploy pipeline is triggered automatically
-7. New version is deployed to production
+2. Deploy workflow triggers automatically
+3. Test job runs all .NET and frontend tests
+4. Build job creates Docker image with semantic version
+5. Deploy Infrastructure job applies Terraform changes
+6. Migrate Database job executes database migrations
+7. Deploy Container job updates and deploys the container
+8. Health checks verify deployment success
 
 ### Manual Deployment
 
@@ -253,9 +240,7 @@ The README includes status badges for all workflows:
 
 ```markdown
 [![Test](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml)
-[![Build](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml)
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
-[![Infra](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml)
 ```
 
 ### Deployment Status
@@ -309,33 +294,37 @@ Each deployment provides detailed status information:
 - **Cause**: Missing `DOCKER_USERNAME` or `DOCKER_PASSWORD` secrets
 - **Solution**: Configure Docker Hub credentials in repository secrets, or the pipeline will build locally without pushing
 
-**Issue**: Tests fail during build
+**Issue**: Tests fail during deployment
 - **Cause**: Code compilation or test errors
 - **Solution**: Run tests locally first with `dotnet test` and `pnpm test`
 
-#### Infrastructure Pipeline
+#### Deploy Pipeline
 
-**Issue**: Terraform fails with "Invalid index" for load_balancer
-- **Cause**: Using incorrect Scaleway RDB instance attributes
-- **Solution**: This has been fixed to use `endpoint_ip` and `endpoint_port`
+**Issue**: Deployment workflow job fails
+- **Cause**: Missing secrets or configuration
+- **Solution**: Verify all required secrets are configured (Docker Hub, Scaleway, Database Password)
+
+**Issue**: Infrastructure deployment skipped but database migration fails
+- **Cause**: Using `skip-infra=true` but infrastructure doesn't exist
+- **Solution**: Run full deployment first, then you can skip infrastructure on subsequent deployments
+
+**Issue**: Migration script not found
+- **Cause**: Build job didn't complete successfully
+- **Solution**: Check build job logs for errors in migration generation
+
+**Issue**: Container deployment fails
+- **Cause**: Container doesn't exist in Scaleway
+- **Solution**: Ensure infrastructure deployment completed successfully (creates the container)
+
+#### Scaleway Configuration
 
 **Issue**: Scaleway authentication fails
 - **Cause**: Missing or incorrect Scaleway credentials
 - **Solution**: Verify `SCALEWAY_ACCESS_KEY`, `SCALEWAY_SECRET_KEY`, and `SCALEWAY_ORGANIZATION_ID` secrets
 
 **Issue**: Terraform output fails with "No valid credential sources found"
-- **Cause**: The `terraform output` command needs AWS credentials to access the S3 backend, but environment variables are not set
-- **Solution**: Ensure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are set for any Terraform command that accesses the state (init, plan, apply, output, etc.)
-
-#### Deploy Pipeline
-
-**Issue**: Deploy workflow not triggering
-- **Cause**: Workflow name mismatch in trigger configuration
-- **Solution**: This has been fixed to use correct workflow names: `build` and `Deploy Infra`
-
-**Issue**: Deploy fails due to missing Docker image
-- **Cause**: Build pipeline didn't push to Docker Hub
-- **Solution**: Ensure Docker Hub credentials are configured
+- **Cause**: The `terraform output` command needs AWS credentials to access the S3 backend
+- **Solution**: Ensure AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables are set (the composite actions handle this automatically)
 
 ### Debugging Commands
 
@@ -358,15 +347,11 @@ gh secret list
 
 ## GitHub Environments
 
-### infrastructure-plan Environment
-- Used for Terraform planning in pull requests
-- No protection rules
-- Provides Scaleway credentials for planning
-
 ### production Environment
-- Used for Terraform apply and destroy operations
-- Requires manual approval from designated reviewers
+- Used for infrastructure deployment, database migrations, and container deployment
+- Requires manual approval from designated reviewers (optional)
 - Protected with deployment protection rules
+- All deployment jobs use this environment for production access
 
 ## Resources
 

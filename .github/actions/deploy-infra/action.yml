@@ -1,0 +1,97 @@
+name: Deploy Infrastructure
+description: Deploys infrastructure using Terraform
+
+inputs:
+  scaleway-access-key:
+    description: Scaleway access key
+    required: true
+  scaleway-secret-key:
+    description: Scaleway secret key
+    required: true
+  scaleway-organization-id:
+    description: Scaleway organization ID
+    required: true
+  scaleway-project-id:
+    description: Scaleway project ID
+    required: true
+  database-password:
+    description: Database password
+    required: true
+  container-image:
+    description: Container image tag
+    required: false
+    default: 'echarnus/clercq-it:latest'
+  custom-domain:
+    description: Custom domain
+    required: false
+    default: 'www.clercq.it'
+  terraform-version:
+    description: Terraform version
+    required: false
+    default: '1.6.1'
+
+runs:
+  using: composite
+  steps:
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        terraform_version: ${{ inputs.terraform-version }}
+
+    - name: Terraform Init
+      shell: bash
+      run: |
+        cd infrastructure/terraform
+        terraform init
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.scaleway-access-key }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.scaleway-secret-key }}
+        AWS_SDK_LOAD_CONFIG: "false"
+        AWS_EC2_METADATA_DISABLED: "true"
+        SCW_ACCESS_KEY: ${{ inputs.scaleway-access-key }}
+        SCW_SECRET_KEY: ${{ inputs.scaleway-secret-key }}
+        SCW_DEFAULT_ORGANIZATION_ID: ${{ inputs.scaleway-organization-id }}
+        SCW_DEFAULT_PROJECT_ID: ${{ inputs.scaleway-project-id }}
+        SCW_DEFAULT_REGION: fr-par
+        SCW_DEFAULT_ZONE: fr-par-1
+        TF_VAR_scaleway_organization_id: ${{ inputs.scaleway-organization-id }}
+        TF_VAR_scaleway_project_id: ${{ inputs.scaleway-project-id }}
+
+    - name: Terraform Apply
+      shell: bash
+      run: |
+        cd infrastructure/terraform
+        echo "🚀 Starting infrastructure deployment..."
+        terraform apply -auto-approve -no-color
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.scaleway-access-key }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.scaleway-secret-key }}
+        AWS_SDK_LOAD_CONFIG: "false"
+        AWS_EC2_METADATA_DISABLED: "true"
+        SCW_ACCESS_KEY: ${{ inputs.scaleway-access-key }}
+        SCW_SECRET_KEY: ${{ inputs.scaleway-secret-key }}
+        SCW_DEFAULT_ORGANIZATION_ID: ${{ inputs.scaleway-organization-id }}
+        SCW_DEFAULT_PROJECT_ID: ${{ inputs.scaleway-project-id }}
+        SCW_DEFAULT_REGION: fr-par
+        SCW_DEFAULT_ZONE: fr-par-1
+        TF_VAR_scaleway_organization_id: ${{ inputs.scaleway-organization-id }}
+        TF_VAR_scaleway_project_id: ${{ inputs.scaleway-project-id }}
+        TF_VAR_container_image: ${{ inputs.container-image }}
+        TF_VAR_custom_domain: ${{ inputs.custom-domain }}
+        TF_VAR_database_password: ${{ inputs.database-password }}
+
+    - name: Terraform Output
+      shell: bash
+      run: |
+        cd infrastructure/terraform
+        echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+        terraform output -json >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+      env:
+        AWS_ACCESS_KEY_ID: ${{ inputs.scaleway-access-key }}
+        AWS_SECRET_ACCESS_KEY: ${{ inputs.scaleway-secret-key }}
+        AWS_SDK_LOAD_CONFIG: "false"
+        AWS_EC2_METADATA_DISABLED: "true"

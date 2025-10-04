@@ -1,10 +1,10 @@
 ---
 name: Test
 
-"on":
+on:
   pull_request:
     branches: [main, develop]
-  workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -20,49 +20,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
-
-      - name: Install .NET Aspire workload
-        run: |
-          echo "🔧 Installing .NET Aspire workload..."
-          dotnet workload install aspire
-          echo "✅ Aspire workload installed successfully"
-
-      - name: Install GitVersion
-        uses: gittools/actions/gitversion/setup@v1
-        with:
-          versionSpec: '6.0.x'
-
-      - name: Determine Version
-        uses: gittools/actions/gitversion/execute@v1
-        id: gitversion
-
-      - name: Restore dependencies
-        run: dotnet restore
-
-      - name: Build
-        run: |
-          echo "🏗️ Building .NET solution..."
-          dotnet build --no-restore --configuration Release
-          echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- Built all projects in Release configuration" >> $GITHUB_STEP_SUMMARY
-
-      - name: Test .NET projects from /tests/
-        run: |
-          echo "🧪 Running .NET tests..."
-          dotnet test --no-build --configuration Release --verbosity normal \
-            --collect:"XPlat Code Coverage" --results-directory ./coverage
-          echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./coverage
-          fail_ci_if_error: false
+      - name: Test .NET API
+        uses: ./.github/actions/test-dotnet
 
   test-frontend:
     name: Test Next.js Frontend
@@ -71,45 +30,5 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '23'
-
-      - name: Install pnpm
-        run: npm install -g pnpm@10.12.4
-
-      - name: Setup pnpm cache
-        uses: actions/setup-node@v4
-        with:
-          node-version: '23'
-          cache: 'pnpm'
-          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
-
-      - name: Install dependencies for main app
-        working-directory: ./src/ClercqIt.Web
-        run: pnpm install --frozen-lockfile
-
-      - name: Install dependencies for tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: pnpm install --frozen-lockfile
-
-      - name: Run linter
-        working-directory: ./src/ClercqIt.Web
-        run: pnpm run lint
-
-      - name: Build Next.js
-        working-directory: ./src/ClercqIt.Web
-        run: |
-          echo "🏗️ Building Next.js application..."
-          pnpm run build
-          echo "## ✅ Next.js Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- Production build completed successfully" >> $GITHUB_STEP_SUMMARY
-
-      - name: Run frontend tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: |
-          echo "🧪 Running frontend tests..."
-          pnpm run test --passWithNoTests
-          echo "## ✅ Frontend Tests Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- All frontend unit tests executed" >> $GITHUB_STEP_SUMMARY
+      - name: Test Next.js Frontend
+        uses: ./.github/actions/test-frontend

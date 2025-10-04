@@ -1,0 +1,164 @@
+name: Deploy Container
+description: Deploys container to Scaleway
+
+inputs:
+  scaleway-access-key:
+    description: Scaleway access key
+    required: true
+  scaleway-secret-key:
+    description: Scaleway secret key
+    required: true
+  scaleway-organization-id:
+    description: Scaleway organization ID
+    required: true
+  image-name:
+    description: Docker image name with tag
+    required: true
+  registry:
+    description: Docker registry
+    required: true
+    default: docker.io
+
+runs:
+  using: composite
+  steps:
+    - name: Validate image exists
+      shell: bash
+      run: |
+        echo "🔍 Validating Docker image exists..."
+        IMAGE_TAG="${{ inputs.image-name }}"
+        MAX_RETRIES=5
+        RETRY_COUNT=0
+        
+        while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+          echo "Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES: Checking for image $IMAGE_TAG"
+          
+          if docker manifest inspect "$IMAGE_TAG" > /dev/null 2>&1; then
+            echo "✅ Image $IMAGE_TAG exists"
+            exit 0
+          fi
+          
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "⏳ Image not found yet, waiting 10 seconds before retry..."
+            sleep 10
+          fi
+        done
+        
+        echo "❌ Image $IMAGE_TAG not found after $MAX_RETRIES attempts"
+        exit 1
+
+    - name: Install dependencies
+      shell: bash
+      run: |
+        echo "📦 Installing deployment dependencies..."
+        sudo apt-get update -qq
+        sudo apt-get install -y jq curl
+
+    - name: Deploy to Scaleway
+      shell: bash
+      run: |
+        echo "🚀 Starting deployment..."
+        echo "📦 Image: ${{ inputs.image-name }}"
+        echo "🌍 Environment: production"
+        
+        # Install Scaleway CLI
+        echo "⬇️ Installing Scaleway CLI..."
+        curl -o /tmp/scw https://github.com/scaleway/scaleway-cli/releases/latest/download/scw-linux-x86_64
+        sudo mv /tmp/scw /usr/local/bin/scw
+        chmod +x /usr/local/bin/scw
+        
+        # Configure Scaleway CLI
+        echo "🔧 Configuring Scaleway CLI..."
+        scw config set access-key=${{ inputs.scaleway-access-key }}
+        scw config set secret-key=${{ inputs.scaleway-secret-key }}
+        scw config set default-organization-id=${{ inputs.scaleway-organization-id }}
+        scw config set default-region=fr-par
+        scw config set default-zone=fr-par-1
+        
+        # Get container information
+        echo "🔍 Looking for existing container deployment..."
+        CONTAINER_NAME="clercq-it"
+        
+        # Check if container exists
+        if scw container container list name=$CONTAINER_NAME --output json | jq -e '.[0]' > /dev/null 2>&1; then
+          echo "📦 Found existing container: $CONTAINER_NAME"
+          
+          # Update container with new image
+          echo "🔄 Updating container with new image..."
+          scw container container update \
+            name=$CONTAINER_NAME \
+            registry-image=${{ inputs.image-name }} \
+            --wait
+          
+          # Deploy the updated container
+          echo "🚀 Deploying updated container..."
+          scw container container deploy name=$CONTAINER_NAME --wait
+          
+        else
+          echo "📦 Container not found. This may be the first deployment or container name mismatch."
+          echo "Please ensure the container is created via infrastructure deployment first."
+          echo "## ⚠️ Deployment Notice" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: Container not found" >> $GITHUB_STEP_SUMMARY
+          echo "- **Action needed**: Run infrastructure deployment to create container" >> $GITHUB_STEP_SUMMARY
+          exit 1
+        fi
+        
+        # Get deployment info
+        echo "📊 Getting deployment information..."
+        CONTAINER_INFO=$(scw container container list name=$CONTAINER_NAME --output json | jq -r '.[0]')
+        CONTAINER_URL=$(echo "$CONTAINER_INFO" | jq -r '.domain_name // "Not available"')
+        CONTAINER_STATUS=$(echo "$CONTAINER_INFO" | jq -r '.status // "unknown"')
+        
+        echo "✅ Deployment completed successfully!"
+        echo "🌐 Container URL: https://$CONTAINER_URL"
+        echo "📊 Container Status: $CONTAINER_STATUS"
+        
+        # Store deployment info for health check
+        echo "CONTAINER_URL=$CONTAINER_URL" >> $GITHUB_ENV
+        echo "CONTAINER_STATUS=$CONTAINER_STATUS" >> $GITHUB_ENV
+
+    - name: Post-deployment health check
+      shell: bash
+      run: |
+        echo "🏥 Running post-deployment health checks..."
+        
+        if [[ "$CONTAINER_URL" != "Not available" && -n "$CONTAINER_URL" ]]; then
+          echo "🔍 Testing container endpoint: https://$CONTAINER_URL"
+          
+          # Wait a moment for container to be ready
+          echo "⏳ Waiting for container to be ready..."
+          sleep 10
+          
+          # Test container health
+          MAX_RETRIES=5
+          RETRY_COUNT=0
+          HEALTH_CHECK_PASSED=false
+          
+          while [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; do
+            echo "🔄 Health check attempt $((RETRY_COUNT + 1))/$MAX_RETRIES"
+            
+            if curl -f -s --max-time 30 "https://$CONTAINER_URL" > /dev/null; then
+              echo "✅ Container is responding"
+              HEALTH_CHECK_PASSED=true
+              break
+            else
+              echo "⚠️ Container not responding yet..."
+              RETRY_COUNT=$((RETRY_COUNT + 1))
+              if [[ $RETRY_COUNT -lt $MAX_RETRIES ]]; then
+                echo "⏳ Waiting 15 seconds before retry..."
+                sleep 15
+              fi
+            fi
+          done
+          
+          if [[ "$HEALTH_CHECK_PASSED" == "true" ]]; then
+            echo "✅ Health checks passed"
+          else
+            echo "⚠️ Health checks failed after $MAX_RETRIES attempts"
+            echo "Container may still be starting up. Check Scaleway console for details."
+          fi
+        else
+          echo "⚠️ Container URL not available, skipping endpoint health check"
+          echo "✅ Deployment completed (health check skipped)"
+        fi

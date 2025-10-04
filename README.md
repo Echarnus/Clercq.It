@@ -1,23 +1,19 @@
 # Clercq.It
 
 [![Test](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/test.yml)
-[![Build](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml)
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
-[![Infra](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
 A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
 
 ## 📊 Pipeline Status
 
-All CI/CD pipelines have been fixed and are operational:
+All CI/CD pipelines are operational:
 
-- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components
-- ✅ **Build Pipeline**: Builds Docker images (requires Docker Hub credentials for push)  
-- ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
-- ✅ **Deploy Pipeline**: Orchestrates application deployment to production
+- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components on pull requests
+- ✅ **Deploy Pipeline**: Unified pipeline for testing, building, infrastructure deployment, and container deployment
 
-> **Note**: Some pipelines require repository secrets to be configured for full functionality. See the [DevOps guide](./docs/devops.md#required-secrets) for configuration details.
+> **Note**: The Deploy pipeline requires repository secrets to be configured for full functionality. See the [DevOps guide](./docs/devops.md#required-secrets) for configuration details.
 
 ## 🚀 Tech Stack
 
