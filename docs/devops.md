@@ -232,18 +232,14 @@ The application integrates with Scaleway Cockpit for centralized logging and mon
 - **Dashboards**: Access Grafana dashboards for visualization
 - **Traces**: Distributed tracing for request tracking
 
-After infrastructure deployment, Terraform outputs provide:
-- Grafana dashboard URL
-- Logs viewer URL  
-- Metrics endpoint URL
-
-Access the Cockpit dashboard via the Scaleway console or using the URLs from Terraform outputs:
+**Note**: Scaleway Cockpit is now enabled by default on all projects. After infrastructure deployment, access the Cockpit dashboard via the Scaleway console at:
+- Navigate to **Observability** > **Cockpit** in your Scaleway project
+- Use the project ID from Terraform outputs to locate your project
 
 ```bash
 cd infrastructure/terraform
-terraform output cockpit_grafana_url
-terraform output cockpit_logs_url
-terraform output cockpit_metrics_url
+terraform output cockpit_project_id
+terraform output cockpit_token_id
 ```
 
 The container is configured to send telemetry data automatically via environment variables:
