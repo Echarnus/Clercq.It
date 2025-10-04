@@ -131,10 +131,16 @@ release:
 ### Main Branch Progression
 
 ```
-Initial: 1.0.0
-After fix: 1.0.1
-After another fix: 1.0.2
+Initial tag: v1.0.0 (created automatically on first build)
+First commit: 1.0.1
+Second commit: 1.0.2
+Third commit: 1.0.3
 ```
+
+**Note:** Each commit to the `main` branch automatically increments the patch version. This happens because:
+- The `main` branch is configured with `increment: Patch` in GitVersion
+- GitVersion uses the latest tag as a baseline and increments from there
+- The version is calculated based on commits since the last tag
 
 ### Feature Branch Examples
 
@@ -245,6 +251,11 @@ Follow consistent naming conventions:
 Use semantic version tags for releases:
 - `v1.0.0`, `v1.0.1`, `v2.0.0`
 
+**Initial Tag Requirement:**
+- GitVersion requires at least one version tag to calculate incremental versions
+- The build pipeline automatically creates `v1.0.0` if no tags exist
+- After the initial tag, each commit to `main` increments the patch version automatically
+
 ### Merge Strategy
 
 Use merge commits to maintain history:
@@ -267,8 +278,10 @@ Keep version history clear:
    - Ensure proper merge history
 
 2. **Missing version tags**
-   - Create initial version tag: `git tag v1.0.0`
-   - Push tags: `git push --tags`
+   - The build pipeline automatically creates the initial `v1.0.0` tag if none exists
+   - To manually create a tag: `git tag v1.0.0`
+   - To push tags: `git push --tags`
+   - Verify tags exist: `git tag -l`
 
 3. **Configuration not applying**
    - Verify GitVersion.yml is in repository root
