@@ -110,12 +110,9 @@ resource "scaleway_container_domain" "portfolio_domain" {
   hostname     = var.custom_domain
 }
 
-# Scaleway Cockpit for centralized logging and monitoring
-resource "scaleway_cockpit" "portfolio_cockpit" {
-  project_id = var.scaleway_project_id
-}
-
 # Cockpit token for container logs and metrics
+# Note: Scaleway Cockpit is now enabled by default on all projects
+# The scaleway_cockpit resource has been deprecated and removed
 resource "scaleway_cockpit_token" "portfolio_logs_token" {
   project_id = var.scaleway_project_id
   name       = "portfolio-container-logs"

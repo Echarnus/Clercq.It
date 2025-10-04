@@ -38,6 +38,7 @@ output "custom_domain_url" {
 
 output "infrastructure_summary" {
   description = "Summary of deployed infrastructure"
+  sensitive   = true
   value = {
     database = {
       name     = scaleway_rdb_instance.portfolio_db.name
@@ -57,23 +58,19 @@ output "infrastructure_summary" {
       id   = data.scaleway_container_namespace.portfolio.id
     }
     cockpit = {
-      project_id = scaleway_cockpit.portfolio_cockpit.project_id
-      endpoints  = scaleway_cockpit.portfolio_cockpit.endpoints
+      project_id = var.scaleway_project_id
+      token_id   = scaleway_cockpit_token.portfolio_logs_token.id
     }
   }
 }
 
-output "cockpit_grafana_url" {
-  description = "Scaleway Cockpit Grafana dashboard URL"
-  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].grafana_url
+output "cockpit_project_id" {
+  description = "Scaleway Project ID for Cockpit access"
+  value       = var.scaleway_project_id
+  sensitive   = true
 }
 
-output "cockpit_logs_url" {
-  description = "Scaleway Cockpit Logs URL"
-  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].logs_url
-}
-
-output "cockpit_metrics_url" {
-  description = "Scaleway Cockpit Metrics URL"
-  value       = scaleway_cockpit.portfolio_cockpit.endpoints[0].metrics_url
+output "cockpit_token_id" {
+  description = "Scaleway Cockpit Token ID for logs and metrics"
+  value       = scaleway_cockpit_token.portfolio_logs_token.id
 }
