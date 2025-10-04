@@ -152,15 +152,23 @@ The build workflow generates an idempotent migration SQL script:
 
 ### Deploy Workflow (`deploy.yml`)
 
-The deploy workflow executes the migration script on the production database:
+The deploy workflow executes the migration script on the production database. Migration steps only run when the deploy workflow is triggered by the `build` workflow (not when triggered by the `Deploy Infra` workflow):
 
 ```yaml
 - name: Download migration script
+  if: >-
+    github.event_name == 'workflow_run' &&
+    github.event.workflow_run.name == 'build'
   uses: actions/download-artifact@v4
   with:
     name: migration-script
+    github-token: ${{ secrets.GITHUB_TOKEN }}
+    run-id: ${{ github.event.workflow_run.id }}
 
 - name: Execute database migrations
+  if: >-
+    github.event_name == 'workflow_run' &&
+    github.event.workflow_run.name == 'build'
   run: |
     # Get database credentials from Terraform outputs
     terraform init
@@ -172,6 +180,8 @@ The deploy workflow executes the migration script on the production database:
     PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
       -U "$DB_USER" -d "$DB_NAME" -f migration.sql
 ```
+
+**Note:** Migrations are only executed when the deploy workflow is triggered by the `build` workflow. When triggered by the `Deploy Infra` workflow or manually, migrations are skipped.
 
 ### Database Connection (Production)
 
@@ -293,6 +303,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 2. Verify "Generate migration SQL script" step succeeded
 3. Ensure artifact was uploaded (check workflow logs)
 4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
+5. Ensure the deploy workflow was triggered by the `build` workflow, not the `Deploy Infra` workflow (migrations are only downloaded when triggered by build)
 
 #### Migration Execution Failed
 
@@ -412,13 +423,20 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 │  │ 4. Build & push Docker image                             │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  deploy.yml                                                       │
+│  deploy.yml (triggered by build.yml completion)                   │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Download migration script artifact                     │  │
+│  │ 1. Download migration script artifact (from build)        │  │
 │  │ 2. Get DB credentials from Terraform outputs             │  │
 │  │ 3. Execute migration script on Scaleway PostgreSQL       │  │
 │  │ 4. Deploy container to Scaleway                          │  │
 │  │ 5. Run health checks                                     │  │
+│  └──────────────────────────────────────────────────────────┘  │
+│                                                                   │
+│  deploy.yml (triggered by Deploy Infra completion)               │
+│  ┌──────────────────────────────────────────────────────────┐  │
+│  │ 1. Deploy container to Scaleway                          │  │
+│  │ 2. Run health checks                                     │  │
+│  │    (migrations skipped - no artifact available)           │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘

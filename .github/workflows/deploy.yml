@@ -91,7 +91,9 @@ jobs:
           sudo apt-get install -y jq curl postgresql-client
 
       - name: Download migration script
-        if: github.event_name == 'workflow_run'
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.name == 'build'
         uses: actions/download-artifact@v4
         with:
           name: migration-script
@@ -99,7 +101,9 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
 
       - name: Execute database migrations
-        if: github.event_name == 'workflow_run'
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.name == 'build'
         run: |
           echo "🗄️ Executing database migrations..."
           
