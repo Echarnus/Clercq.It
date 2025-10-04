@@ -92,11 +92,13 @@ jobs:
 
       - name: Download migration script
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: dawidd6/action-download-artifact@v3
         with:
           name: migration-script
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ github.event.workflow_run.id }}
+          workflow: build.yml
+          workflow_conclusion: success
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          run_id: ${{ github.event.workflow_run.id }}
 
       - name: Execute database migrations
         if: github.event_name == 'workflow_run'

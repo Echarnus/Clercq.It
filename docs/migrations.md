@@ -156,9 +156,13 @@ The deploy workflow executes the migration script on the production database:
 
 ```yaml
 - name: Download migration script
-  uses: actions/download-artifact@v4
+  uses: dawidd6/action-download-artifact@v3
   with:
     name: migration-script
+    workflow: build.yml
+    workflow_conclusion: success
+    github_token: ${{ secrets.GITHUB_TOKEN }}
+    run_id: ${{ github.event.workflow_run.id }}
 
 - name: Execute database migrations
   run: |
@@ -172,6 +176,8 @@ The deploy workflow executes the migration script on the production database:
     PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
       -U "$DB_USER" -d "$DB_NAME" -f migration.sql
 ```
+
+**Note:** The workflow uses `dawidd6/action-download-artifact@v3` to properly handle artifact downloads from `workflow_run` triggered deployments.
 
 ### Database Connection (Production)
 
@@ -293,6 +299,8 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 2. Verify "Generate migration SQL script" step succeeded
 3. Ensure artifact was uploaded (check workflow logs)
 4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
+
+**Note:** The deploy workflow uses `dawidd6/action-download-artifact@v3` instead of the standard `actions/download-artifact@v4` because it better handles downloading artifacts from `workflow_run` triggered workflows
 
 #### Migration Execution Failed
 
