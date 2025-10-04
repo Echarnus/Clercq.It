@@ -27,7 +27,7 @@ The project uses **GitVersion** for automatic semantic versioning based on Git h
 
 ### Configuration File
 
-The GitVersion configuration is stored in `GitVersion.yml` at the repository root with mode set to `ContinuousDeployment`.
+The GitVersion configuration is stored in `GitVersion.yml` at the repository root. The global mode is set to `ContinuousDelivery` to ensure each commit gets a unique version number with build metadata.
 
 ### Branch Configuration
 
@@ -36,18 +36,16 @@ The GitVersion configuration is stored in `GitVersion.yml` at the repository roo
 ```yaml
 main:
   regex: ^master$|^main$
-  mode: ContinuousDeployment
-  tag: ''
+  mode: ContinuousDelivery
+  label: ''
   increment: Patch
-  prevent-increment-of-merged-branch-version: true
   track-merge-target: false
-  source-branches: ['develop', 'feature', 'support', 'hotfix']
-  is-mainline: true
 ```
 
-- **Increment**: Patch (1.0.0 → 1.0.1)
-- **Tag**: None (clean version)
-- **Purpose**: Production releases
+- **Mode**: ContinuousDelivery (includes commit count in version)
+- **Increment**: Patch (1.0.0 → 1.0.1-n where n is commits since tag)
+- **Label**: None (clean version when tagged)
+- **Purpose**: Production releases with unique version for each commit
 
 #### Develop Branch
 
@@ -55,14 +53,13 @@ main:
 develop:
   regex: ^dev(elop)?(ment)?$
   mode: ContinuousDeployment
-  tag: 'alpha'
+  label: 'alpha'
   increment: Minor
   source-branches: ['main']
-  is-mainline: false
 ```
 
 - **Increment**: Minor (1.0.0 → 1.1.0-alpha.1)
-- **Tag**: alpha
+- **Label**: alpha
 - **Purpose**: Development integration
 
 #### Feature Branches
@@ -71,13 +68,13 @@ develop:
 feature:
   regex: ^features?[/-]
   mode: ContinuousDeployment
-  tag: 'feature'
+  label: 'feature'
   increment: Inherit
   source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
 ```
 
 - **Increment**: Inherit from parent branch
-- **Tag**: feature (e.g., 1.0.1-feature.my-feature.1)
+- **Label**: feature (e.g., 1.0.1-feature.my-feature.1)
 - **Naming**: `feature/my-feature` or `features/my-feature`
 
 #### Hotfix Branches
@@ -86,13 +83,13 @@ feature:
 hotfix:
   regex: ^hotfix(es)?[/-]
   mode: ContinuousDeployment
-  tag: 'beta'
+  label: 'beta'
   increment: Patch
   source-branches: ['develop', 'main', 'support']
 ```
 
 - **Increment**: Patch (1.0.0 → 1.0.1-beta.1)
-- **Tag**: beta
+- **Label**: beta
 - **Naming**: `hotfix/urgent-fix` or `hotfixes/urgent-fix`
 
 #### Pull Request Branches
@@ -101,13 +98,13 @@ hotfix:
 pull-request:
   regex: ^(pull|pull\-requests|pr)[/-]
   mode: ContinuousDeployment
-  tag: 'pr'
+  label: 'pr'
   increment: Inherit
   source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
 ```
 
 - **Increment**: Inherit from target branch
-- **Tag**: pr (e.g., 1.0.1-pr.123.1)
+- **Label**: pr (e.g., 1.0.1-pr.123.1)
 - **Purpose**: Pull request validation
 
 #### Release Branches
@@ -116,14 +113,14 @@ pull-request:
 release:
   regex: ^releases?[/-]
   mode: ContinuousDeployment
-  tag: 'beta'
+  label: 'beta'
   increment: None
-  prevent-increment-of-merged-branch-version: true
+  source-branches: ['develop']
   is-release-branch: true
 ```
 
 - **Increment**: None (maintains version)
-- **Tag**: beta
+- **Label**: beta
 - **Naming**: `release/v1.0.0` or `releases/v1.0.0`
 
 ## Version Examples
@@ -132,15 +129,19 @@ release:
 
 ```
 Initial tag: v1.0.0 (created automatically on first build)
-First commit: 1.0.1
-Second commit: 1.0.2
-Third commit: 1.0.3
+First commit: 1.0.1-1
+Second commit: 1.0.1-2
+Third commit: 1.0.1-3
+...
+After creating v1.0.1 tag: 1.0.2
+Next commit: 1.0.2-1
 ```
 
-**Note:** Each commit to the `main` branch automatically increments the patch version. This happens because:
-- The `main` branch is configured with `increment: Patch` in GitVersion
-- GitVersion uses the latest tag as a baseline and increments from there
-- The version is calculated based on commits since the last tag
+**Note:** Each commit to the `main` branch gets a unique version with build metadata. This happens because:
+- The `main` branch is configured with `mode: ContinuousDelivery` and `increment: Patch` in GitVersion
+- GitVersion uses the latest tag as a baseline and adds the commit count since that tag
+- The version format is `{major}.{minor}.{patch}-{commits-since-tag}`
+- To get a clean version number (e.g., 1.0.2), create a new git tag for that version
 
 ### Feature Branch Examples
 
@@ -227,15 +228,19 @@ dotnet gitversion /output json
   "Major": 1,
   "Minor": 0,
   "Patch": 1,
-  "PreReleaseTag": "",
-  "SemVer": "1.0.1",
-  "FullSemVer": "1.0.1",
-  "InformationalVersion": "1.0.1+1.Branch.main.Sha.abc123",
+  "PreReleaseTag": "12",
+  "PreReleaseLabelWithDash": "-12",
+  "SemVer": "1.0.1-12",
+  "FullSemVer": "1.0.1-12",
+  "InformationalVersion": "1.0.1-12+Branch.main.Sha.abc123",
   "BranchName": "main",
   "ShortSha": "abc1234",
-  "CommitDate": "2024-01-15"
+  "CommitDate": "2024-01-15",
+  "CommitsSinceVersionSource": 12
 }
 ```
+
+**Note**: The version includes the commit count (e.g., `1.0.1-12`) which represents 12 commits since the v1.0.0 tag. When you create a new tag (e.g., v1.0.1), subsequent commits will be `1.0.2-1`, `1.0.2-2`, etc.
 
 ## Best Practices
 

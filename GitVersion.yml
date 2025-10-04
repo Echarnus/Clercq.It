@@ -1,10 +1,11 @@
-mode: ContinuousDeployment
+mode: ContinuousDelivery
 branches:
   main:
     regex: ^master$|^main$
-    mode: ContinuousDeployment
+    mode: ContinuousDelivery
     label: ''
     increment: Patch
+    track-merge-target: false
   develop:
     regex: ^dev(elop)?(ment)?$
     mode: ContinuousDeployment
@@ -16,18 +17,19 @@ branches:
     mode: ContinuousDeployment
     label: 'feature'
     increment: Inherit
-    source-branches: ['develop', 'main']
+    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
     mode: ContinuousDeployment
     label: 'pr'
     increment: Inherit
+    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
   hotfix:
     regex: ^hotfix(es)?[/-]
     mode: ContinuousDeployment
     label: 'beta'
     increment: Patch
-    source-branches: ['main']
+    source-branches: ['develop', 'main', 'support']
   release:
     regex: ^releases?[/-]
     mode: ContinuousDeployment
