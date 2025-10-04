@@ -73,7 +73,7 @@ resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
-  port           = 8080
+  port           = 80
   protocol       = "http1"
   http_option    = "redirected"
 
@@ -81,8 +81,8 @@ resource "scaleway_container" "portfolio_app" {
   max_scale = 1
 
   # Resource limits
-  memory_limit = 1024 # 1024MB
-  cpu_limit    = 1000 # 1 vCPU (1000m)
+  memory_limit = 256  # 256MB
+  cpu_limit    = 250  # 250 mvcpu (250m)
 
   # Request limits for efficient scaling
   timeout = 30
