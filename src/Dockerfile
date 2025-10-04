@@ -58,6 +58,9 @@ RUN pnpm run build || npm run build
 FROM nginx:1.25-bookworm AS final
 WORKDIR /app
 
+# Install curl for health checks
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # Copy .NET runtime from Microsoft's runtime image
 COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/share/dotnet /usr/share/dotnet
 COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/bin/dotnet /usr/bin/dotnet
@@ -91,13 +94,44 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '# Start .NET API in background' >> /app/start.sh && \
     echo 'cd /app/api' >> /app/start.sh && \
     echo 'su dotnetuser -c "dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000" &' >> /app/start.sh && \
+    echo 'API_PID=$!' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start Next.js frontend in background' >> /app/start.sh && \
     echo 'cd /app/frontend' >> /app/start.sh && \
     echo 'su nextjs -c "PORT=3000 HOSTNAME=0.0.0.0 node server.js" &' >> /app/start.sh && \
+    echo 'FRONTEND_PID=$!' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
-    echo '# Wait a moment for services to start' >> /app/start.sh && \
-    echo 'sleep 2' >> /app/start.sh && \
+    echo '# Wait for .NET API to be ready' >> /app/start.sh && \
+    echo 'echo "Waiting for .NET API to be ready..."' >> /app/start.sh && \
+    echo 'for i in $(seq 1 60); do' >> /app/start.sh && \
+    echo '  if curl -sf http://localhost:5000/health > /dev/null 2>&1; then' >> /app/start.sh && \
+    echo '    echo ".NET API is ready!"' >> /app/start.sh && \
+    echo '    break' >> /app/start.sh && \
+    echo '  fi' >> /app/start.sh && \
+    echo '  if [ $i -eq 60 ]; then' >> /app/start.sh && \
+    echo '    echo "ERROR: .NET API failed to start within 60 seconds"' >> /app/start.sh && \
+    echo '    exit 1' >> /app/start.sh && \
+    echo '  fi' >> /app/start.sh && \
+    echo '  echo "Waiting for .NET API... ($i/60)"' >> /app/start.sh && \
+    echo '  sleep 1' >> /app/start.sh && \
+    echo 'done' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo '# Wait for Next.js frontend to be ready' >> /app/start.sh && \
+    echo 'echo "Waiting for Next.js frontend to be ready..."' >> /app/start.sh && \
+    echo 'for i in $(seq 1 60); do' >> /app/start.sh && \
+    echo '  if curl -sf http://localhost:3000 > /dev/null 2>&1; then' >> /app/start.sh && \
+    echo '    echo "Next.js frontend is ready!"' >> /app/start.sh && \
+    echo '    break' >> /app/start.sh && \
+    echo '  fi' >> /app/start.sh && \
+    echo '  if [ $i -eq 60 ]; then' >> /app/start.sh && \
+    echo '    echo "ERROR: Next.js frontend failed to start within 60 seconds"' >> /app/start.sh && \
+    echo '    exit 1' >> /app/start.sh && \
+    echo '  fi' >> /app/start.sh && \
+    echo '  echo "Waiting for Next.js frontend... ($i/60)"' >> /app/start.sh && \
+    echo '  sleep 1' >> /app/start.sh && \
+    echo 'done' >> /app/start.sh && \
+    echo '' >> /app/start.sh && \
+    echo 'echo "All services are ready! Starting nginx..."' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start nginx in foreground' >> /app/start.sh && \
     echo 'nginx -g "daemon off;"' >> /app/start.sh
