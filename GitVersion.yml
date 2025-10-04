@@ -1,8 +1,8 @@
-mode: ContinuousDelivery
+mode: ContinuousDeployment
 branches:
   main:
     regex: ^master$|^main$
-    mode: ContinuousDelivery
+    mode: ContinuousDeployment
     label: ''
     increment: Patch
     track-merge-target: false

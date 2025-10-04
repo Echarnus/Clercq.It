@@ -27,7 +27,7 @@ The project uses **GitVersion** for automatic semantic versioning based on Git h
 
 ### Configuration File
 
-The GitVersion configuration is stored in `GitVersion.yml` at the repository root. The global mode is set to `ContinuousDelivery` to ensure each commit gets a unique version number with build metadata.
+The GitVersion configuration is stored in `GitVersion.yml` at the repository root. The global mode is set to `ContinuousDeployment` to ensure each commit gets a unique version number by auto-incrementing the patch version.
 
 ### Branch Configuration
 
@@ -36,16 +36,16 @@ The GitVersion configuration is stored in `GitVersion.yml` at the repository roo
 ```yaml
 main:
   regex: ^master$|^main$
-  mode: ContinuousDelivery
+  mode: ContinuousDeployment
   label: ''
   increment: Patch
   track-merge-target: false
 ```
 
-- **Mode**: ContinuousDelivery (includes commit count in version)
-- **Increment**: Patch (1.0.0 → 1.0.1-n where n is commits since tag)
-- **Label**: None (clean version when tagged)
-- **Purpose**: Production releases with unique version for each commit
+- **Mode**: ContinuousDeployment (auto-increments patch for each commit)
+- **Increment**: Patch (1.0.0 → 1.0.1, 1.0.2, 1.0.3, etc.)
+- **Label**: None (clean version numbers)
+- **Purpose**: Production releases with auto-incrementing version for each commit
 
 #### Develop Branch
 
@@ -129,19 +129,19 @@ release:
 
 ```
 Initial tag: v1.0.0 (created automatically on first build)
-First commit: 1.0.1-1
-Second commit: 1.0.1-2
-Third commit: 1.0.1-3
+First commit: 1.0.1
+Second commit: 1.0.2
+Third commit: 1.0.3
 ...
-After creating v1.0.1 tag: 1.0.2
-Next commit: 1.0.2-1
+After 22 commits: 1.0.22
+After 100 commits: 1.0.100
 ```
 
-**Note:** Each commit to the `main` branch gets a unique version with build metadata. This happens because:
-- The `main` branch is configured with `mode: ContinuousDelivery` and `increment: Patch` in GitVersion
-- GitVersion uses the latest tag as a baseline and adds the commit count since that tag
-- The version format is `{major}.{minor}.{patch}-{commits-since-tag}`
-- To get a clean version number (e.g., 1.0.2), create a new git tag for that version
+**Note:** Each commit to the `main` branch gets a unique version by auto-incrementing the patch number. This happens because:
+- The `main` branch is configured with `mode: ContinuousDeployment` and `increment: Patch` in GitVersion
+- GitVersion uses the latest tag as a baseline and increments the patch version for each commit
+- The version format is clean semantic versioning: `{major}.{minor}.{patch}`
+- Each commit automatically increments the patch number, giving clean versions for deployment
 
 ### Feature Branch Examples
 
