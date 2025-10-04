@@ -73,7 +73,7 @@ resource "scaleway_container" "portfolio_app" {
   name           = "clercq-it-app"
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
-  port           = 8080
+  port           = 80
   protocol       = "http1"
   http_option    = "redirected"
 
