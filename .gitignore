@@ -201,3 +201,4 @@ infrastructure/terraform/crash.*.log
 # Note: .terraform.lock.hcl should be committed to version control
 # Development tools
 actionlint
+Debug
