@@ -191,3 +191,8 @@ jobs:
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
           terraform output -json >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          AWS_SDK_LOAD_CONFIG: "false"
+          AWS_EC2_METADATA_DISABLED: "true"
