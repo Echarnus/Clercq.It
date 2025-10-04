@@ -30,6 +30,11 @@ else
 
 var app = builder.Build();
 
+// IMPORTANT: Migrations are NOT executed at runtime.
+// - Local Development: Migrations run via Clercq.It.Infrastructure.EF.Migrations console project (Aspire orchestration)
+// - Production: Migrations applied via SQL scripts in deployment pipeline (.github/workflows/deploy.yml)
+// DO NOT add app.Services.GetRequiredService<DbContext>().Database.Migrate() or similar code here.
+
 // Configure the HTTP request pipeline
 app.MapDefaultEndpoints(); // Aspire health checks and telemetry
 
