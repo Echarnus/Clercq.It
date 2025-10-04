@@ -292,6 +292,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 1. Check build workflow completed successfully
 2. Verify "Generate migration SQL script" step succeeded
 3. Ensure artifact was uploaded (check workflow logs)
+4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
 
 #### Migration Execution Failed
 
