@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ClercqIt.Api\ClercqIt.Api.csproj" />
+    <ProjectReference Include="..\Clercq.It.Infrastructure.EF.Migrations\Clercq.It.Infrastructure.EF.Migrations.csproj" />
   </ItemGroup>
 
 </Project>

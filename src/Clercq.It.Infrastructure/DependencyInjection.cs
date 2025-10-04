@@ -15,12 +15,14 @@ public static class DependencyInjection
         {
             // This will be configured by Aspire's AddNpgsqlDataSource
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql());
+                options.UseNpgsql(x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
         }
         else
         {
             services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+                options.UseNpgsql(
+                    configuration.GetConnectionString("DefaultConnection"),
+                    x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
         }
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
