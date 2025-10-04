@@ -48,6 +48,31 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Install EF Core tools
+        run: dotnet tool install --global dotnet-ef --version 9.0.9
+
+      - name: Generate migration SQL script
+        run: |
+          echo "📝 Generating migration SQL script..."
+          cd src/Clercq.It.Infrastructure
+          dotnet ef migrations script --idempotent --output ../../migration.sql --startup-project ../ClercqIt.Api
+          echo "✅ Migration script generated successfully"
+          
+      - name: Upload migration script as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: migration-script
+          path: migration.sql
+          retention-days: 30
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
