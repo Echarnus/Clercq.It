@@ -193,26 +193,26 @@ jobs:
           echo "🔧 Initializing Terraform..."
           terraform init -input=false
           
-          # Get container details from Terraform outputs
-          echo "🔍 Getting container details from infrastructure state..."
-          CONTAINER_NAME=$(terraform output -raw container_name 2>/dev/null || echo "")
-          CONTAINER_ID=$(terraform output -raw container_id 2>/dev/null || echo "")
-          NAMESPACE_ID=$(terraform output -raw container_namespace_id 2>/dev/null || echo "")
+          # Container name is defined in Terraform IaC (infrastructure/terraform/main.tf)
+          CONTAINER_NAME="clercq-it-app"
           
-          if [[ -z "$CONTAINER_NAME" ]] || [[ -z "$CONTAINER_ID" ]]; then
-            echo "❌ Failed to retrieve container details from Terraform state"
-            echo "Container Name: ${CONTAINER_NAME:-not found}"
-            echo "Container ID: ${CONTAINER_ID:-not found}"
+          # Get container ID from Terraform outputs (dynamically assigned by Scaleway)
+          echo "🔍 Getting container ID from infrastructure state..."
+          CONTAINER_ID=$(terraform output -raw container_id 2>/dev/null || echo "")
+          
+          if [[ -z "$CONTAINER_ID" ]]; then
+            echo "❌ Failed to retrieve container ID from Terraform state"
+            echo "Container Name: $CONTAINER_NAME (from IaC)"
+            echo "Container ID: not found"
             echo "Please ensure the infrastructure has been deployed via Terraform pipeline first"
             echo "## ❌ Deployment Failed" >> $GITHUB_STEP_SUMMARY
-            echo "- **Reason**: Container details not found in Terraform state" >> $GITHUB_STEP_SUMMARY
+            echo "- **Reason**: Container ID not found in Terraform state" >> $GITHUB_STEP_SUMMARY
             echo "- **Action needed**: Run infrastructure pipeline to create container" >> $GITHUB_STEP_SUMMARY
             exit 1
           fi
           
-          echo "📦 Container name: $CONTAINER_NAME"
+          echo "📦 Container name: $CONTAINER_NAME (from IaC)"
           echo "🆔 Container ID: $CONTAINER_ID"
-          echo "📂 Namespace ID: $NAMESPACE_ID"
           
           cd ../..
           
