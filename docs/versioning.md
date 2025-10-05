@@ -77,6 +77,22 @@ feature:
 - **Label**: feature (e.g., 1.0.1-feature.my-feature.1)
 - **Naming**: `feature/my-feature` or `features/my-feature`
 
+#### Copilot Branches
+
+```yaml
+copilot:
+  regex: ^copilot[/-]
+  mode: ContinuousDeployment
+  label: 'copilot'
+  increment: Inherit
+  source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
+```
+
+- **Increment**: Inherit from parent branch
+- **Label**: copilot (e.g., 1.0.1-copilot.fix-abc.1)
+- **Purpose**: GitHub Copilot automated branches
+- **Naming**: `copilot/fix-*` or `copilot/feature-*`
+
 #### Hotfix Branches
 
 ```yaml
@@ -311,18 +327,24 @@ Keep version history clear:
 
 ### Common Issues
 
-1. **Incorrect version calculation**
-   - Check branch naming convention
+1. **Version not incrementing**
+   - **On tag commit**: If you create a tag (e.g., `v1.0.0`) on the current commit, GitVersion will show `1.0.0` for that commit. The patch increment to `1.0.1` only happens on the NEXT commit after the tag.
+   - **Branch name mismatch**: Ensure your branch name matches one of the configured patterns in GitVersion.yml (e.g., `main`, `develop`, `feature/*`, `copilot/*`, `hotfix/*`)
+   - **No base tag**: GitVersion needs at least one version tag as a baseline. The build pipeline creates `v1.0.0` automatically if none exists.
+   - **First run after setup**: The first commit after setting up GitVersion will use the initial tag. Subsequent commits will increment.
+
+2. **Incorrect version calculation**
+   - Check branch naming convention matches GitVersion.yml patterns
    - Verify GitVersion.yml syntax
    - Ensure proper merge history
 
-2. **Missing version tags**
+3. **Missing version tags**
    - The build pipeline automatically creates the initial `v1.0.0` tag if none exists
    - To manually create a tag: `git tag v1.0.0`
    - To push tags: `git push --tags`
    - Verify tags exist: `git tag -l`
 
-3. **Configuration not applying**
+4. **Configuration not applying**
    - Verify GitVersion.yml is in repository root
    - Check YAML syntax and indentation
    - Clear GitVersion cache: `dotnet gitversion /nocache`
