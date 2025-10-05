@@ -89,8 +89,9 @@ resource "scaleway_container" "portfolio_app" {
   max_scale = 1
 
   # Resource limits
-  memory_limit = 256 # 256MB
-  cpu_limit    = 250 # 250 mvcpu (250m)
+  # Increased from 256MB/250m CPU to support .NET API + Next.js + nginx
+  memory_limit = 512 # 512MB (was 256MB)
+  cpu_limit    = 560 # 560 mvcpu (was 250m)
 
   # Request limits for efficient scaling
   timeout = 30
