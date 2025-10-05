@@ -2,6 +2,9 @@ using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Clercq.It.Api.Features;
 using Scalar.AspNetCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,28 @@ builder.AddServiceDefaults();
 
 // Add services to the container
 builder.Services.AddOpenApi();
+
+// Add Authentication
+var jwtSecretKey = builder.Configuration["Authentication:JwtSecretKey"];
+if (!string.IsNullOrEmpty(jwtSecretKey))
+{
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = builder.Configuration["Authentication:Issuer"] ?? "Clercq.It",
+                ValidAudience = builder.Configuration["Authentication:Audience"] ?? "Clercq.It.Api",
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+            };
+        });
+
+    builder.Services.AddAuthorization();
+}
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
@@ -45,6 +70,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Use authentication and authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 // Map feature endpoints
 app.MapProjectsEndpoints();
