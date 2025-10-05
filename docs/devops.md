@@ -349,6 +349,23 @@ Each deployment provides detailed status information:
 - **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment
 - **Solution**: This has been fixed to use the official `hashicorp/setup-terraform` action instead of manual installation
 
+**Issue**: Bad Gateway (502) errors during container startup
+- **Cause**: nginx was auto-starting before the .NET API and Next.js services were ready, causing proxy errors
+- **Solution**: The Dockerfile now:
+  1. Overrides nginx's default ENTRYPOINT to prevent auto-start
+  2. Waits for both backend services to be healthy before starting nginx
+  3. Checks process health during startup to detect early failures
+  4. Logs service output to /var/log for debugging
+  5. Has increased resource limits (512MB RAM, 560m CPU) to support all services
+
+**Issue**: Container fails to start or services crash during startup
+- **Cause**: Insufficient memory or CPU resources, or service configuration issues
+- **Solution**: 
+  1. Check container logs in Scaleway Console for detailed error messages
+  2. The startup script now includes detailed logging and will show the last 50 lines of service logs on failure
+  3. Verify resource limits are adequate (currently 512MB RAM, 560m CPU)
+  4. Ensure DATABASE_CONNECTION_STRING environment variable is set correctly
+
 ### Debugging Commands
 
 ```bash
