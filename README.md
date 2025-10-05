@@ -24,6 +24,10 @@ All CI/CD pipelines have been fixed and are operational:
 ### Backend
 - **.NET 9.0** - Modern C# web API with minimal APIs
 - **ASP.NET Core** - High-performance web framework
+- **Entity Framework Core** - ORM with PostgreSQL
+- **MediatR** - CQRS pattern implementation
+- **FluentValidation** - Request validation
+- **JWT Authentication** - Secure token-based authentication
 - **OpenAPI/Swagger** - API documentation and testing
 
 ### Frontend  
@@ -36,6 +40,8 @@ All CI/CD pipelines have been fixed and are operational:
 ### Infrastructure
 - **Docker** - Multi-stage containerization
 - **Nginx** - Reverse proxy and load balancing
+- **PostgreSQL** - Relational database
+- **Scaleway Object Storage** - S3-compatible object storage for blog images
 - **GitHub Actions** - CI/CD automation
 - **GitVersion** - Semantic versioning
 - **Scaleway** - Cloud hosting platform
