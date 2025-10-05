@@ -18,6 +18,12 @@ branches:
     label: 'feature'
     increment: Inherit
     source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
+  copilot:
+    regex: ^copilot[/-]
+    mode: ContinuousDeployment
+    label: 'copilot'
+    increment: Inherit
+    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
     mode: ContinuousDeployment
