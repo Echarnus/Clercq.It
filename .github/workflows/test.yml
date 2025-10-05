@@ -39,8 +39,10 @@ jobs:
           echo "📦 Restoring dependencies for production and test projects..."
           cd src
           dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
-          cd ..
-          dotnet restore tests/
+          cd ../tests
+          dotnet restore ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj
+          dotnet restore Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj
+          dotnet restore Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj
           echo "✅ Dependencies restored successfully"
 
       - name: Build
@@ -48,8 +50,10 @@ jobs:
           echo "🏗️ Building .NET projects (excluding Aspire AppHost)..."
           cd src
           dotnet build ClercqIt.Api/ClercqIt.Api.csproj --no-restore --configuration Release
-          cd ..
-          dotnet build tests/ --no-restore --configuration Release
+          cd ../tests
+          dotnet build ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj --no-restore --configuration Release
           echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "- Built production and test projects in Release configuration" >> $GITHUB_STEP_SUMMARY
 
