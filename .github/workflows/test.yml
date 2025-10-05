@@ -25,12 +25,6 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Install .NET Aspire workload
-        run: |
-          echo "🔧 Installing .NET Aspire workload..."
-          dotnet workload install aspire
-          echo "✅ Aspire workload installed successfully"
-
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@v1
         with:
@@ -40,15 +34,28 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
-      - name: Restore dependencies
-        run: dotnet restore
+      - name: Restore dependencies (excluding Aspire projects)
+        run: |
+          echo "📦 Restoring dependencies for production and test projects..."
+          cd src
+          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+          cd ../tests
+          dotnet restore ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj
+          dotnet restore Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj
+          dotnet restore Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj
+          echo "✅ Dependencies restored successfully"
 
       - name: Build
         run: |
-          echo "🏗️ Building .NET solution..."
-          dotnet build --no-restore --configuration Release
+          echo "🏗️ Building .NET projects (excluding Aspire AppHost)..."
+          cd src
+          dotnet build ClercqIt.Api/ClercqIt.Api.csproj --no-restore --configuration Release
+          cd ../tests
+          dotnet build ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj --no-restore --configuration Release
           echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- Built all projects in Release configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Built production and test projects in Release configuration" >> $GITHUB_STEP_SUMMARY
 
       - name: Test .NET projects from /tests/
         run: |

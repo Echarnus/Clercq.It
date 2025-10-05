@@ -58,6 +58,9 @@ You can develop using either **Aspire orchestration** (recommended) or **manual 
 ### Prerequisites
 - .NET 9.0 SDK
 - Docker Desktop
+- **Aspire workload** (install with `dotnet workload install aspire`)
+
+> **Note**: The Aspire workload is only required for local development when running the AppHost. Production builds and CI/CD pipelines do NOT require this workload.
 
 ### Start the Application
 
@@ -106,8 +109,9 @@ When running with Aspire, the following services are available:
 | Components | AppHost, ServiceDefaults, Dashboard | API, frontend, nginx only |
 | Database | Containerized PostgreSQL + pgAdmin | Managed PostgreSQL (Scaleway, etc.) |
 | Features | Hot reload, tracing, metrics | Optimized for performance |
+| Workload Required | Yes (`dotnet workload install aspire`) | No - AppHost excluded from builds |
 
-> **Key Point**: The `Clercq.It.AppHost` and `Clercq.It.ServiceDefaults` projects are **excluded from production Docker builds**.
+> **Key Point**: The `Clercq.It.AppHost` project is **excluded from production Docker builds and CI/CD pipelines**. The ServiceDefaults project is included in production but does not require the Aspire workload.
 
 ## Option B: Manual Setup
 
@@ -342,6 +346,22 @@ dotnet build
 1. **Port Conflicts**: Aspire Dashboard typically uses port 15888
 2. **Docker Requirements**: PostgreSQL requires Docker Desktop to be running
 3. **Network Connectivity**: Ensure Docker networks allow inter-container communication
+
+#### Aspire Workload Issues
+
+If you get an error like `error NETSDK1147: To build this project, the following workloads must be installed: aspire`:
+
+```bash
+# Install the Aspire workload (for local development only)
+dotnet workload install aspire
+```
+
+**Note**: This error should ONLY occur when running the AppHost project locally. Production builds and CI/CD pipelines explicitly exclude the AppHost project and do not require the Aspire workload.
+
+If you're seeing this error in CI/CD or Docker builds, check that:
+- The build is not trying to restore/build the `Clercq.It.AppHost` project
+- The solution-level restore/build is not being used
+- Only the specific production projects are being built
 
 ### Debugging
 
