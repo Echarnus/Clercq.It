@@ -31,6 +31,11 @@ output "container_id" {
   value       = scaleway_container.portfolio_app.id
 }
 
+output "container_name" {
+  description = "Container name"
+  value       = scaleway_container.portfolio_app.name
+}
+
 output "custom_domain_url" {
   description = "Custom domain URL (if configured)"
   value       = var.custom_domain != "" ? "https://${var.custom_domain}" : ""
