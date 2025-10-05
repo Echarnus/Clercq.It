@@ -223,7 +223,20 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
   password    = var.database_password
   is_admin    = false
 }
+
+resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
+  instance_id   = scaleway_rdb_instance.portfolio_db.id
+  user_name     = scaleway_rdb_user.portfolio_app_user.name
+  database_name = scaleway_rdb_database.portfolio_app_db.name
+  permission    = "all"
+}
 ```
+
+**Key Points:**
+- The `clercqit_admin` user is the instance admin created during database instance creation
+- The `clercqit_user` is the application user with limited privileges (non-admin)
+- The `scaleway_rdb_privilege` resource grants the application user full permissions (CONNECT, CREATE, etc.) on the `clercqit_portfolio` database
+- This privilege grant is essential for running migrations and accessing the database from the application
 
 ### Accessing Production Database
 
@@ -314,6 +327,20 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 2. Verify database credentials secret (`DATABASE_PASSWORD`)
 3. Review migration SQL for syntax errors
 4. Check database logs in Scaleway console
+
+#### Database Permission Errors
+
+**Problem:** Migration fails with "User does not have CONNECT privilege" or similar permission errors.
+
+**Solution:**
+1. Ensure the `scaleway_rdb_privilege` resource is defined in Terraform (grants `clercqit_user` permissions on `clercqit_portfolio` database)
+2. Run the infrastructure workflow to apply the privilege changes
+3. Verify the user has the correct permissions by connecting to the database with an admin user and checking privileges:
+   ```sql
+   \l  -- List databases with permissions
+   \du -- List users and roles
+   ```
+4. The `scaleway_rdb_privilege` resource with `permission = "all"` grants CONNECT, CREATE, and all other necessary privileges to the application user
 
 #### Database Connection Timeout
 

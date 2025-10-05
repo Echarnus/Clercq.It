@@ -61,6 +61,14 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
   is_admin    = false
 }
 
+# Grant privileges to the application user on the database
+resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
+  instance_id   = scaleway_rdb_instance.portfolio_db.id
+  user_name     = scaleway_rdb_user.portfolio_app_user.name
+  database_name = scaleway_rdb_database.portfolio_app_db.name
+  permission    = "all"
+}
+
 # Reference the existing Serverless Container Namespace
 # The namespace already exists in Scaleway and is managed outside of Terraform
 # Using a data source prevents "409 Conflict: Namespace already exists" errors
