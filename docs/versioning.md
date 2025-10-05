@@ -39,12 +39,15 @@ main:
   mode: ContinuousDeployment
   label: ''
   increment: Patch
+  prevent-increment:
+    of-merged-branch: false
   track-merge-target: false
 ```
 
 - **Mode**: ContinuousDeployment (auto-increments patch for each commit)
 - **Increment**: Patch (1.0.0 → 1.0.1, 1.0.2, 1.0.3, etc.)
 - **Label**: None (clean version numbers)
+- **Prevent Increment**: `of-merged-branch: false` ensures version increments on every merge to main
 - **Purpose**: Production releases with auto-incrementing version for each commit
 
 #### Develop Branch
@@ -332,6 +335,7 @@ Keep version history clear:
    - **Branch name mismatch**: Ensure your branch name matches one of the configured patterns in GitVersion.yml (e.g., `main`, `develop`, `feature/*`, `copilot/*`, `hotfix/*`)
    - **No base tag**: GitVersion needs at least one version tag as a baseline. The build pipeline creates `v1.0.0` automatically if none exists.
    - **First run after setup**: The first commit after setting up GitVersion will use the initial tag. Subsequent commits will increment.
+   - **Prevent increment on merge**: If `prevent-increment.of-merged-branch: true` is set for the main branch, GitVersion will not increment the version when branches are merged. This should be set to `false` to ensure each merge to main increments the version.
 
 2. **Incorrect version calculation**
    - Check branch naming convention matches GitVersion.yml patterns

@@ -5,6 +5,8 @@ branches:
     mode: ContinuousDeployment
     label: ''
     increment: Patch
+    prevent-increment:
+      of-merged-branch: false
     track-merge-target: false
   develop:
     regex: ^dev(elop)?(ment)?$
