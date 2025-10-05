@@ -344,6 +344,10 @@ Each deployment provides detailed status information:
 - **Cause**: Build pipeline didn't push to Docker Hub
 - **Solution**: Ensure Docker Hub credentials are configured
 
+**Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"
+- **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment
+- **Solution**: This has been fixed to use the official `hashicorp/setup-terraform` action instead of manual installation
+
 ### Debugging Commands
 
 ```bash
