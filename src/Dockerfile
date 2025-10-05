@@ -55,8 +55,19 @@ RUN pnpm install --frozen-lockfile || npm install
 # Build Next.js application
 FROM node-base AS node-builder
 WORKDIR /app
+
+# Accept version build arguments for creating version.json
+ARG VERSION=0.0.0
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
 COPY --from=node-deps /app/node_modules ./node_modules
 COPY ClercqIt.Web/ .
+
+# Create version.json file before building Next.js app
+# This ensures the file is included in the build output
+RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"${BUILD_DATE}\"}" > /app/public/version.json
+
 RUN pnpm run build || npm run build
 
 # Final runtime stage starting from nginx
@@ -93,13 +104,10 @@ COPY nginx.conf /etc/nginx/conf.d/default.conf
 # Copy .NET API
 COPY --from=dotnet-build --chown=1002:1002 /app/publish /app/api
 
-# Copy Next.js application
+# Copy Next.js application (version.json is already included in public directory from build stage)
 COPY --from=node-builder --chown=1001:1001 /app/public /app/frontend/public
 COPY --from=node-builder --chown=1001:1001 /app/.next/standalone /app/frontend/
 COPY --from=node-builder --chown=1001:1001 /app/.next/static /app/frontend/.next/static
-
-# Create version.json file
-RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"${BUILD_DATE}\"}" > /app/frontend/public/version.json
 
 # Create startup script that starts all services
 RUN echo '#!/bin/sh' > /app/start.sh && \
