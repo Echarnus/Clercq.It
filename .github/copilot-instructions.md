@@ -51,6 +51,13 @@ All detailed technical information, setup guides, and architecture decisions are
 - Use Docker for containerization
 - Follow GitFlow branching strategy
 
+### UI Feedback Guidelines
+- **ALWAYS** provide visual output for UI changes by taking screenshots
+- When making changes to the frontend (Next.js/React), demonstrate the changes with screenshots
+- Use the browser tools to capture the visual impact of changes
+- Include screenshots in progress reports when UI components are modified
+- This helps reviewers understand the visual impact without deploying the application
+
 ### Project Structure Notes
 - All projects follow .NET 9 conventions
 - Domain entities use DDD aggregate patterns

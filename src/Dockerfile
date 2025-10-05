@@ -2,6 +2,11 @@
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
 WORKDIR /src
 
+# Accept version build arguments
+ARG VERSION=0.0.0
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
 # Configure environment for production builds
 ENV NUGET_XMLDOC_MODE=skip
 ENV DOTNET_SKIP_FIRST_TIME_EXPERIENCE=1
@@ -58,6 +63,11 @@ RUN pnpm run build || npm run build
 FROM nginx:1.25-bookworm AS final
 WORKDIR /app
 
+# Accept version build arguments again for final stage
+ARG VERSION=0.0.0
+ARG GIT_SHA=unknown
+ARG BUILD_DATE=unknown
+
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
@@ -87,6 +97,9 @@ COPY --from=dotnet-build --chown=1002:1002 /app/publish /app/api
 COPY --from=node-builder --chown=1001:1001 /app/public /app/frontend/public
 COPY --from=node-builder --chown=1001:1001 /app/.next/standalone /app/frontend/
 COPY --from=node-builder --chown=1001:1001 /app/.next/static /app/frontend/.next/static
+
+# Create version.json file
+RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"${BUILD_DATE}\"}" > /app/frontend/public/version.json
 
 # Create startup script that starts all services
 RUN echo '#!/bin/sh' > /app/start.sh && \

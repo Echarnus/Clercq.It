@@ -193,6 +193,40 @@ hotfix/critical-bug → 1.0.2-beta.1
 - `sha`: Full commit SHA
 - `branchName`: Current branch name
 
+## Version Display in Application
+
+### Version JSON File
+
+During the Docker build process, a `version.json` file is automatically generated in the frontend's public directory. This file contains:
+
+```json
+{
+  "version": "1.0.1",
+  "gitSha": "abc1234",
+  "buildDate": "2024-10-05"
+}
+```
+
+The file is created using GitVersion outputs:
+- `version`: The semantic version from GitVersion (`semVer`)
+- `gitSha`: The short commit SHA (`shortSha`)
+- `buildDate`: The commit date (`commitDate`)
+
+### Frontend Integration
+
+The Next.js frontend fetches this file at runtime and displays the version in the footer component. This provides visibility into which version is currently deployed.
+
+The version is displayed as: `Version 1.0.1 (abc1234)`
+
+### Build Arguments
+
+The Dockerfile accepts the following build arguments to generate the version file:
+- `VERSION`: Semantic version number
+- `GIT_SHA`: Short Git commit SHA
+- `BUILD_DATE`: Build/commit date
+
+These are automatically passed by the GitHub Actions build workflow from GitVersion outputs.
+
 ## Local Development
 
 ### Install GitVersion CLI

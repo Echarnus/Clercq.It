@@ -123,6 +123,10 @@ jobs:
               steps.gitversion.outputs.semVer }}
             org.opencontainers.image.revision=${{
               steps.gitversion.outputs.sha }}
+          build-args: |
+            VERSION=${{ steps.gitversion.outputs.semVer }}
+            GIT_SHA=${{ steps.gitversion.outputs.shortSha }}
+            BUILD_DATE=${{ steps.gitversion.outputs.commitDate }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

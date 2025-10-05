@@ -1,6 +1,28 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+interface VersionInfo {
+  version: string;
+  gitSha: string;
+  buildDate: string;
+}
 
 export function Footer() {
+  const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+
+  useEffect(() => {
+    // Fetch version info from the public version.json file
+    fetch("/version.json")
+      .then((res) => res.json())
+      .then((data) => setVersionInfo(data))
+      .catch(() => {
+        // If version.json doesn't exist (e.g., in dev), ignore the error
+        console.log("Version info not available");
+      });
+  }, []);
+
   return (
     <footer className="bg-slate-900 text-white py-12 dark:bg-slate-950">
       <div className="container mx-auto px-4">
@@ -103,6 +125,11 @@ export function Footer() {
           <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight">
             Made with ❤️ using React, .NET, Docker • Hosted on Scaleway
           </p>
+          {versionInfo && (
+            <p className="text-xs mt-2 text-slate-500">
+              Version {versionInfo.version} ({versionInfo.gitSha})
+            </p>
+          )}
         </div>
       </div>
     </footer>
