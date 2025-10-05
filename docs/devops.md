@@ -364,7 +364,7 @@ Each deployment provides detailed status information:
   1. Check container logs in Scaleway Console for detailed error messages
   2. The startup script now includes detailed logging and will show the last 50 lines of service logs on failure
   3. Verify resource limits are adequate (currently 512MB RAM, 560m CPU)
-  4. Ensure DATABASE_CONNECTION_STRING environment variable is set correctly
+  4. Ensure ConnectionStrings__DefaultConnection environment variable is set correctly
 
 ### Debugging Commands
 
