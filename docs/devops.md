@@ -358,6 +358,14 @@ Each deployment provides detailed status information:
   4. Logs service output to /var/log for debugging
   5. Has increased resource limits (512MB RAM, 560m CPU) to support all services
 
+**Issue**: .NET API fails to start with "Failed to resolve libhostfxr.so" error
+- **Cause**: The .NET runtime couldn't locate its shared libraries because the dotnet binary was resolving paths incorrectly
+- **Error message**: `Error: [/usr/bin/host/fxr] does not exist` and `Failed to resolve libhostfxr.so [not found]. Error code: 0x80008083`
+- **Solution**: The Dockerfile now:
+  1. Uses the full path to dotnet binary (`/usr/share/dotnet/dotnet`) instead of the symlink
+  2. Sets `DOTNET_ROOT=/usr/share/dotnet` environment variable
+  3. Sets `DOTNET_RUNNING_IN_CONTAINER=true` for proper container runtime detection
+
 **Issue**: Container fails to start or services crash during startup
 - **Cause**: Insufficient memory or CPU resources, or service configuration issues
 - **Solution**: 

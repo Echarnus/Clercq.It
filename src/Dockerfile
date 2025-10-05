@@ -109,7 +109,7 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '# Start .NET API in background' >> /app/start.sh && \
     echo 'echo "Starting .NET API..."' >> /app/start.sh && \
     echo 'cd /app/api' >> /app/start.sh && \
-    echo 'su dotnetuser -c "dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000" > /var/log/api.log 2>&1 &' >> /app/start.sh && \
+    echo 'su dotnetuser -c "/usr/share/dotnet/dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000" > /var/log/api.log 2>&1 &' >> /app/start.sh && \
     echo 'API_PID=$!' >> /app/start.sh && \
     echo 'echo "Started .NET API with PID $API_PID"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -178,6 +178,8 @@ EXPOSE 80
 
 ENV NODE_ENV=production
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV DOTNET_ROOT=/usr/share/dotnet
+ENV DOTNET_RUNNING_IN_CONTAINER=true
 
 # Override nginx's default entrypoint to prevent auto-start
 # This ensures nginx only starts when our script explicitly launches it
