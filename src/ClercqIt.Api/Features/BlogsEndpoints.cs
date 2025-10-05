@@ -23,6 +23,33 @@ public static class BlogsEndpoints
         .WithSummary("Get all blogs")
         .WithDescription("Retrieves all blogs from the system");
 
+        group.MapPost("/images", async (HttpRequest request, IMediator mediator) =>
+        {
+            // Read multipart form data
+            var form = await request.ReadFormAsync();
+            
+            var imageFile = form.Files["image"];
+            if (imageFile == null || imageFile.Length == 0)
+            {
+                return Results.BadRequest(new { error = "Image file is required" });
+            }
+
+            using var imageStream = imageFile.OpenReadStream();
+            var command = new UploadBlogImageCommand(
+                imageStream,
+                imageFile.FileName,
+                imageFile.ContentType
+            );
+
+            var result = await mediator.Send(command);
+            return Results.Ok(result);
+        })
+        .RequireAuthorization()
+        .WithName("UploadBlogImage")
+        .WithSummary("Upload an inline blog image")
+        .WithDescription("Uploads an image for use in blog markdown content. Returns the image URL. Requires authentication.")
+        .DisableAntiforgery();
+
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
             // Read multipart form data

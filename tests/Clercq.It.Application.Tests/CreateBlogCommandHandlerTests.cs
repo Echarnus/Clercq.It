@@ -36,6 +36,7 @@ public class CreateBlogCommandHandlerTests
                 MoqIt.IsAny<string>(),
                 MoqIt.IsAny<Stream>(),
                 MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
                 MoqIt.IsAny<CancellationToken>()))
             .ReturnsAsync(imageUrl);
 
@@ -63,6 +64,7 @@ public class CreateBlogCommandHandlerTests
             "test-image.jpg",
             imageStream,
             "image/jpeg",
+            false,
             MoqIt.IsAny<CancellationToken>()), Times.Once);
 
         _mockBlogRepository.Verify(x => x.AddAsync(
@@ -88,6 +90,7 @@ public class CreateBlogCommandHandlerTests
                 MoqIt.IsAny<string>(),
                 MoqIt.IsAny<Stream>(),
                 MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
                 MoqIt.IsAny<CancellationToken>()))
             .ReturnsAsync(imageUrl);
 
@@ -123,6 +126,7 @@ public class CreateBlogCommandHandlerTests
                 MoqIt.IsAny<string>(),
                 MoqIt.IsAny<Stream>(),
                 MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
                 MoqIt.IsAny<CancellationToken>()))
             .Callback(() => callSequence.Add("UploadImage"))
             .ReturnsAsync("https://example.com/image.jpg");
@@ -164,6 +168,7 @@ public class CreateBlogCommandHandlerTests
                 MoqIt.IsAny<string>(),
                 MoqIt.IsAny<Stream>(),
                 MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
                 MoqIt.IsAny<CancellationToken>()))
             .ReturnsAsync("https://example.com/image.jpg");
 

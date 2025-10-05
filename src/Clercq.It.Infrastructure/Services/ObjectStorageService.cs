@@ -17,14 +17,16 @@ public class ObjectStorageService : IObjectStorageService
         _settings = settings.Value;
     }
 
-    public async Task<string> UploadFileAsync(string fileName, Stream fileContent, string contentType, CancellationToken cancellationToken = default)
+    public async Task<string> UploadFileAsync(string fileName, Stream fileContent, string contentType, bool isInlineImage = false, CancellationToken cancellationToken = default)
     {
         if (_s3Client == null)
         {
             throw new InvalidOperationException("Object storage is not configured. Please configure ObjectStorage settings in appsettings.json");
         }
         
-        var key = $"blog-images/{Guid.NewGuid()}/{fileName}";
+        // Use different path prefix for inline images vs header images
+        var pathPrefix = isInlineImage ? "blog-images/inline" : "blog-images";
+        var key = $"{pathPrefix}/{Guid.NewGuid()}/{fileName}";
         
         var request = new PutObjectRequest
         {

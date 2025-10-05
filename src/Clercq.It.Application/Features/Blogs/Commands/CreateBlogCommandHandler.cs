@@ -24,11 +24,12 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, BlogD
 
     public async Task<BlogDto> Handle(CreateBlogCommand request, CancellationToken cancellationToken)
     {
-        // Upload image to object storage
+        // Upload image to object storage (header image, not inline)
         var imageUrl = await _objectStorageService.UploadFileAsync(
             request.ImageFileName,
             request.ImageStream,
             request.ImageContentType,
+            isInlineImage: false,
             cancellationToken);
 
         // Create blog entity
