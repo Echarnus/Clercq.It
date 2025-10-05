@@ -330,11 +330,12 @@ Each deployment provides detailed status information:
 #### Deploy Pipeline
 
 **Issue**: Container not found during deployment
-- **Cause**: The deployment pipeline retrieves the container name from Terraform state. If infrastructure hasn't been deployed or Terraform state is unavailable, the container won't be found.
+- **Cause**: The deployment pipeline retrieves container details (name and ID) from Terraform state. If infrastructure hasn't been deployed or Terraform state is unavailable, the container won't be found.
 - **Solution**: 
   1. Ensure the infrastructure pipeline has run successfully at least once
   2. Verify Terraform state is accessible (check AWS credentials for S3 backend)
-  3. The container name is managed by Terraform (`clercq-it-app`) and automatically retrieved during deployment
+  3. The container is managed by Terraform (`clercq-it-app`) and deployment uses the container ID from Terraform outputs for reliable updates
+- **Note**: This has been fixed to use container ID instead of name-based lookups for more reliable container discovery
 
 **Issue**: Deploy workflow not triggering
 - **Cause**: Workflow name mismatch in trigger configuration
