@@ -1,6 +1,7 @@
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Clercq.It.Api.Features;
+using Clercq.It.Api.Features.Auth;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -13,6 +14,22 @@ builder.AddServiceDefaults();
 
 // Add services to the container
 builder.Services.AddOpenApi();
+
+// Add CORS for frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:3000",
+            "https://localhost:3000",
+            "https://www.clercq.it"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
 
 // Add Authentication
 var jwtSecretKey = builder.Configuration["Authentication:JwtSecretKey"];
@@ -35,6 +52,9 @@ if (!string.IsNullOrEmpty(jwtSecretKey))
 
     builder.Services.AddAuthorization();
 }
+
+// Register TokenService
+builder.Services.AddSingleton<ITokenService, TokenService>();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
@@ -71,11 +91,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Use CORS
+app.UseCors("AllowFrontend");
+
 // Use authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Map feature endpoints
+app.MapAuthEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 
