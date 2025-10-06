@@ -97,12 +97,12 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
-    "DATABASE_CONNECTION_STRING"  = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
-    "ASPNETCORE_ENVIRONMENT"      = "Production"
-    "NODE_ENV"                    = "production"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
-    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
+    "ASPNETCORE_ENVIRONMENT"               = "Production"
+    "NODE_ENV"                             = "production"
+    "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL"          = "grpc"
+    "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
   }
 
   tags = [
