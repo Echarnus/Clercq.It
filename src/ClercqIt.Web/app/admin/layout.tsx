@@ -1,6 +1,6 @@
 import type React from "react";
 import type { Metadata } from "next";
-import { ThemeProvider } from "@/components/theme-provider";
+import "../globals.css";
 
 export const metadata: Metadata = {
   title: "Admin - Clercq.It",
@@ -12,14 +12,5 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-    >
-      {children}
-    </ThemeProvider>
-  );
+  return children;
 }
