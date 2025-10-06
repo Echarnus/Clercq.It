@@ -79,3 +79,13 @@ output "cockpit_token_id" {
   description = "Scaleway Cockpit Token ID for logs and metrics"
   value       = scaleway_cockpit_token.portfolio_logs_token.id
 }
+
+output "object_storage_bucket_name" {
+  description = "Object storage bucket name for blog images"
+  value       = scaleway_object_bucket.blog_images.name
+}
+
+output "object_storage_endpoint" {
+  description = "Object storage endpoint for blog images"
+  value       = scaleway_object_bucket.blog_images.endpoint
+}

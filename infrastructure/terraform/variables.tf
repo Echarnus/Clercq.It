@@ -47,3 +47,21 @@ variable "database_password" {
   type        = string
   sensitive   = true
 }
+
+variable "scaleway_access_key" {
+  description = "Scaleway access key for object storage"
+  type        = string
+  sensitive   = true
+}
+
+variable "scaleway_secret_key" {
+  description = "Scaleway secret key for object storage"
+  type        = string
+  sensitive   = true
+}
+
+variable "jwt_secret_key" {
+  description = "JWT secret key for authentication"
+  type        = string
+  sensitive   = true
+}

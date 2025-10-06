@@ -112,6 +112,7 @@ gh workflow run build.yml
 
 - **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
 - **Serverless SQL**: PostgreSQL database with minimal resource allocation
+- **Object Storage**: S3-compatible bucket for blog images with public-read ACL
 - **Organization**: ClercqIt with Portfolio namespace
 - **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
 - **Custom Domain**: www.clercq.it configured for the application

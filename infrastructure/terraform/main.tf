@@ -97,6 +97,12 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
+    "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
+    "ObjectStorage__BucketName"   = scaleway_object_bucket.blog_images.name
+    "ObjectStorage__Region"       = var.scaleway_region
+    "ObjectStorage__AccessKey"    = var.scaleway_access_key
+    "ObjectStorage__SecretKey"    = var.scaleway_secret_key
+    "Authentication__JwtSecretKey" = var.jwt_secret_key
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"               = "Production"
     "NODE_ENV"                             = "production"
@@ -117,6 +123,25 @@ resource "scaleway_container_domain" "portfolio_domain" {
   count        = var.custom_domain != "" ? 1 : 0
   container_id = scaleway_container.portfolio_app.id
   hostname     = var.custom_domain
+}
+
+# Object Storage bucket for blog images
+resource "scaleway_object_bucket" "blog_images" {
+  name   = "clercq-it-blog-images"
+  region = var.scaleway_region
+
+  tags = {
+    project     = "clercq-it"
+    environment = var.environment
+    purpose     = "blog-images"
+  }
+}
+
+# Object Storage bucket ACL for public read access
+resource "scaleway_object_bucket_acl" "blog_images_acl" {
+  bucket = scaleway_object_bucket.blog_images.name
+  region = var.scaleway_region
+  acl    = "public-read"
 }
 
 # Cockpit token for container logs and metrics

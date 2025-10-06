@@ -49,9 +49,10 @@ Orchestrates application workflows and use cases.
 **Components:**
 - **Features**: Organized by aggregate (Projects, Blogs)
 - **Queries**: `GetAllProjectsQuery`, `GetFeaturedProjectsQuery`, `GetAllBlogsQuery`
-- **Handlers**: MediatR query handlers implementing CQRS pattern
+- **Commands**: `CreateBlogCommand` for creating blog posts with images
+- **Handlers**: MediatR query and command handlers implementing CQRS pattern
 - **DTOs**: `ProjectDto`, `BlogDto` for data transfer
-- **Validation**: FluentValidation for request validation (ready for commands)
+- **Validation**: FluentValidation for request validation
 
 **Key Principles:**
 - Depends only on Domain layer
@@ -68,6 +69,8 @@ Implements external concerns and data persistence.
 - **Entity Configurations**: EF Core fluent mappings for domain entities
 - **Repositories**: Generic `Repository<T>` and specific implementations
 - **Unit of Work**: Transaction management and change tracking
+- **Object Storage**: S3-compatible service for Scaleway Object Storage (blog images)
+- **Configuration**: Settings for object storage and authentication
 
 **Key Principles:**
 - Implements repository interfaces from Domain
@@ -82,6 +85,7 @@ Exposes HTTP endpoints and handles web concerns.
 **Components:**
 - **Minimal APIs**: Feature-based endpoint organization
 - **Endpoints**: `/api/projects`, `/api/blogs`
+- **Authentication**: JWT Bearer authentication for protected endpoints
 - **OpenAPI**: Swagger documentation with summaries
 - **DI Configuration**: Clean Architecture layer registration
 
@@ -90,6 +94,7 @@ Exposes HTTP endpoints and handles web concerns.
 - Uses minimal APIs for modern, performant endpoints
 - Handles request/response mapping
 - Configures dependency injection
+- Implements authentication for write operations
 
 ## Database Schema
 
@@ -107,8 +112,8 @@ Exposes HTTP endpoints and handles web concerns.
 ### Blogs Table
 - `Id` (GUID, Primary Key)
 - `ShortDescription` (varchar(500), required)
-- `LongDescription` (text, required) - Rich text with images
-- `Image` (text, required) - Base64 encoded
+- `LongDescription` (text, required) - Markdown content
+- `Image` (text, required) - URL to Scaleway Object Storage
 - `CreatedDate` (timestamp, required)
 - `PublishDate` (timestamp, required)
 - `Tags` (text, required) - Semicolon-separated values
@@ -121,8 +126,35 @@ Exposes HTTP endpoints and handles web concerns.
 
 ### Blogs
 - `GET /api/blogs` - Get all blogs
+- `POST /api/blogs` - Create a new blog (requires authentication)
+  - Accepts multipart/form-data with:
+    - `shortDescription`: Brief description (max 500 chars)
+    - `longDescription`: Full markdown content
+    - `image`: Image file (jpg, jpeg, png, gif, webp)
+    - `tags`: Comma-separated list of tags
 
 All endpoints return JSON and include OpenAPI documentation.
+
+## Authentication
+
+The API uses JWT Bearer token authentication for protected endpoints (blog creation).
+
+**Configuration:**
+- `Authentication:JwtSecretKey` - Secret key for signing JWTs
+- `Authentication:Issuer` - Token issuer (default: "Clercq.It")
+- `Authentication:Audience` - Token audience (default: "Clercq.It.Api")
+- `Authentication:ExpirationMinutes` - Token expiration time (default: 60)
+
+## Object Storage
+
+Blog images are stored in Scaleway Object Storage (S3-compatible).
+
+**Configuration:**
+- `ObjectStorage:Endpoint` - S3 endpoint URL
+- `ObjectStorage:BucketName` - Bucket name for blog images
+- `ObjectStorage:Region` - Scaleway region
+- `ObjectStorage:AccessKey` - S3 access key
+- `ObjectStorage:SecretKey` - S3 secret key
 
 ## Technology Stack
 
@@ -236,6 +268,8 @@ dotnet test --collect:"XPlat Code Coverage"
 - **HTTPS**: Enforced in production
 - **CORS**: Configurable for frontend integration
 - **Container Security**: Non-root execution, minimal attack surface
+- **JWT Authentication**: Secure token-based authentication for protected endpoints
+- **File Upload Validation**: Strict validation of file types and sizes for blog images
 
 ## Monitoring & Observability
 
