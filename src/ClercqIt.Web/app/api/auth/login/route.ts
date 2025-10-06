@@ -1,34 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Scaleway IAM validation endpoint
-// In a production environment, this would verify credentials against Scaleway IAM
-// For now, we'll use the existing JWT authentication system
+// Quasr.io authentication endpoint
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accessKey, secretKey, totpCode } = body;
+    const { username, password, totpCode } = body;
 
     // Validate input
-    if (!accessKey || !secretKey) {
+    if (!username || !password) {
       return NextResponse.json(
-        { message: "Access key and secret key are required" },
+        { message: "Username and password are required" },
         { status: 400 }
       );
     }
 
-    // For Scaleway IAM integration, we'll validate the credentials
-    // and generate a JWT token using the backend API
+    // Call the backend authentication endpoint
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
     
-    // Call the backend authentication endpoint
-    const response = await fetch(`${apiUrl}/api/auth/token`, {
+    const response = await fetch(`${apiUrl}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        accessKey,
-        secretKey,
+        username,
+        password,
         totpCode,
       }),
     });
@@ -57,6 +53,7 @@ export async function POST(request: NextRequest) {
     
     return NextResponse.json({
       token: data.token,
+      user: data.user,
       expiresAt: data.expiresAt,
     });
   } catch (error) {
