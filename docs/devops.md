@@ -317,7 +317,7 @@ Each deployment provides detailed status information:
 
 **Issue**: Terraform fails with "Invalid index" for load_balancer
 - **Cause**: Using incorrect Scaleway RDB instance attributes
-- **Solution**: This has been fixed to use `endpoint_ip` and `endpoint_port`
+- **Solution**: Use `load_balancer.0.ip` and `load_balancer.0.port` instead of deprecated `endpoint_ip` and `endpoint_port`
 
 **Issue**: Scaleway authentication fails
 - **Cause**: Missing or incorrect Scaleway credentials
@@ -356,7 +356,7 @@ Each deployment provides detailed status information:
   2. Waits for both backend services to be healthy before starting nginx
   3. Checks process health during startup to detect early failures
   4. Logs service output to /var/log for debugging
-  5. Has increased resource limits (512MB RAM, 560m CPU) to support all services
+  5. Has increased resource limits (512MB RAM, 500m CPU) to support all services
 
 **Issue**: .NET API fails to start with "Failed to resolve libhostfxr.so" error
 - **Cause**: The .NET runtime couldn't locate its shared libraries because the dotnet binary was resolving paths incorrectly
@@ -371,7 +371,7 @@ Each deployment provides detailed status information:
 - **Solution**: 
   1. Check container logs in Scaleway Console for detailed error messages
   2. The startup script now includes detailed logging and will show the last 50 lines of service logs on failure
-  3. Verify resource limits are adequate (currently 512MB RAM, 560m CPU)
+  3. Verify resource limits are adequate (currently 512MB RAM, 500m CPU)
   4. Ensure ConnectionStrings__DefaultConnection environment variable is set correctly
 
 ### Debugging Commands
