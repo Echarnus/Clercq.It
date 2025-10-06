@@ -91,13 +91,13 @@ resource "scaleway_container" "portfolio_app" {
   # Resource limits
   # Increased from 256MB/250m CPU to support .NET API + Next.js + nginx
   memory_limit = 512 # 512MB (was 256MB)
-  cpu_limit    = 560 # 560 mvcpu (was 250m)
+  cpu_limit    = 500 # 500 mvcpu (was 250m)
 
   # Request limits for efficient scaling
   timeout = 30
 
   environment_variables = {
-    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"               = "Production"
     "NODE_ENV"                             = "production"
     "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"

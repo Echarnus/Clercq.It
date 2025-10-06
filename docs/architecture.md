@@ -171,7 +171,7 @@ The production deployment uses a single Docker container with multiple services:
 - **Process monitoring**: Startup script detects if services crash during initialization
 - **Detailed logging**: Service logs captured for debugging failed startups
 - **Clean shutdown**: Signal handling ensures graceful termination of all services
-- **Resource limits**: 512MB RAM, 560m CPU (optimized for Scaleway serverless containers)
+- **Resource limits**: 512MB RAM, 500m CPU (optimized for Scaleway serverless containers)
 
 ## Design Patterns
 
