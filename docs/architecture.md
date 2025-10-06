@@ -49,7 +49,7 @@ Orchestrates application workflows and use cases.
 **Components:**
 - **Features**: Organized by aggregate (Projects, Blogs)
 - **Queries**: `GetAllProjectsQuery`, `GetFeaturedProjectsQuery`, `GetAllBlogsQuery`
-- **Commands**: `CreateBlogCommand` for creating blog posts with images
+- **Commands**: `CreateProjectCommand`, `CreateBlogCommand` for creating projects and blog posts with images
 - **Handlers**: MediatR query and command handlers implementing CQRS pattern
 - **DTOs**: `ProjectDto`, `BlogDto` for data transfer
 - **Validation**: FluentValidation for request validation
@@ -123,6 +123,16 @@ Exposes HTTP endpoints and handles web concerns.
 ### Projects
 - `GET /api/projects` - Get all projects
 - `GET /api/projects/featured` - Get featured projects only
+- `POST /api/projects` - Create a new project (requires authentication)
+  - Accepts multipart/form-data with:
+    - `title`: Project title (max 200 chars)
+    - `shortDescription`: Brief description (max 500 chars)
+    - `longDescription`: Full markdown content
+    - `image`: Image file (jpg, jpeg, png, gif, webp)
+    - `startDate`: Project start date (ISO 8601 format)
+    - `endDate`: Project end date (ISO 8601 format)
+    - `featured`: Whether the project is featured (true/false, defaults to false)
+    - `skills`: Comma-separated list of skills
 
 ### Blogs
 - `GET /api/blogs` - Get all blogs
@@ -137,7 +147,7 @@ All endpoints return JSON and include OpenAPI documentation.
 
 ## Authentication
 
-The API uses JWT Bearer token authentication for protected endpoints (blog creation).
+The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
 
 **Configuration:**
 - `Authentication:JwtSecretKey` - Secret key for signing JWTs
@@ -147,11 +157,11 @@ The API uses JWT Bearer token authentication for protected endpoints (blog creat
 
 ## Object Storage
 
-Blog images are stored in Scaleway Object Storage (S3-compatible).
+Project and blog images are stored in Scaleway Object Storage (S3-compatible).
 
 **Configuration:**
 - `ObjectStorage:Endpoint` - S3 endpoint URL
-- `ObjectStorage:BucketName` - Bucket name for blog images
+- `ObjectStorage:BucketName` - Bucket name for project and blog images
 - `ObjectStorage:Region` - Scaleway region
 - `ObjectStorage:AccessKey` - S3 access key
 - `ObjectStorage:SecretKey` - S3 secret key
