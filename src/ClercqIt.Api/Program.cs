@@ -15,7 +15,7 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddOpenApi();
 
-// Add HttpClient for Scaleway API calls
+// Add HttpClient for API calls (Quasr.io, etc.)
 builder.Services.AddHttpClient();
 
 // Add CORS for frontend
@@ -49,15 +49,23 @@ if (!string.IsNullOrEmpty(jwtSecretKey))
                 ValidateIssuerSigningKey = true,
                 ValidIssuer = builder.Configuration["Authentication:Issuer"] ?? "Clercq.It",
                 ValidAudience = builder.Configuration["Authentication:Audience"] ?? "Clercq.It.Api",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+                RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        // Fine-grained role-based policies
+        options.AddPolicy("AdminView", policy => policy.RequireRole("Admin.View"));
+        options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
+        options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
+    });
 }
 
-// Register TokenService
+// Register authentication services
 builder.Services.AddSingleton<ITokenService, TokenService>();
+builder.Services.AddSingleton<IQuasrAuthService, QuasrAuthService>();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
