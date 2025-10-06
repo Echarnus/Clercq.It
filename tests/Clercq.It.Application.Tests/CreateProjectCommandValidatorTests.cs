@@ -19,9 +19,7 @@ public class CreateProjectCommandValidatorTests
             "Test Project",
             "Valid short description",
             "# Valid Long Description\n\nThis is markdown content.",
-            new MemoryStream(),
-            "test-image.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow.AddMonths(-6),
             DateTime.UtcNow.AddMonths(-3),
             true,
@@ -44,9 +42,7 @@ public class CreateProjectCommandValidatorTests
             "",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -70,9 +66,7 @@ public class CreateProjectCommandValidatorTests
             longTitle,
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -97,9 +91,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -123,9 +115,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             longDescription,
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -150,9 +140,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -168,16 +156,14 @@ public class CreateProjectCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_ShouldFail_WhenImageStreamIsNull()
+    public void Validate_ShouldFail_WhenImageUrlIsEmpty()
     {
         // Arrange
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            null!,
-            "test.jpg",
-            "image/jpeg",
+            "",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -189,26 +175,21 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ImageStream");
+        result.Errors.Should().Contain(e => e.PropertyName == "ImageUrl");
     }
 
     [Theory]
-    [InlineData("test.jpg")]
-    [InlineData("test.jpeg")]
-    [InlineData("test.png")]
-    [InlineData("test.gif")]
-    [InlineData("test.webp")]
-    [InlineData("TEST.JPG")]
-    public void Validate_ShouldPass_WhenImageFileNameHasValidExtension(string fileName)
+    [InlineData("https://example.com/image.jpg")]
+    [InlineData("http://example.com/image.png")]
+    [InlineData("https://s3.amazonaws.com/bucket/image.webp")]
+    public void Validate_ShouldPass_WhenImageUrlIsValid(string imageUrl)
     {
         // Arrange
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            fileName,
-            "image/jpeg",
+            imageUrl,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -223,19 +204,18 @@ public class CreateProjectCommandValidatorTests
     }
 
     [Theory]
-    [InlineData("test.txt")]
-    [InlineData("test.pdf")]
-    [InlineData("test")]
-    public void Validate_ShouldFail_WhenImageFileNameHasInvalidExtension(string fileName)
+    [InlineData("not-a-url")]
+    [InlineData("ftp://example.com/image.jpg")]
+    [InlineData("//example.com/image.jpg")]
+    [InlineData("example.com/image.jpg")]
+    public void Validate_ShouldFail_WhenImageUrlIsInvalid(string imageUrl)
     {
         // Arrange
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            fileName,
-            "image/jpeg",
+            imageUrl,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -247,64 +227,7 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ImageFileName" && 
-            e.ErrorMessage.Contains("extension"));
-    }
-
-    [Theory]
-    [InlineData("image/jpeg")]
-    [InlineData("image/png")]
-    [InlineData("image/gif")]
-    public void Validate_ShouldPass_WhenImageContentTypeIsValid(string contentType)
-    {
-        // Arrange
-        var command = new CreateProjectCommand(
-            "Title",
-            "Short description",
-            "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            contentType,
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(1),
-            false,
-            new[] { "Skill1" }
-        );
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        result.IsValid.Should().BeTrue();
-    }
-
-    [Theory]
-    [InlineData("text/plain")]
-    [InlineData("application/pdf")]
-    [InlineData("")]
-    public void Validate_ShouldFail_WhenImageContentTypeIsInvalid(string contentType)
-    {
-        // Arrange
-        var command = new CreateProjectCommand(
-            "Title",
-            "Short description",
-            "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            contentType,
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(1),
-            false,
-            new[] { "Skill1" }
-        );
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ImageContentType");
+        result.Errors.Should().Contain(e => e.PropertyName == "ImageUrl");
     }
 
     [Fact]
@@ -318,9 +241,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             startDate,
             endDate,
             false,
@@ -347,9 +268,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             date,
             date,
             false,
@@ -371,9 +290,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -396,9 +313,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -424,9 +339,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -452,9 +365,7 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            new MemoryStream(),
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,

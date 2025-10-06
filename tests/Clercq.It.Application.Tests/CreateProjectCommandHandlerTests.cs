@@ -8,19 +8,16 @@ namespace Clercq.It.Application.Tests.Features.Projects.Commands;
 public class CreateProjectCommandHandlerTests
 {
     private readonly Mock<IProjectRepository> _mockProjectRepository;
-    private readonly Mock<IObjectStorageService> _mockObjectStorageService;
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
     private readonly CreateProjectCommandHandler _handler;
 
     public CreateProjectCommandHandlerTests()
     {
         _mockProjectRepository = new Mock<IProjectRepository>();
-        _mockObjectStorageService = new Mock<IObjectStorageService>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
         
         _handler = new CreateProjectCommandHandler(
             _mockProjectRepository.Object,
-            _mockObjectStorageService.Object,
             _mockUnitOfWork.Object);
     }
 
@@ -29,26 +26,14 @@ public class CreateProjectCommandHandlerTests
     {
         // Arrange
         var imageUrl = "https://s3.fr-par.scw.cloud/test-bucket/project-images/test-image.jpg";
-        var imageStream = new MemoryStream();
         var startDate = DateTime.UtcNow.AddMonths(-6);
         var endDate = DateTime.UtcNow.AddMonths(-3);
-        
-        _mockObjectStorageService
-            .Setup(x => x.UploadFileAsync(
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<Stream>(),
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<bool>(),
-                MoqIt.IsAny<CancellationToken>()))
-            .ReturnsAsync(imageUrl);
 
         var command = new CreateProjectCommand(
             "Test Project",
             "Short description",
             "# Long Description\n\nThis is markdown content.",
-            imageStream,
-            "test-image.jpg",
-            "image/jpeg",
+            imageUrl,
             startDate,
             endDate,
             true,
@@ -70,13 +55,6 @@ public class CreateProjectCommandHandlerTests
         result.Skills.Should().BeEquivalentTo(new[] { "C#", "React" });
         result.Id.Should().NotBeEmpty();
 
-        _mockObjectStorageService.Verify(x => x.UploadFileAsync(
-            "test-image.jpg",
-            imageStream,
-            "image/jpeg",
-            false,
-            MoqIt.IsAny<CancellationToken>()), Times.Once);
-
         _mockProjectRepository.Verify(x => x.AddAsync(
             MoqIt.Is<Project>(p => 
                 p.Title == "Test Project" &&
@@ -90,22 +68,11 @@ public class CreateProjectCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldUploadImageBeforeSavingProject()
+    public async Task Handle_ShouldSaveProjectToRepository()
     {
         // Arrange
         var callSequence = new List<string>();
-        var imageStream = new MemoryStream();
         
-        _mockObjectStorageService
-            .Setup(x => x.UploadFileAsync(
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<Stream>(),
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<bool>(),
-                MoqIt.IsAny<CancellationToken>()))
-            .Callback(() => callSequence.Add("UploadImage"))
-            .ReturnsAsync("https://example.com/image.jpg");
-
         _mockProjectRepository
             .Setup(x => x.AddAsync(MoqIt.IsAny<Project>(), MoqIt.IsAny<CancellationToken>()))
             .Callback(() => callSequence.Add("AddProject"))
@@ -120,9 +87,7 @@ public class CreateProjectCommandHandlerTests
             "Title",
             "Short",
             "Long",
-            imageStream,
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -133,32 +98,19 @@ public class CreateProjectCommandHandlerTests
         await _handler.Handle(command, CancellationToken.None);
 
         // Assert
-        callSequence.Should().Equal("UploadImage", "AddProject", "SaveChanges");
+        callSequence.Should().Equal("AddProject", "SaveChanges");
     }
 
     [Fact]
     public async Task Handle_ShouldHandleMultipleSkills()
     {
         // Arrange
-        var imageStream = new MemoryStream();
-        
-        _mockObjectStorageService
-            .Setup(x => x.UploadFileAsync(
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<Stream>(),
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<bool>(),
-                MoqIt.IsAny<CancellationToken>()))
-            .ReturnsAsync("https://example.com/image.jpg");
-
         var skills = new[] { "C#", ".NET", "React", "TypeScript", "Docker" };
         var command = new CreateProjectCommand(
             "Title",
             "Short",
             "Long",
-            imageStream,
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -180,24 +132,11 @@ public class CreateProjectCommandHandlerTests
     public async Task Handle_ShouldSetFeaturedFlagCorrectly()
     {
         // Arrange
-        var imageStream = new MemoryStream();
-        
-        _mockObjectStorageService
-            .Setup(x => x.UploadFileAsync(
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<Stream>(),
-                MoqIt.IsAny<string>(),
-                MoqIt.IsAny<bool>(),
-                MoqIt.IsAny<CancellationToken>()))
-            .ReturnsAsync("https://example.com/image.jpg");
-
         var command = new CreateProjectCommand(
             "Title",
             "Short",
             "Long",
-            imageStream,
-            "test.jpg",
-            "image/jpeg",
+            "https://example.com/image.jpg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             true, // Featured

@@ -123,12 +123,16 @@ Exposes HTTP endpoints and handles web concerns.
 ### Projects
 - `GET /api/projects` - Get all projects
 - `GET /api/projects/featured` - Get featured projects only
+- `POST /api/projects/images` - Upload a project image (requires authentication)
+  - Accepts multipart/form-data with:
+    - `image`: Image file (jpg, jpeg, png, gif, webp)
+  - Returns the image URL for use in project creation
 - `POST /api/projects` - Create a new project (requires authentication)
   - Accepts multipart/form-data with:
     - `title`: Project title (max 200 chars)
     - `shortDescription`: Brief description (max 500 chars)
     - `longDescription`: Full markdown content
-    - `image`: Image file (jpg, jpeg, png, gif, webp)
+    - `imageUrl`: URL of previously uploaded image (from `/api/projects/images`)
     - `startDate`: Project start date (ISO 8601 format)
     - `endDate`: Project end date (ISO 8601 format)
     - `featured`: Whether the project is featured (true/false, defaults to false)

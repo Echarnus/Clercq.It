@@ -18,16 +18,9 @@ public class CreateProjectCommandValidator : AbstractValidator<CreateProjectComm
             .NotEmpty().WithMessage("Long description is required")
             .MaximumLength(50000).WithMessage("Long description must not exceed 50000 characters");
 
-        RuleFor(x => x.ImageStream)
-            .NotNull().WithMessage("Image is required");
-
-        RuleFor(x => x.ImageFileName)
-            .NotEmpty().WithMessage("Image file name is required")
-            .Must(BeAValidImageFileName).WithMessage("Invalid image file extension. Only jpg, jpeg, png, gif, and webp are allowed");
-
-        RuleFor(x => x.ImageContentType)
-            .NotEmpty().WithMessage("Image content type is required")
-            .Must(BeAValidImageContentType).WithMessage("Invalid image content type. Only image types are allowed");
+        RuleFor(x => x.ImageUrl)
+            .NotEmpty().WithMessage("Image URL is required")
+            .Must(BeAValidUrl).WithMessage("Image URL must be a valid URL");
 
         RuleFor(x => x.StartDate)
             .NotEmpty().WithMessage("Start date is required");
@@ -42,20 +35,12 @@ public class CreateProjectCommandValidator : AbstractValidator<CreateProjectComm
             .Must(x => x != null && x.Length <= 20).WithMessage("Maximum 20 skills allowed");
     }
 
-    private bool BeAValidImageFileName(string fileName)
+    private bool BeAValidUrl(string url)
     {
-        if (string.IsNullOrWhiteSpace(fileName))
+        if (string.IsNullOrWhiteSpace(url))
             return false;
 
-        var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
-        return validExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
-    }
-
-    private bool BeAValidImageContentType(string contentType)
-    {
-        if (string.IsNullOrWhiteSpace(contentType))
-            return false;
-
-        return contentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
+        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
+            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }
