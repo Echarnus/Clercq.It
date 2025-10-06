@@ -20,27 +20,92 @@ import {
   Image as ImageIcon,
 } from "lucide-react";
 
+interface UserRoles {
+  hasAdminView: boolean;
+  hasBlogsContributor: boolean;
+  hasProjectsContributor: boolean;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userRoles, setUserRoles] = useState<UserRoles>({
+    hasAdminView: false,
+    hasBlogsContributor: false,
+    hasProjectsContributor: false,
+  });
+  const [username, setUsername] = useState<string>("");
 
   useEffect(() => {
     // Check if user is authenticated
     const token = localStorage.getItem("admin_token");
+    const userDataStr = localStorage.getItem("admin_user");
+    
     if (!token) {
       router.push("/admin");
     } else {
       setIsAuthenticated(true);
+      
+      // Parse user roles from stored user data
+      if (userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr);
+          setUsername(userData.username || "");
+          
+          const roles = userData.roles || [];
+          setUserRoles({
+            hasAdminView: roles.includes("Admin.View"),
+            hasBlogsContributor: roles.includes("Blogs.Contributor"),
+            hasProjectsContributor: roles.includes("Projects.Contributor"),
+          });
+        } catch (e) {
+          console.error("Failed to parse user data:", e);
+        }
+      }
     }
   }, [router]);
 
   const handleLogout = () => {
     localStorage.removeItem("admin_token");
+    localStorage.removeItem("admin_user");
     router.push("/admin");
   };
 
   if (!isAuthenticated) {
     return null; // or a loading spinner
+  }
+
+  // Check if user has any admin permissions
+  const hasAnyPermission = userRoles.hasAdminView || userRoles.hasBlogsContributor || userRoles.hasProjectsContributor;
+
+  if (!hasAnyPermission) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+        <Card className="w-full max-w-md shadow-xl">
+          <CardHeader>
+            <CardTitle className="text-2xl text-center">No Access</CardTitle>
+            <CardDescription className="text-center">
+              Your account does not have any admin permissions assigned.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground text-center">
+              Please contact an administrator to request access to the admin panel.
+              You will need one of the following roles:
+            </p>
+            <ul className="text-sm list-disc list-inside space-y-1 text-muted-foreground">
+              <li>Admin.View - Access admin area</li>
+              <li>Blogs.Contributor - Manage blog posts</li>
+              <li>Projects.Contributor - Manage projects</li>
+            </ul>
+            <Button onClick={handleLogout} className="w-full">
+              <LogOut className="mr-2 h-4 w-4" />
+              Return to Login
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   return (
@@ -51,7 +116,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-2xl font-bold">Clercq.It Admin</h1>
             <p className="text-sm text-muted-foreground">
-              Content Management System
+              Content Management System {username && `• Welcome, ${username}`}
             </p>
           </div>
           <Button
@@ -68,27 +133,36 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-            <TabsTrigger value="overview">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="blogs">
-              <FileText className="h-4 w-4 mr-2" />
-              Blogs
-            </TabsTrigger>
-            <TabsTrigger value="projects">
-              <FolderKanban className="h-4 w-4 mr-2" />
-              Projects
-            </TabsTrigger>
-            <TabsTrigger value="settings">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </TabsTrigger>
+          <TabsList className="grid w-full lg:w-auto" style={{ gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasAdminView].filter(Boolean).length}, 1fr)` }}>
+            {userRoles.hasAdminView && (
+              <TabsTrigger value="overview">
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Overview
+              </TabsTrigger>
+            )}
+            {userRoles.hasBlogsContributor && (
+              <TabsTrigger value="blogs">
+                <FileText className="h-4 w-4 mr-2" />
+                Blogs
+              </TabsTrigger>
+            )}
+            {userRoles.hasProjectsContributor && (
+              <TabsTrigger value="projects">
+                <FolderKanban className="h-4 w-4 mr-2" />
+                Projects
+              </TabsTrigger>
+            )}
+            {userRoles.hasAdminView && (
+              <TabsTrigger value="settings">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </TabsTrigger>
+            )}
           </TabsList>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
+          {userRoles.hasAdminView && (
+            <TabsContent value="overview" className="space-y-6">
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -180,9 +254,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Blogs Tab */}
-          <TabsContent value="blogs" className="space-y-6">
+          {userRoles.hasBlogsContributor && (
+            <TabsContent value="blogs" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Blog Management</CardTitle>
@@ -207,9 +283,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Projects Tab */}
-          <TabsContent value="projects" className="space-y-6">
+          {userRoles.hasProjectsContributor && (
+            <TabsContent value="projects" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Project Management</CardTitle>
@@ -234,9 +312,11 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           {/* Settings Tab */}
-          <TabsContent value="settings" className="space-y-6">
+          {userRoles.hasAdminView && (
+            <TabsContent value="settings" className="space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>System Settings</CardTitle>
@@ -248,7 +328,15 @@ export default function AdminDashboard() {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Authentication</h4>
                   <p className="text-sm text-muted-foreground">
-                    Scaleway IAM integration active
+                    Quasr.io Identity as a Service active
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <h4 className="text-sm font-medium">Your Roles</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {userRoles.hasAdminView && "Admin.View "}
+                    {userRoles.hasBlogsContributor && "Blogs.Contributor "}
+                    {userRoles.hasProjectsContributor && "Projects.Contributor "}
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -266,6 +354,7 @@ export default function AdminDashboard() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
         </Tabs>
       </main>
     </div>
