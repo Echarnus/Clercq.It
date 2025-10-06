@@ -68,4 +68,36 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await _client.GetAsync("/api/blogs");
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
+
+    [Fact]
+    public async Task AuthToken_WithoutCredentials_ReturnsUnauthorized()
+    {
+        // Arrange
+        var content = new StringContent(
+            "{\"accessKey\":\"\",\"secretKey\":\"\"}",
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/auth/token", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task AuthToken_WithInvalidCredentials_ReturnsUnauthorized()
+    {
+        // Arrange
+        var content = new StringContent(
+            "{\"accessKey\":\"INVALID_KEY\",\"secretKey\":\"invalid_secret\"}",
+            System.Text.Encoding.UTF8,
+            "application/json");
+
+        // Act
+        var response = await _client.PostAsync("/api/auth/token", content);
+
+        // Assert
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
 }

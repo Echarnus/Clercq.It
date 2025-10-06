@@ -1,6 +1,7 @@
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Clercq.It.Api.Features;
+using Clercq.It.Api.Features.Auth;
 using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -14,27 +15,62 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddOpenApi();
 
-// Add Authentication
-var jwtSecretKey = builder.Configuration["Authentication:JwtSecretKey"];
-if (!string.IsNullOrEmpty(jwtSecretKey))
+// Add HttpClient for API calls (Quasr.io, etc.)
+builder.Services.AddHttpClient();
+
+// Add CORS for frontend
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(
+            "http://localhost:3000",
+            "https://localhost:3000",
+            "https://www.clercq.it"
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials();
+    });
+});
+
+// Add Authentication - validate JWT tokens from Quasr.io
+var quasrApiUrl = builder.Configuration["Quasr:ApiUrl"];
+if (!string.IsNullOrEmpty(quasrApiUrl))
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            // Configure to validate tokens from Quasr.io
+            options.Authority = quasrApiUrl;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateAudience = false, // Quasr.io may not include audience
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = builder.Configuration["Authentication:Issuer"] ?? "Clercq.It",
-                ValidAudience = builder.Configuration["Authentication:Audience"] ?? "Clercq.It.Api",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey))
+                ValidIssuer = quasrApiUrl,
+                RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
+            
+            // For development, accept tokens from Quasr.io without HTTPS requirement
+            if (builder.Environment.IsDevelopment())
+            {
+                options.RequireHttpsMetadata = false;
+            }
         });
 
-    builder.Services.AddAuthorization();
+    builder.Services.AddAuthorization(options =>
+    {
+        // Fine-grained role-based policies
+        options.AddPolicy("AdminView", policy => policy.RequireRole("Admin.View"));
+        options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
+        options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
+    });
 }
+
+// Register authentication services
+builder.Services.AddSingleton<IQuasrAuthService, QuasrAuthService>();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
@@ -71,11 +107,15 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+// Use CORS
+app.UseCors("AllowFrontend");
+
 // Use authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
 // Map feature endpoints
+app.MapAuthEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 
