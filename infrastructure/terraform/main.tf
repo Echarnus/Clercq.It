@@ -118,12 +118,7 @@ resource "scaleway_container" "portfolio_app" {
   ]
 }
 
-# Container Domain for custom domain setup (optional)
-resource "scaleway_container_domain" "portfolio_domain" {
-  count        = var.custom_domain != "" ? 1 : 0
-  container_id = scaleway_container.portfolio_app.id
-  hostname     = var.custom_domain
-}
+
 
 # Object Storage bucket for blog images
 resource "scaleway_object_bucket" "blog_images" {
