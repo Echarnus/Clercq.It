@@ -34,24 +34,30 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Authentication
-var jwtSecretKey = builder.Configuration["Authentication:JwtSecretKey"];
-if (!string.IsNullOrEmpty(jwtSecretKey))
+// Add Authentication - validate JWT tokens from Quasr.io
+var quasrApiUrl = builder.Configuration["Quasr:ApiUrl"];
+if (!string.IsNullOrEmpty(quasrApiUrl))
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
+            // Configure to validate tokens from Quasr.io
+            options.Authority = quasrApiUrl;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = true,
+                ValidateAudience = false, // Quasr.io may not include audience
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = builder.Configuration["Authentication:Issuer"] ?? "Clercq.It",
-                ValidAudience = builder.Configuration["Authentication:Audience"] ?? "Clercq.It.Api",
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecretKey)),
+                ValidIssuer = quasrApiUrl,
                 RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
+            
+            // For development, accept tokens from Quasr.io without HTTPS requirement
+            if (builder.Environment.IsDevelopment())
+            {
+                options.RequireHttpsMetadata = false;
+            }
         });
 
     builder.Services.AddAuthorization(options =>
@@ -64,7 +70,6 @@ if (!string.IsNullOrEmpty(jwtSecretKey))
 }
 
 // Register authentication services
-builder.Services.AddSingleton<ITokenService, TokenService>();
 builder.Services.AddSingleton<IQuasrAuthService, QuasrAuthService>();
 
 // Add Clean Architecture layers

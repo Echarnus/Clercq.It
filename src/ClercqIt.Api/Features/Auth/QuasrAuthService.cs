@@ -18,6 +18,7 @@ public class QuasrAuthResult
     public string? ErrorMessage { get; set; }
     public QuasrUser? User { get; set; }
     public string? EmailVerificationRequired { get; set; }
+    public string? AccessToken { get; set; } // Token from Quasr.io
 }
 
 public class QuasrUser
@@ -95,6 +96,7 @@ public class QuasrAuthService : IQuasrAuthService
                 return new QuasrAuthResult
                 {
                     Success = true,
+                    AccessToken = result.AccessToken ?? result.Token, // Use token from Quasr.io
                     User = new QuasrUser
                     {
                         Id = result.User.Id,
@@ -269,6 +271,7 @@ public class QuasrAuthService : IQuasrAuthService
                 return new QuasrAuthResult
                 {
                     Success = true,
+                    AccessToken = result.AccessToken ?? result.Token, // Use token from Quasr.io
                     User = new QuasrUser
                     {
                         Id = result.User.Id,
@@ -351,6 +354,7 @@ public class QuasrAuthService : IQuasrAuthService
     private class QuasrLoginResponse
     {
         public QuasrUserDto? User { get; set; }
+        public string? AccessToken { get; set; }
         public string? Token { get; set; }
     }
 
@@ -363,6 +367,7 @@ public class QuasrAuthService : IQuasrAuthService
     private class QuasrOAuthResponse
     {
         public QuasrUserDto? User { get; set; }
+        public string? AccessToken { get; set; }
         public string? Token { get; set; }
     }
 

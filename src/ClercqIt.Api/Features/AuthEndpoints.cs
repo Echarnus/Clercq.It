@@ -14,8 +14,7 @@ public static class AuthEndpoints
         // Username/Password Login
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
-            IQuasrAuthService quasrAuthService,
-            ITokenService tokenService) =>
+            IQuasrAuthService quasrAuthService) =>
         {
             var authResult = await quasrAuthService.AuthenticateAsync(
                 request.Username,
@@ -40,27 +39,22 @@ public static class AuthEndpoints
                 );
             }
 
-            // Generate JWT token with user roles
-            var token = tokenService.GenerateToken(authResult.User);
-
-            var expirationMinutes = 60; // Default, could be from config
-            
+            // Return the token from Quasr.io (not self-generated)
             return Results.Ok(new
             {
-                token,
+                token = authResult.AccessToken,
                 user = new
                 {
                     authResult.User.Id,
                     authResult.User.Username,
                     authResult.User.Email,
                     authResult.User.Roles
-                },
-                expiresAt = DateTime.UtcNow.AddMinutes(expirationMinutes)
+                }
             });
         })
         .WithName("Login")
         .WithSummary("Login with username and password")
-        .WithDescription("Authenticates using Quasr.io and returns a JWT token with user roles")
+        .WithDescription("Authenticates using Quasr.io and returns a JWT token from Quasr.io with user roles")
         .AllowAnonymous();
 
         // User Registration
@@ -118,7 +112,6 @@ public static class AuthEndpoints
             [FromQuery] string code,
             [FromQuery] string state,
             IQuasrAuthService quasrAuthService,
-            ITokenService tokenService,
             IConfiguration configuration) =>
         {
             var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("github", code, state);
@@ -129,8 +122,8 @@ public static class AuthEndpoints
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Generate JWT token
-            var token = tokenService.GenerateToken(authResult.User);
+            // Use token from Quasr.io
+            var token = authResult.AccessToken;
             
             var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
@@ -161,7 +154,6 @@ public static class AuthEndpoints
             [FromQuery] string code,
             [FromQuery] string state,
             IQuasrAuthService quasrAuthService,
-            ITokenService tokenService,
             IConfiguration configuration) =>
         {
             var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("linkedin", code, state);
@@ -172,8 +164,8 @@ public static class AuthEndpoints
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Generate JWT token
-            var token = tokenService.GenerateToken(authResult.User);
+            // Use token from Quasr.io
+            var token = authResult.AccessToken;
             
             var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
