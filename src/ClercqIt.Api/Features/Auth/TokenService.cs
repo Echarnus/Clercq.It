@@ -8,18 +8,23 @@ namespace Clercq.It.Api.Features.Auth;
 public interface ITokenService
 {
     string GenerateToken(string userId, string email);
-    bool ValidateScalewayCredentials(string accessKey, string secretKey);
+    Task<bool> ValidateScalewayCredentials(string accessKey, string secretKey);
 }
 
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
     private readonly ILogger<TokenService> _logger;
+    private readonly IHttpClientFactory _httpClientFactory;
 
-    public TokenService(IConfiguration configuration, ILogger<TokenService> logger)
+    public TokenService(
+        IConfiguration configuration, 
+        ILogger<TokenService> logger,
+        IHttpClientFactory httpClientFactory)
     {
         _configuration = configuration;
         _logger = logger;
+        _httpClientFactory = httpClientFactory;
     }
 
     public string GenerateToken(string userId, string email)
@@ -53,28 +58,35 @@ public class TokenService : ITokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public bool ValidateScalewayCredentials(string accessKey, string secretKey)
+    public async Task<bool> ValidateScalewayCredentials(string accessKey, string secretKey)
     {
-        // In a production environment, this would validate against Scaleway IAM
-        // For now, we'll validate against configured credentials
-        var validAccessKey = _configuration["Scaleway:AdminAccessKey"];
-        var validSecretKey = _configuration["Scaleway:AdminSecretKey"];
-
-        if (string.IsNullOrEmpty(validAccessKey) || string.IsNullOrEmpty(validSecretKey))
+        try
         {
-            _logger.LogWarning("Scaleway admin credentials are not configured");
+            // Validate credentials by making a request to Scaleway IAM API
+            // We'll use the IAM API to list the current user's information
+            // This endpoint requires valid credentials and will return 403 if invalid
+            
+            var client = _httpClientFactory.CreateClient();
+            client.DefaultRequestHeaders.Add("X-Auth-Token", secretKey);
+            
+            var request = new HttpRequestMessage(HttpMethod.Get, "https://api.scaleway.com/iam/v1alpha1/api-keys");
+            request.Headers.Add("X-Auth-Token", secretKey);
+            
+            var response = await client.SendAsync(request);
+            
+            if (response.IsSuccessStatusCode)
+            {
+                _logger.LogInformation("Successfully validated Scaleway IAM credentials");
+                return true;
+            }
+            
+            _logger.LogWarning("Failed to validate Scaleway credentials. Status: {StatusCode}", response.StatusCode);
             return false;
         }
-
-        // Simple comparison for now
-        // In production, use Scaleway SDK for proper IAM validation
-        var isValid = accessKey == validAccessKey && secretKey == validSecretKey;
-        
-        if (!isValid)
+        catch (Exception ex)
         {
-            _logger.LogWarning("Invalid Scaleway credentials provided");
+            _logger.LogError(ex, "Error validating Scaleway credentials");
+            return false;
         }
-
-        return isValid;
     }
 }

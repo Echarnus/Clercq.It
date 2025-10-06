@@ -15,6 +15,9 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddOpenApi();
 
+// Add HttpClient for Scaleway API calls
+builder.Services.AddHttpClient();
+
 // Add CORS for frontend
 builder.Services.AddCors(options =>
 {

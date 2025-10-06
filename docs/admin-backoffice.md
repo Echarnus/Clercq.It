@@ -53,7 +53,7 @@ Upon successful authentication, a JWT token is generated and stored in the brows
 - **API Route**: `/app/api/auth/login/route.ts` - Proxy to backend authentication
 
 ### Backend (.NET API)
-- **Token Service**: `Features/Auth/TokenService.cs` - Generates and validates JWT tokens
+- **Token Service**: `Features/Auth/TokenService.cs` - Generates JWT tokens and validates Scaleway IAM credentials
 - **Auth Endpoints**: `Features/AuthEndpoints.cs` - Provides `/api/auth/token` endpoint
 - **CORS**: Configured to allow frontend requests from localhost:3000 and www.clercq.it
 
@@ -61,23 +61,21 @@ Upon successful authentication, a JWT token is generated and stored in the brows
 1. User enters Scaleway IAM credentials in the login form
 2. Frontend calls `/api/auth/login` (Next.js API route)
 3. Next.js API route forwards request to backend `/api/auth/token`
-4. Backend validates credentials against configured Scaleway admin credentials
-5. If valid, backend generates a JWT token with admin claims
+4. Backend validates credentials by making a request to Scaleway IAM API (`https://api.scaleway.com/iam/v1alpha1/api-keys`)
+5. If credentials are valid (API returns 200), backend generates a JWT token with admin claims
 6. Token is returned to frontend and stored in localStorage
 7. All subsequent API requests include the token in the Authorization header
+
+**Important:** The system validates credentials in real-time against Scaleway's IAM API. No hardcoded credentials are stored in the application.
 
 ## Configuration
 
 ### Backend Configuration
 
-Add the following to your `appsettings.json` or environment variables:
+The application only requires JWT secret configuration. Scaleway credentials are validated in real-time via Scaleway's IAM API:
 
 ```json
 {
-  "Scaleway": {
-    "AdminAccessKey": "SCW_XXX...",
-    "AdminSecretKey": "your-secret-key"
-  },
   "Authentication": {
     "JwtSecretKey": "your-jwt-secret-key",
     "Issuer": "Clercq.It",
@@ -88,9 +86,9 @@ Add the following to your `appsettings.json` or environment variables:
 ```
 
 **Environment Variables (Production):**
-- `Scaleway__AdminAccessKey`: Scaleway IAM access key
-- `Scaleway__AdminSecretKey`: Scaleway IAM secret key
-- `Authentication__JwtSecretKey`: Secret key for signing JWT tokens
+- `Authentication__JwtSecretKey`: Secret key for signing JWT tokens (required)
+
+**Note:** No Scaleway credentials need to be configured in the application. The system validates user-provided credentials directly against Scaleway's IAM API.
 
 ### Frontend Configuration
 
@@ -112,7 +110,7 @@ NEXT_PUBLIC_API_URL=https://api.clercq.it
 
 ## Future Enhancements
 
-1. **Full Scaleway IAM Integration**: Currently uses simple credential comparison. Can be enhanced to use Scaleway SDK for proper IAM validation
+1. **Enhanced IAM Features**: Support for Scaleway IAM policies and permissions
 2. **Multi-Factor Authentication**: Add MFA support
 3. **Role-Based Access Control**: Implement different permission levels
 4. **Audit Logging**: Track admin actions
@@ -165,13 +163,18 @@ pnpm dev
 
 3. Navigate to `http://localhost:3000/admin`
 
-### Testing Credentials (Development)
+### Using Your Scaleway IAM Credentials
 
-The development environment includes test credentials:
-- **Access Key**: `SCW_DEMO_ACCESS_KEY`
-- **Secret Key**: `demo_secret_key_12345`
+To log in to the admin panel, use your actual Scaleway IAM credentials:
 
-**Note:** These are for local development only and should never be used in production.
+1. Go to [Scaleway Console](https://console.scaleway.com/)
+2. Navigate to **IAM** > **API Keys** in your organization
+3. Create a new API key or use an existing one
+4. Copy the **Access Key** (starts with `SCW_`)
+5. Copy the **Secret Key**
+6. Use these credentials to log in at `/admin`
+
+The application validates these credentials in real-time against Scaleway's IAM API. No test credentials are needed.
 
 ## Support
 

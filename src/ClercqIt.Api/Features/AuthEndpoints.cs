@@ -11,12 +11,12 @@ public static class AuthEndpoints
             .WithTags("Authentication")
             .WithOpenApi();
 
-        group.MapPost("/token", (
+        group.MapPost("/token", async (
             [FromBody] LoginRequest request,
             ITokenService tokenService) =>
         {
             // Validate Scaleway credentials
-            var isValid = tokenService.ValidateScalewayCredentials(
+            var isValid = await tokenService.ValidateScalewayCredentials(
                 request.AccessKey,
                 request.SecretKey
             );
