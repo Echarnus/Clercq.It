@@ -36,11 +36,6 @@ output "container_name" {
   value       = scaleway_container.portfolio_app.name
 }
 
-output "custom_domain_url" {
-  description = "Custom domain URL (if configured)"
-  value       = var.custom_domain != "" ? "https://${var.custom_domain}" : ""
-}
-
 output "infrastructure_summary" {
   description = "Summary of deployed infrastructure"
   sensitive   = true

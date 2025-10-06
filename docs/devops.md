@@ -110,12 +110,13 @@ gh workflow run build.yml
 
 ### Infrastructure Components
 
-- **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
+- **Serverless Container**: Auto-scales 0-1 vCPU with 512MB memory
 - **Serverless SQL**: PostgreSQL database with minimal resource allocation
 - **Organization**: ClercqIt with Portfolio namespace
 - **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
-- **Custom Domain**: www.clercq.it configured for the application
 - **Cost Optimization**: Infrastructure scales to zero when not in use
+
+**Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
 
 ### Terraform Backend Configuration
 
@@ -200,7 +201,6 @@ The pipeline includes comprehensive health checks:
 - `REGISTRY`: Docker registry (docker.io)
 - `IMAGE_NAME`: Docker image name (echarnus/clercq-it)
 - `CONTAINER_IMAGE`: Container image tag for deployment (optional)
-- `CUSTOM_DOMAIN`: Custom domain for Scaleway deployment (optional)
 
 ## Deployment Process
 

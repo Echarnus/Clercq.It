@@ -30,12 +30,6 @@ variable "container_image" {
   default     = "echarnus/clercq-it:latest"
 }
 
-variable "custom_domain" {
-  description = "Custom domain for the application (optional)"
-  type        = string
-  default     = "www.clercq.it"
-}
-
 variable "environment" {
   description = "Environment name"
   type        = string
