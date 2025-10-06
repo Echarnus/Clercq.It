@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { accessKey, secretKey } = body;
+    const { accessKey, secretKey, totpCode } = body;
 
     // Validate input
     if (!accessKey || !secretKey) {
@@ -29,20 +29,31 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         accessKey,
         secretKey,
+        totpCode,
       }),
     });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: "Invalid credentials",
-      }));
+    const data = await response.json().catch(() => ({
+      message: "Invalid response from server",
+    }));
+
+    // Check if MFA is required (status 428)
+    if (response.status === 428) {
       return NextResponse.json(
-        { message: errorData.message || "Authentication failed" },
-        { status: response.status }
+        { 
+          requiresMfa: data.requiresMfa || true, 
+          message: data.message || "MFA required" 
+        },
+        { status: 428 }
       );
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      return NextResponse.json(
+        { message: data.message || "Authentication failed" },
+        { status: response.status }
+      );
+    }
     
     return NextResponse.json({
       token: data.token,

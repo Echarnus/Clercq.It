@@ -15,15 +15,28 @@ public static class AuthEndpoints
             [FromBody] LoginRequest request,
             ITokenService tokenService) =>
         {
-            // Validate Scaleway credentials
-            var isValid = await tokenService.ValidateScalewayCredentials(
+            // Validate Scaleway credentials with optional TOTP
+            var validationResult = await tokenService.ValidateScalewayCredentials(
                 request.AccessKey,
-                request.SecretKey
+                request.SecretKey,
+                request.TotpCode
             );
 
-            if (!isValid)
+            // If MFA is required, return a specific response
+            if (validationResult.RequiresMfa)
             {
-                return Results.Unauthorized();
+                return Results.Json(
+                    new { requiresMfa = true, message = validationResult.ErrorMessage ?? "MFA required" },
+                    statusCode: 428 // 428 Precondition Required
+                );
+            }
+
+            if (!validationResult.IsValid)
+            {
+                return Results.Json(
+                    new { message = validationResult.ErrorMessage ?? "Invalid credentials" },
+                    statusCode: 401
+                );
             }
 
             // Generate JWT token
@@ -46,5 +59,5 @@ public static class AuthEndpoints
         .AllowAnonymous();
     }
 
-    public record LoginRequest(string AccessKey, string SecretKey);
+    public record LoginRequest(string AccessKey, string SecretKey, string? TotpCode = null);
 }

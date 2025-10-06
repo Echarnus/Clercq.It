@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Clercq.It website includes a secure admin backoffice accessible at `/admin` for content management. The backoffice uses Scaleway IAM integration for authentication and provides a clean interface for managing blogs, projects, and system settings.
+The Clercq.It website includes a secure admin backoffice accessible at `/admin` for content management. The backoffice uses Scaleway IAM integration for authentication with **automatic MFA detection** and provides a clean interface for managing blogs, projects, and system settings.
 
 ## Accessing the Admin Panel
 
@@ -13,12 +13,15 @@ The admin panel is accessible at: `https://www.clercq.it/admin`
 
 ### Authentication
 
-The system uses Scaleway IAM credentials for authentication:
+The system uses Scaleway IAM credentials for authentication with automatic MFA/TOTP detection:
 
 1. Navigate to `/admin`
 2. Enter your Scaleway Access Key (starts with `SCW_`)
 3. Enter your Scaleway Secret Key
 4. Click "Sign In"
+5. **If MFA is enabled on your account**, the system will automatically detect it and show a TOTP input field
+6. Enter your 6-digit TOTP code from your authenticator app
+7. Click "Sign In" again to complete authentication
 
 Upon successful authentication, a JWT token is generated and stored in the browser's localStorage, which is used for subsequent API requests.
 
@@ -62,11 +65,19 @@ Upon successful authentication, a JWT token is generated and stored in the brows
 2. Frontend calls `/api/auth/login` (Next.js API route)
 3. Next.js API route forwards request to backend `/api/auth/token`
 4. Backend validates credentials by making a request to Scaleway IAM API (`https://api.scaleway.com/iam/v1alpha1/api-keys`)
-5. If credentials are valid (API returns 200), backend generates a JWT token with admin claims
-6. Token is returned to frontend and stored in localStorage
-7. All subsequent API requests include the token in the Authorization header
+5. **If MFA is required**, backend detects this from Scaleway's response and returns status 428 with `requiresMfa: true`
+6. Frontend automatically shows the TOTP input field when MFA is detected
+7. User enters 6-digit TOTP code from their authenticator app
+8. Frontend resends the request with the TOTP code included
+9. Backend validates credentials + TOTP code against Scaleway's IAM API
+10. If valid, backend generates a JWT token with admin claims
+11. Token is returned to frontend and stored in localStorage
+12. All subsequent API requests include the token in the Authorization header
 
-**Important:** The system validates credentials in real-time against Scaleway's IAM API. No hardcoded credentials are stored in the application.
+**Important:** The system:
+- Validates credentials in real-time against Scaleway's IAM API
+- Automatically detects if MFA/TOTP is required
+- No hardcoded credentials are stored in the application
 
 ## Configuration
 
@@ -103,15 +114,16 @@ NEXT_PUBLIC_API_URL=https://api.clercq.it
 ## Security Considerations
 
 1. **No Public Links**: The admin panel has no links from public pages, making it harder to discover
-2. **Scaleway IAM**: Uses Scaleway credentials for authentication (can be enhanced with actual Scaleway SDK)
-3. **JWT Tokens**: Secure token-based authentication with configurable expiration
-4. **CORS**: Restricted to specific origins
-5. **HTTPS Only**: Should only be accessed over HTTPS in production
+2. **Scaleway IAM**: Uses Scaleway credentials for authentication with real-time API validation
+3. **Automatic MFA Detection**: Detects and handles MFA/TOTP requirements automatically
+4. **JWT Tokens**: Secure token-based authentication with configurable expiration
+5. **CORS**: Restricted to specific origins
+6. **HTTPS Only**: Should only be accessed over HTTPS in production
 
 ## Future Enhancements
 
 1. **Enhanced IAM Features**: Support for Scaleway IAM policies and permissions
-2. **Multi-Factor Authentication**: Add MFA support
+2. **Additional MFA Methods**: Support for other MFA methods beyond TOTP
 3. **Role-Based Access Control**: Implement different permission levels
 4. **Audit Logging**: Track admin actions
 5. **Session Management**: Better session handling and refresh tokens
