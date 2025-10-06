@@ -318,7 +318,7 @@ Each deployment provides detailed status information:
 
 **Issue**: Terraform fails with "Invalid index" for load_balancer
 - **Cause**: Using incorrect Scaleway RDB instance attributes
-- **Solution**: This has been fixed to use `endpoint_ip` and `endpoint_port`
+- **Solution**: Use `load_balancer.0.ip` and `load_balancer.0.port` instead of deprecated `endpoint_ip` and `endpoint_port`
 
 **Issue**: Scaleway authentication fails
 - **Cause**: Missing or incorrect Scaleway credentials
@@ -331,11 +331,12 @@ Each deployment provides detailed status information:
 #### Deploy Pipeline
 
 **Issue**: Container not found during deployment
-- **Cause**: The deployment pipeline retrieves the container name from Terraform state. If infrastructure hasn't been deployed or Terraform state is unavailable, the container won't be found.
+- **Cause**: The deployment pipeline retrieves container details (name and ID) from Terraform state. If infrastructure hasn't been deployed or Terraform state is unavailable, the container won't be found.
 - **Solution**: 
   1. Ensure the infrastructure pipeline has run successfully at least once
   2. Verify Terraform state is accessible (check AWS credentials for S3 backend)
-  3. The container name is managed by Terraform (`clercq-it-app`) and automatically retrieved during deployment
+  3. The container is managed by Terraform (`clercq-it-app`) and deployment uses the container ID from Terraform outputs for reliable updates
+- **Note**: This has been fixed to use container ID instead of name-based lookups for more reliable container discovery
 
 **Issue**: Deploy workflow not triggering
 - **Cause**: Workflow name mismatch in trigger configuration
@@ -344,6 +345,35 @@ Each deployment provides detailed status information:
 **Issue**: Deploy fails due to missing Docker image
 - **Cause**: Build pipeline didn't push to Docker Hub
 - **Solution**: Ensure Docker Hub credentials are configured
+
+**Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"
+- **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment
+- **Solution**: This has been fixed to use the official `hashicorp/setup-terraform` action instead of manual installation
+
+**Issue**: Bad Gateway (502) errors during container startup
+- **Cause**: nginx was auto-starting before the .NET API and Next.js services were ready, causing proxy errors
+- **Solution**: The Dockerfile now:
+  1. Overrides nginx's default ENTRYPOINT to prevent auto-start
+  2. Waits for both backend services to be healthy before starting nginx
+  3. Checks process health during startup to detect early failures
+  4. Logs service output to /var/log for debugging
+  5. Has increased resource limits (512MB RAM, 500m CPU) to support all services
+
+**Issue**: .NET API fails to start with "Failed to resolve libhostfxr.so" error
+- **Cause**: The .NET runtime couldn't locate its shared libraries because the dotnet binary was resolving paths incorrectly
+- **Error message**: `Error: [/usr/bin/host/fxr] does not exist` and `Failed to resolve libhostfxr.so [not found]. Error code: 0x80008083`
+- **Solution**: The Dockerfile now:
+  1. Uses the full path to dotnet binary (`/usr/share/dotnet/dotnet`) instead of the symlink
+  2. Sets `DOTNET_ROOT=/usr/share/dotnet` environment variable
+  3. Sets `DOTNET_RUNNING_IN_CONTAINER=true` for proper container runtime detection
+
+**Issue**: Container fails to start or services crash during startup
+- **Cause**: Insufficient memory or CPU resources, or service configuration issues
+- **Solution**: 
+  1. Check container logs in Scaleway Console for detailed error messages
+  2. The startup script now includes detailed logging and will show the last 50 lines of service logs on failure
+  3. Verify resource limits are adequate (currently 512MB RAM, 500m CPU)
+  4. Ensure ConnectionStrings__DefaultConnection environment variable is set correctly
 
 ### Debugging Commands
 

@@ -182,6 +182,29 @@ Blog images are stored in Scaleway Object Storage (S3-compatible).
 - **Scaleway** - Cloud hosting platform
 - **Terraform** - Infrastructure as Code
 
+### Production Container Architecture
+
+The production deployment uses a single Docker container with multiple services:
+
+**Container Components:**
+1. **.NET API** (port 5000) - Backend REST API
+2. **Next.js Frontend** (port 3000) - Server-side rendered React application
+3. **nginx** (port 80) - Reverse proxy routing requests to backend services
+
+**Startup Sequence:**
+1. .NET API starts in background and writes logs to `/var/log/api.log`
+2. Next.js frontend starts in background and writes logs to `/var/log/frontend.log`
+3. Health check waits for API `/health` endpoint (up to 60 seconds)
+4. Health check waits for Next.js on port 3000 (up to 60 seconds)
+5. nginx starts in foreground after all services are healthy
+
+**Key Features:**
+- **No Bad Gateway errors**: nginx only starts after backend services are ready
+- **Process monitoring**: Startup script detects if services crash during initialization
+- **Detailed logging**: Service logs captured for debugging failed startups
+- **Clean shutdown**: Signal handling ensures graceful termination of all services
+- **Resource limits**: 512MB RAM, 500m CPU (optimized for Scaleway serverless containers)
+
 ## Design Patterns
 
 ### CQRS (Command Query Responsibility Segregation)

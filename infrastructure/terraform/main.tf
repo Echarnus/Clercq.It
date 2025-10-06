@@ -89,25 +89,26 @@ resource "scaleway_container" "portfolio_app" {
   max_scale = 1
 
   # Resource limits
-  memory_limit = 256 # 256MB
-  cpu_limit    = 250 # 250 mvcpu (250m)
+  # Increased from 256MB/250m CPU to support .NET API + Next.js + nginx
+  memory_limit = 512 # 512MB (was 256MB)
+  cpu_limit    = 500 # 500 mvcpu (was 250m)
 
   # Request limits for efficient scaling
   timeout = 30
 
   environment_variables = {
-    "DATABASE_CONNECTION_STRING"  = "Host=${scaleway_rdb_instance.portfolio_db.endpoint_ip};Port=${scaleway_rdb_instance.portfolio_db.endpoint_port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
-    "ASPNETCORE_ENVIRONMENT"      = "Production"
-    "NODE_ENV"                    = "production"
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
-    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
     "ObjectStorage__BucketName"   = scaleway_object_bucket.blog_images.name
     "ObjectStorage__Region"       = var.scaleway_region
     "ObjectStorage__AccessKey"    = var.scaleway_access_key
     "ObjectStorage__SecretKey"    = var.scaleway_secret_key
     "Authentication__JwtSecretKey" = var.jwt_secret_key
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
+    "ASPNETCORE_ENVIRONMENT"               = "Production"
+    "NODE_ENV"                             = "production"
+    "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL"          = "grpc"
+    "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
   }
 
   tags = [

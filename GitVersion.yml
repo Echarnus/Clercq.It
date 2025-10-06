@@ -5,6 +5,8 @@ branches:
     mode: ContinuousDeployment
     label: ''
     increment: Patch
+    prevent-increment:
+      of-merged-branch: false
     track-merge-target: false
   develop:
     regex: ^dev(elop)?(ment)?$
@@ -16,6 +18,12 @@ branches:
     regex: ^features?[/-]
     mode: ContinuousDeployment
     label: 'feature'
+    increment: Inherit
+    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
+  copilot:
+    regex: ^copilot[/-]
+    mode: ContinuousDeployment
+    label: 'copilot'
     increment: Inherit
     source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
   pull-request:

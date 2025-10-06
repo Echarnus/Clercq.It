@@ -39,12 +39,15 @@ main:
   mode: ContinuousDeployment
   label: ''
   increment: Patch
+  prevent-increment:
+    of-merged-branch: false
   track-merge-target: false
 ```
 
 - **Mode**: ContinuousDeployment (auto-increments patch for each commit)
 - **Increment**: Patch (1.0.0 → 1.0.1, 1.0.2, 1.0.3, etc.)
 - **Label**: None (clean version numbers)
+- **Prevent Increment**: `of-merged-branch: false` ensures version increments on every merge to main
 - **Purpose**: Production releases with auto-incrementing version for each commit
 
 #### Develop Branch
@@ -76,6 +79,22 @@ feature:
 - **Increment**: Inherit from parent branch
 - **Label**: feature (e.g., 1.0.1-feature.my-feature.1)
 - **Naming**: `feature/my-feature` or `features/my-feature`
+
+#### Copilot Branches
+
+```yaml
+copilot:
+  regex: ^copilot[/-]
+  mode: ContinuousDeployment
+  label: 'copilot'
+  increment: Inherit
+  source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
+```
+
+- **Increment**: Inherit from parent branch
+- **Label**: copilot (e.g., 1.0.1-copilot.fix-abc.1)
+- **Purpose**: GitHub Copilot automated branches
+- **Naming**: `copilot/fix-*` or `copilot/feature-*`
 
 #### Hotfix Branches
 
@@ -193,6 +212,40 @@ hotfix/critical-bug → 1.0.2-beta.1
 - `sha`: Full commit SHA
 - `branchName`: Current branch name
 
+## Version Display in Application
+
+### Version JSON File
+
+During the Docker build process, a `version.json` file is automatically generated in the frontend's public directory. This file contains:
+
+```json
+{
+  "version": "1.0.1",
+  "gitSha": "abc1234",
+  "buildDate": "2024-10-05"
+}
+```
+
+The file is created using GitVersion outputs:
+- `version`: The semantic version from GitVersion (`semVer`)
+- `gitSha`: The short commit SHA (`shortSha`)
+- `buildDate`: The commit date (`commitDate`)
+
+### Frontend Integration
+
+The Next.js frontend fetches this file at runtime and displays the version in the footer component. This provides visibility into which version is currently deployed.
+
+The version is displayed as: `Version 1.0.1 (abc1234)`
+
+### Build Arguments
+
+The Dockerfile accepts the following build arguments to generate the version file:
+- `VERSION`: Semantic version number
+- `GIT_SHA`: Short Git commit SHA
+- `BUILD_DATE`: Build/commit date
+
+These are automatically passed by the GitHub Actions build workflow from GitVersion outputs.
+
 ## Local Development
 
 ### Install GitVersion CLI
@@ -277,18 +330,25 @@ Keep version history clear:
 
 ### Common Issues
 
-1. **Incorrect version calculation**
-   - Check branch naming convention
+1. **Version not incrementing**
+   - **On tag commit**: If you create a tag (e.g., `v1.0.0`) on the current commit, GitVersion will show `1.0.0` for that commit. The patch increment to `1.0.1` only happens on the NEXT commit after the tag.
+   - **Branch name mismatch**: Ensure your branch name matches one of the configured patterns in GitVersion.yml (e.g., `main`, `develop`, `feature/*`, `copilot/*`, `hotfix/*`)
+   - **No base tag**: GitVersion needs at least one version tag as a baseline. The build pipeline creates `v1.0.0` automatically if none exists.
+   - **First run after setup**: The first commit after setting up GitVersion will use the initial tag. Subsequent commits will increment.
+   - **Prevent increment on merge**: If `prevent-increment.of-merged-branch: true` is set for the main branch, GitVersion will not increment the version when branches are merged. This should be set to `false` to ensure each merge to main increments the version.
+
+2. **Incorrect version calculation**
+   - Check branch naming convention matches GitVersion.yml patterns
    - Verify GitVersion.yml syntax
    - Ensure proper merge history
 
-2. **Missing version tags**
+3. **Missing version tags**
    - The build pipeline automatically creates the initial `v1.0.0` tag if none exists
    - To manually create a tag: `git tag v1.0.0`
    - To push tags: `git push --tags`
    - Verify tags exist: `git tag -l`
 
-3. **Configuration not applying**
+4. **Configuration not applying**
    - Verify GitVersion.yml is in repository root
    - Check YAML syntax and indentation
    - Clear GitVersion cache: `dotnet gitversion /nocache`
