@@ -60,6 +60,38 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
+      - name: Calculate commit-based version
+        id: version
+        run: |
+          MAJOR=${{ steps.gitversion.outputs.major }}
+          MINOR=${{ steps.gitversion.outputs.minor }}
+          COMMITS=${{ steps.gitversion.outputs.commitsSinceVersionSource }}
+          
+          if [ "${{ github.ref_name }}" == "main" ]; then
+            # For main branch: use commit count as patch version
+            VERSION="${MAJOR}.${MINOR}.${COMMITS}"
+          else
+            # For feature/PR branches: use label with commit count
+            LABEL="${{ steps.gitversion.outputs.preReleaseLabel }}"
+            if [ -z "$LABEL" ]; then
+              # If no label, determine from branch name
+              BRANCH_NAME="${{ github.ref_name }}"
+              if [[ "$BRANCH_NAME" == copilot/* ]]; then
+                LABEL="copilot"
+              elif [[ "$BRANCH_NAME" == feature/* ]]; then
+                LABEL="feature"
+              elif [[ "$BRANCH_NAME" == pr/* ]] || [[ "$BRANCH_NAME" == pull/* ]]; then
+                LABEL="pr"
+              else
+                LABEL="dev"
+              fi
+            fi
+            VERSION="${MAJOR}.${MINOR}.${COMMITS}-${LABEL}"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "📦 Calculated version: ${VERSION}" >> $GITHUB_STEP_SUMMARY
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -104,7 +136,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ steps.gitversion.outputs.semVer }}
+            type=raw,value=${{ steps.version.outputs.version }}
             type=raw,value=${{ steps.gitversion.outputs.shortSha }}
             type=raw,value=latest
 
@@ -120,11 +152,11 @@ jobs:
           labels: |
             ${{ steps.meta.outputs.labels }}
             org.opencontainers.image.version=${{
-              steps.gitversion.outputs.semVer }}
+              steps.version.outputs.version }}
             org.opencontainers.image.revision=${{
               steps.gitversion.outputs.sha }}
           build-args: |
-            VERSION=${{ steps.gitversion.outputs.semVer }}
+            VERSION=${{ steps.version.outputs.version }}
             GIT_SHA=${{ steps.gitversion.outputs.shortSha }}
             BUILD_DATE=${{ steps.gitversion.outputs.commitDate }}
           cache-from: type=gha
@@ -143,7 +175,7 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "- **Status**: ✅ Built and pushed to Docker Hub" >> $GITHUB_STEP_SUMMARY
           echo "- **Registry**: Docker Hub" >> $GITHUB_STEP_SUMMARY
-          echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Version**: \`${{ steps.gitversion.outputs.semVer }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Version**: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.gitversion.outputs.shortSha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
