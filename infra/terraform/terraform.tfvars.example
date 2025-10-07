@@ -9,6 +9,8 @@ scaleway_zone            = "fr-par-1"
 scaleway_region          = "fr-par"
 
 # Object Storage Configuration
+# These should be the same as your SCW_ACCESS_KEY and SCW_SECRET_KEY
+# They are used for S3-compatible object storage access from the application container
 scaleway_access_key = "your-scaleway-access-key"
 scaleway_secret_key = "your-scaleway-secret-key"
 
