@@ -92,9 +92,9 @@ public static class AuthEndpoints
         .AllowAnonymous();
 
         // GitHub OAuth Initiation
-        group.MapGet("/github", (IConfiguration configuration) =>
+        group.MapGet("/github", (IQuasrAuthService quasrAuthService, IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
+            var quasrApiUrl = quasrAuthService.GetApiUrl();
             var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
             
             // Redirect to Quasr.io OAuth endpoint which handles the GitHub OAuth flow
@@ -134,9 +134,9 @@ public static class AuthEndpoints
         .AllowAnonymous();
 
         // LinkedIn OAuth Initiation
-        group.MapGet("/linkedin", (IConfiguration configuration) =>
+        group.MapGet("/linkedin", (IQuasrAuthService quasrAuthService, IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
+            var quasrApiUrl = quasrAuthService.GetApiUrl();
             var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
             
             // Redirect to Quasr.io OAuth endpoint which handles the LinkedIn OAuth flow

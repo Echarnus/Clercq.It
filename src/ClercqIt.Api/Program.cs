@@ -35,13 +35,14 @@ builder.Services.AddCors(options =>
 });
 
 // Add Authentication - validate JWT tokens from Quasr.io
-var quasrApiUrl = builder.Configuration["Quasr:ApiUrl"];
-if (!string.IsNullOrEmpty(quasrApiUrl))
+var quasrTenantId = builder.Configuration["Quasr:TenantId"];
+if (!string.IsNullOrEmpty(quasrTenantId))
 {
+    var quasrApiUrl = $"https://{quasrTenantId}.api.quasr.io";
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Configure to validate tokens from Quasr.io
+            // Configure to validate tokens from Quasr.io using OpenID Connect
             options.Authority = quasrApiUrl;
             options.TokenValidationParameters = new TokenValidationParameters
             {
