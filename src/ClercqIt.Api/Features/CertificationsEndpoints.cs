@@ -22,33 +22,6 @@ public static class CertificationsEndpoints
         .WithSummary("Get all certifications")
         .WithDescription("Retrieves all certifications from the system");
 
-        group.MapPost("/images", async (HttpRequest request, IMediator mediator) =>
-        {
-            // Read multipart form data
-            var form = await request.ReadFormAsync();
-            
-            var imageFile = form.Files["image"];
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return Results.BadRequest(new { error = "Image file is required" });
-            }
-
-            using var imageStream = imageFile.OpenReadStream();
-            var command = new UploadCertificationImageCommand(
-                imageStream,
-                imageFile.FileName,
-                imageFile.ContentType
-            );
-
-            var result = await mediator.Send(command);
-            return Results.Ok(result);
-        })
-        .RequireAuthorization()
-        .WithName("UploadCertificationImage")
-        .WithSummary("Upload an inline certification image")
-        .WithDescription("Uploads an image for use in certification content. Returns the image URL. Requires authentication.")
-        .DisableAntiforgery();
-
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
             // Read multipart form data

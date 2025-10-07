@@ -117,6 +117,7 @@ app.UseAuthorization();
 
 // Map feature endpoints
 app.MapAuthEndpoints();
+app.MapImagesEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 app.MapCertificationsEndpoints();
