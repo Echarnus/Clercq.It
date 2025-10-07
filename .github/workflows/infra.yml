@@ -4,6 +4,8 @@ name: Deploy Infra
 on:
   push:
     branches: [main]
+    paths:
+      - 'infra/**'
   pull_request:
     branches: [main]
     paths:

@@ -82,9 +82,11 @@ gh workflow run build.yml
 ## Infrastructure Pipeline (`infra.yml`)
 
 ### Triggers
-- Push to `main` branch with infrastructure changes
-- Pull requests with infrastructure changes
+- Push to `main` branch with changes to `infra/**` files only
+- Pull requests with changes to `infra/**` files
 - Manual workflow dispatch
+
+**Note**: The pipeline only runs when infrastructure files are modified to prevent conflicts with application deployments. This ensures Terraform doesn't revert container image versions set by the deploy pipeline.
 
 ### Jobs
 
@@ -163,9 +165,12 @@ gh workflow run infra.yml
 
 #### deploy
 - Validates Docker image exists
-- Updates Scaleway container configuration
+- Updates Scaleway container configuration with new image tag
+- Redeploys container to force pull of new Docker image
 - Performs health checks
 - Reports deployment status
+
+**Note**: The deployment uses `scw container container redeploy` to ensure the container pulls the latest image from the registry, preventing stale cached images from being used.
 
 ### Manual Deployment
 
@@ -359,11 +364,19 @@ Each deployment provides detailed status information:
 
 **Issue**: Deploy workflow not triggering
 - **Cause**: Workflow name mismatch in trigger configuration
-- **Solution**: This has been fixed to use correct workflow names: `build` and `Deploy Infra`
+- **Solution**: Deploy workflow now only triggers after "build" workflow (removed "Deploy Infra" trigger to prevent conflicts)
+
+**Issue**: Container image reverting to `:latest` tag
+- **Cause**: Infrastructure pipeline was running on every push to main, resetting the container image to `:latest` via Terraform, conflicting with the deploy pipeline's version-specific updates
+- **Solution**: Infrastructure pipeline now only runs when files in `infra/**` are modified, preventing it from reverting application deployments
 
 **Issue**: Deploy fails due to missing Docker image
 - **Cause**: Build pipeline didn't push to Docker Hub
 - **Solution**: Ensure Docker Hub credentials are configured
+
+**Issue**: Version not updating after deployment
+- **Cause**: Container was using cached Docker image instead of pulling the new version
+- **Solution**: Changed deployment to use `scw container container redeploy` instead of `deploy`, which forces the container to pull the latest image from the registry
 
 **Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"
 - **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment

@@ -3,7 +3,7 @@ name: Deploy to Scaleway
 
 "on":
   workflow_run:
-    workflows: ["build", "Deploy Infra"]
+    workflows: ["build"]
     branches: [main]
     types: [completed]
   workflow_dispatch:
@@ -252,11 +252,11 @@ jobs:
               registry-image=${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
               --wait
             
-            # Deploy the updated container
-            echo "🚀 Deploying updated container..."
-            scw container container deploy "$CONTAINER_ID" --wait
+            # Redeploy the container to force pull the new image
+            echo "🔄 Redeploying container to force image pull..."
+            scw container container redeploy "$CONTAINER_ID" --wait
             
-            echo "✅ Container deployment successful"
+            echo "✅ Container redeployment successful"
           else
             echo "❌ Container not found in Scaleway"
             echo "Container ID: $CONTAINER_ID"
