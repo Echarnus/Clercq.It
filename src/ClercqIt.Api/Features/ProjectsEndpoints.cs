@@ -82,7 +82,7 @@ public static class ProjectsEndpoints
         .RequireAuthorization()
         .WithName("CreateProject")
         .WithSummary("Create a new project")
-        .WithDescription("Creates a new project with markdown content. Image must be uploaded separately via /api/images/projects. Requires authentication.")
+        .WithDescription("Creates a new project with markdown content. Image must be uploaded separately via /api/images. Requires authentication.")
         .DisableAntiforgery();
     }
 }

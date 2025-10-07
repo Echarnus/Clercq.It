@@ -1,7 +1,5 @@
 using MediatR;
-using Clercq.It.Application.Features.Blogs.Commands;
-using Clercq.It.Application.Features.Projects.Commands;
-using Clercq.It.Application.Features.Certifications.Commands;
+using Clercq.It.Application.Common.Commands;
 
 namespace Clercq.It.Api.Features;
 
@@ -13,7 +11,7 @@ public static class ImagesEndpoints
             .WithTags("Images")
             .WithOpenApi();
 
-        group.MapPost("/blogs", async (HttpRequest request, IMediator mediator) =>
+        group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
             var form = await request.ReadFormAsync();
             
@@ -24,7 +22,7 @@ public static class ImagesEndpoints
             }
 
             using var imageStream = imageFile.OpenReadStream();
-            var command = new UploadBlogImageCommand(
+            var command = new UploadImageCommand(
                 imageStream,
                 imageFile.FileName,
                 imageFile.ContentType
@@ -34,61 +32,9 @@ public static class ImagesEndpoints
             return Results.Ok(result);
         })
         .RequireAuthorization()
-        .WithName("UploadBlogImage")
-        .WithSummary("Upload a blog image")
-        .WithDescription("Uploads an image for use in blog content. Returns the image URL. Requires authentication.")
-        .DisableAntiforgery();
-
-        group.MapPost("/projects", async (HttpRequest request, IMediator mediator) =>
-        {
-            var form = await request.ReadFormAsync();
-            
-            var imageFile = form.Files["image"];
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return Results.BadRequest(new { error = "Image file is required" });
-            }
-
-            using var imageStream = imageFile.OpenReadStream();
-            var command = new UploadProjectImageCommand(
-                imageStream,
-                imageFile.FileName,
-                imageFile.ContentType
-            );
-
-            var result = await mediator.Send(command);
-            return Results.Ok(result);
-        })
-        .RequireAuthorization()
-        .WithName("UploadProjectImage")
-        .WithSummary("Upload a project image")
-        .WithDescription("Uploads an image for use in project content. Returns the image URL. Requires authentication.")
-        .DisableAntiforgery();
-
-        group.MapPost("/certifications", async (HttpRequest request, IMediator mediator) =>
-        {
-            var form = await request.ReadFormAsync();
-            
-            var imageFile = form.Files["image"];
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return Results.BadRequest(new { error = "Image file is required" });
-            }
-
-            using var imageStream = imageFile.OpenReadStream();
-            var command = new UploadCertificationImageCommand(
-                imageStream,
-                imageFile.FileName,
-                imageFile.ContentType
-            );
-
-            var result = await mediator.Send(command);
-            return Results.Ok(result);
-        })
-        .RequireAuthorization()
-        .WithName("UploadCertificationImage")
-        .WithSummary("Upload a certification image")
-        .WithDescription("Uploads an image for use in certification content. Returns the image URL. Requires authentication.")
+        .WithName("UploadImage")
+        .WithSummary("Upload an image")
+        .WithDescription("Uploads an image to object storage. Returns the image URL. Requires authentication.")
         .DisableAntiforgery();
     }
 }
