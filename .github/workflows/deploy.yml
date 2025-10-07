@@ -143,6 +143,9 @@ jobs:
           export TF_VAR_scaleway_organization_id="${{ secrets.SCALEWAY_ORGANIZATION_ID }}"
           export TF_VAR_scaleway_project_id="${{ secrets.SCALEWAY_PROJECT_ID }}"
           export TF_VAR_database_password="${{ secrets.DATABASE_PASSWORD }}"
+          export TF_VAR_quasr_tenant_id="${{ secrets.QUASR_TENANT_ID }}"
+          export TF_VAR_quasr_api_key="${{ secrets.QUASR_API_KEY }}"
+          export TF_VAR_quasr_client_redirect_url="${{ secrets.QUASR_CLIENT_REDIRECT_URL || 'https://www.clercq.it' }}"
           
           echo "🔧 Initializing Terraform..."
           terraform init -input=false
