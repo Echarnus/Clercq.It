@@ -163,9 +163,12 @@ gh workflow run infra.yml
 
 #### deploy
 - Validates Docker image exists
-- Updates Scaleway container configuration
+- Updates Scaleway container configuration with new image tag
+- Redeploys container to force pull of new Docker image
 - Performs health checks
 - Reports deployment status
+
+**Note**: The deployment uses `scw container container redeploy` to ensure the container pulls the latest image from the registry, preventing stale cached images from being used.
 
 ### Manual Deployment
 
@@ -364,6 +367,10 @@ Each deployment provides detailed status information:
 **Issue**: Deploy fails due to missing Docker image
 - **Cause**: Build pipeline didn't push to Docker Hub
 - **Solution**: Ensure Docker Hub credentials are configured
+
+**Issue**: Version not updating after deployment
+- **Cause**: Container was using cached Docker image instead of pulling the new version
+- **Solution**: Changed deployment to use `scw container container redeploy` instead of `deploy`, which forces the container to pull the latest image from the registry
 
 **Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"
 - **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment
