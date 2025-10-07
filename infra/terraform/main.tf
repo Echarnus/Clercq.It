@@ -108,6 +108,9 @@ resource "scaleway_container" "portfolio_app" {
     "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"
     "OTEL_EXPORTER_OTLP_PROTOCOL"          = "grpc"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
+    "Quasr__TenantId"                      = var.quasr_tenant_id
+    "Quasr__ApiKey"                        = var.quasr_api_key
+    "Quasr__ClientRedirectUrl"             = var.quasr_client_redirect_url
   }
 
   tags = [

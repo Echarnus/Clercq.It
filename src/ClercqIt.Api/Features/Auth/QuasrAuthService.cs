@@ -9,6 +9,7 @@ public interface IQuasrAuthService
     Task<QuasrAuthResult> RegisterUserAsync(string username, string email, string password);
     Task<QuasrAuthResult> ValidateOAuthCallbackAsync(string provider, string code, string state);
     Task<QuasrUser?> GetUserByIdAsync(string userId);
+    string GetApiUrl();
 }
 
 public class QuasrAuthResult
@@ -47,9 +48,14 @@ public class QuasrAuthService : IQuasrAuthService
         _httpClientFactory = httpClientFactory;
         _configuration = configuration;
         _logger = logger;
-        _quasrApiUrl = configuration["Quasr:ApiUrl"] ?? throw new InvalidOperationException("Quasr:ApiUrl not configured");
+        
+        // Build tenant-specific URL: https://{tenantId}.api.quasr.io
+        var tenantId = configuration["Quasr:TenantId"] ?? throw new InvalidOperationException("Quasr:TenantId not configured");
+        _quasrApiUrl = $"https://{tenantId}.api.quasr.io";
         _quasrApiKey = configuration["Quasr:ApiKey"] ?? throw new InvalidOperationException("Quasr:ApiKey not configured");
     }
+
+    public string GetApiUrl() => _quasrApiUrl;
 
     public async Task<QuasrAuthResult> AuthenticateAsync(string username, string password, string? totpCode = null)
     {

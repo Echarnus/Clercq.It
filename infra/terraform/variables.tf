@@ -53,3 +53,21 @@ variable "scaleway_secret_key" {
   type        = string
   sensitive   = true
 }
+
+variable "quasr_tenant_id" {
+  description = "Quasr.io tenant ID for authentication"
+  type        = string
+  sensitive   = true
+}
+
+variable "quasr_api_key" {
+  description = "Quasr.io API key for authentication"
+  type        = string
+  sensitive   = true
+}
+
+variable "quasr_client_redirect_url" {
+  description = "Client redirect URL for Quasr.io OAuth callbacks"
+  type        = string
+  default     = "https://www.clercq.it"
+}
