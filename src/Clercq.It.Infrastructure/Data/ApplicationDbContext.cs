@@ -23,6 +23,7 @@ public class ApplicationDbContext : DbContext
 
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Blog> Blogs => Set<Blog>();
+    public DbSet<Certification> Certifications => Set<Certification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

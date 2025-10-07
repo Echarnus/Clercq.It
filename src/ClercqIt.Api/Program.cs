@@ -66,6 +66,7 @@ if (!string.IsNullOrEmpty(quasrApiUrl))
         options.AddPolicy("AdminView", policy => policy.RequireRole("Admin.View"));
         options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
         options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
+        options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
     });
 }
 
@@ -118,6 +119,7 @@ app.UseAuthorization();
 app.MapAuthEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
+app.MapCertificationsEndpoints();
 
 app.Run();
 
