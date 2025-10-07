@@ -8,6 +8,8 @@ Clercq.It uses **Quasr.io** as an external Identity as a Service (IDaaS) provide
 
 ## Quasr.io Architecture
 
+Quasr.io implements OpenID Connect for authentication. The API endpoint is tenant-specific, using the format `https://{tenantId}.api.quasr.io`, where `{tenantId}` is your unique tenant identifier.
+
 ### Authentication Flow
 
 #### Username/Password Authentication
@@ -82,17 +84,19 @@ The application container must be configured with the following Quasr.io-related
 
 ```bash
 # Quasr.io API Configuration
-Quasr__ApiUrl=https://api.quasr.io
+Quasr__TenantId=<your-tenant-id>
 Quasr__ApiKey=<your-quasr-api-key>
 Quasr__ClientRedirectUrl=<frontend-url>
 ```
 
 #### Configuration Details
 
-**Quasr__ApiUrl**
-- The Quasr.io API endpoint
-- Default: `https://api.quasr.io`
-- Used for all authentication and user management operations
+**Quasr__TenantId**
+- Your unique Quasr.io tenant identifier
+- Used to construct the tenant-specific API URL: `https://{tenantId}.api.quasr.io`
+- Example: If your tenant ID is `my-company`, the API URL will be `https://my-company.api.quasr.io`
+- Obtained from your Quasr.io dashboard
+- Required for all authentication and user management operations
 
 **Quasr__ApiKey**
 - API key for authenticating with Quasr.io
@@ -115,7 +119,7 @@ Example Docker run command:
 ```bash
 docker run -d \
   -p 80:80 \
-  -e Quasr__ApiUrl=https://api.quasr.io \
+  -e Quasr__TenantId=<your-tenant-id> \
   -e Quasr__ApiKey=<your-api-key> \
   -e Quasr__ClientRedirectUrl=https://www.clercq.it \
   echarnus/clercq-it:latest
@@ -133,8 +137,8 @@ resource "scaleway_container" "app" {
   # ... other configuration ...
   
   environment_variables = {
-    "Quasr__ApiUrl" = "https://api.quasr.io"
-    "Quasr__ClientRedirectUrl" = var.client_redirect_url
+    "Quasr__TenantId" = var.quasr_tenant_id
+    "Quasr__ClientRedirectUrl" = var.quasr_client_redirect_url
   }
   
   secret_environment_variables = {
@@ -142,6 +146,8 @@ resource "scaleway_container" "app" {
   }
 }
 ```
+
+**Note**: The API URL is automatically constructed from the tenant ID as `https://{tenantId}.api.quasr.io`.
 
 #### Via Scaleway Console
 
@@ -168,9 +174,10 @@ NEXT_PUBLIC_API_URL=https://api.clercq.it
 ### Initial Configuration
 
 1. **Create Account**: Sign up at https://quasr.io
-2. **Create Application**: Create a new application/project in Quasr.io dashboard
-3. **Get API Key**: Copy the API key from the application settings
-4. **Configure OAuth**:
+2. **Create Tenant**: Create a new tenant in the Quasr.io dashboard
+3. **Get Tenant ID**: Note your tenant ID from the dashboard (used to construct `https://{tenantId}.api.quasr.io`)
+4. **Get API Key**: Copy the API key from the tenant settings
+5. **Configure OAuth**:
    - Create OAuth apps in [GitHub Developer Settings](https://github.com/settings/developers)
    - Create OAuth apps in [LinkedIn Developer Portal](https://www.linkedin.com/developers/)
    - Add OAuth client IDs and secrets to Quasr.io
