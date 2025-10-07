@@ -24,7 +24,6 @@ The blog creation feature adds the ability to create blog posts through the API 
 2. **New Variables** (in `variables.tf`)
    - `scaleway_access_key` - S3 access key
    - `scaleway_secret_key` - S3 secret key
-   - `jwt_secret_key` - JWT signing key (legacy, not used with Quasr.io)
 
 3. **Container Environment Variables** (in `main.tf`)
    - `ObjectStorage__Endpoint`
@@ -32,7 +31,6 @@ The blog creation feature adds the ability to create blog posts through the API 
    - `ObjectStorage__Region`
    - `ObjectStorage__AccessKey`
    - `ObjectStorage__SecretKey`
-   - `Authentication__JwtSecretKey` (legacy, not used with Quasr.io)
 
 ### Application Code
 
@@ -82,11 +80,8 @@ Add the following secrets to your GitHub repository:
 ```
 SCW_ACCESS_KEY       - Scaleway access key (for Terraform and Object Storage)
 SCW_SECRET_KEY       - Scaleway secret key (for Terraform and Object Storage)
-JWT_SECRET_KEY       - (Legacy) Not used with Quasr.io authentication
 DATABASE_PASSWORD    - PostgreSQL database password
 ```
-
-> **Note:** The `JWT_SECRET_KEY` secret is from a legacy implementation and is no longer used. The application now uses Quasr.io for authentication, which manages its own JWT signing keys.
 
 ### 3. Update Terraform Variables
 
@@ -97,7 +92,6 @@ Update your Terraform workflow to pass the new variables:
 env:
   TF_VAR_scaleway_access_key: ${{ secrets.SCW_ACCESS_KEY }}
   TF_VAR_scaleway_secret_key: ${{ secrets.SCW_SECRET_KEY }}
-  TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
   TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 ```
 
@@ -116,13 +110,11 @@ terraform init
 # Plan changes
 terraform plan -var="scaleway_access_key=$SCW_ACCESS_KEY" \
   -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="jwt_secret_key=$JWT_SECRET_KEY" \
   -var="database_password=$DB_PASSWORD"
 
 # Apply changes
 terraform apply -var="scaleway_access_key=$SCW_ACCESS_KEY" \
   -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="jwt_secret_key=$JWT_SECRET_KEY" \
   -var="database_password=$DB_PASSWORD"
 ```
 
@@ -170,56 +162,6 @@ curl -X POST https://www.clercq.it/api/blogs \
 ```
 
 ## Security Considerations
-
-### JWT Token Generation
-
-> **Note:** This section describes an older implementation. The application now uses **Quasr.io** for authentication and token generation. See [CIAM Documentation](./ciam.md) for current implementation details.
-
-<details>
-<summary>Legacy JWT Implementation (for reference only)</summary>
-
-The example below shows how JWT tokens were manually generated before Quasr.io integration. This code is **not used** in the current implementation.
-
-**Example Token Generation:**
-
-```csharp
-public class TokenService
-{
-    private readonly IConfiguration _configuration;
-
-    public TokenService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
-    public string GenerateToken(string userId, string email)
-    {
-        var securityKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Authentication:JwtSecretKey"]!));
-        
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, userId),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Authentication:Issuer"],
-            audience: _configuration["Authentication:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_configuration["Authentication:ExpirationMinutes"] ?? "60")),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-}
-```
-
-</details>
 
 ### Object Storage Security
 
