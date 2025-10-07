@@ -14,9 +14,9 @@ public static class AuthEndpoints
         // Username/Password Login
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
-            IQuasrAuthService quasrAuthService) =>
+            ICloudIAMAuthService cloudIAMAuthService) =>
         {
-            var authResult = await quasrAuthService.AuthenticateAsync(
+            var authResult = await cloudIAMAuthService.AuthenticateAsync(
                 request.Username,
                 request.Password,
                 request.TotpCode
@@ -39,7 +39,7 @@ public static class AuthEndpoints
                 );
             }
 
-            // Return the token from Quasr.io (not self-generated)
+            // Return the token from Cloud IAM (not self-generated)
             return Results.Ok(new
             {
                 token = authResult.AccessToken,
@@ -54,15 +54,15 @@ public static class AuthEndpoints
         })
         .WithName("Login")
         .WithSummary("Login with username and password")
-        .WithDescription("Authenticates using Quasr.io and returns a JWT token from Quasr.io with user roles")
+        .WithDescription("Authenticates using Cloud IAM and returns a JWT token from Cloud IAM with user roles")
         .AllowAnonymous();
 
         // User Registration
         group.MapPost("/register", async (
             [FromBody] RegisterRequest request,
-            IQuasrAuthService quasrAuthService) =>
+            ICloudIAMAuthService cloudIAMAuthService) =>
         {
-            var result = await quasrAuthService.RegisterUserAsync(
+            var result = await cloudIAMAuthService.RegisterUserAsync(
                 request.Username,
                 request.Email,
                 request.Password
@@ -94,85 +94,85 @@ public static class AuthEndpoints
         // GitHub OAuth Initiation
         group.MapGet("/github", (IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
-            var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var cloudIAMApiUrl = configuration["CloudIAM:ApiUrl"];
+            var clientRedirectUrl = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
             
-            // Redirect to Quasr.io OAuth endpoint which handles the GitHub OAuth flow
-            var oauthUrl = $"{quasrApiUrl}/v1/auth/oauth/github?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
+            // Redirect to Cloud IAM OAuth endpoint which handles the GitHub OAuth flow
+            var oauthUrl = $"{cloudIAMApiUrl}/v1/auth/oauth/github?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
             
             return Results.Redirect(oauthUrl);
         })
         .WithName("GitHubLogin")
         .WithSummary("Initiate GitHub OAuth login")
-        .WithDescription("Redirects to Quasr.io GitHub OAuth flow")
+        .WithDescription("Redirects to Cloud IAM GitHub OAuth flow")
         .AllowAnonymous();
 
         // GitHub OAuth Callback
         group.MapGet("/github/callback", async (
             [FromQuery] string code,
             [FromQuery] string state,
-            IQuasrAuthService quasrAuthService,
+            ICloudIAMAuthService cloudIAMAuthService,
             IConfiguration configuration) =>
         {
-            var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("github", code, state);
+            var authResult = await cloudIAMAuthService.ValidateOAuthCallbackAsync("github", code, state);
 
             if (!authResult.Success || authResult.User == null)
             {
-                var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+                var clientRedirectUrl = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Use token from Quasr.io
+            // Use token from Cloud IAM
             var token = authResult.AccessToken;
             
-            var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var clientRedirectUrl2 = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
         })
         .WithName("GitHubCallback")
         .WithSummary("Handle GitHub OAuth callback")
-        .WithDescription("Processes GitHub OAuth callback from Quasr.io")
+        .WithDescription("Processes GitHub OAuth callback from Cloud IAM")
         .AllowAnonymous();
 
         // LinkedIn OAuth Initiation
         group.MapGet("/linkedin", (IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
-            var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var cloudIAMApiUrl = configuration["CloudIAM:ApiUrl"];
+            var clientRedirectUrl = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
             
-            // Redirect to Quasr.io OAuth endpoint which handles the LinkedIn OAuth flow
-            var oauthUrl = $"{quasrApiUrl}/v1/auth/oauth/linkedin?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
+            // Redirect to Cloud IAM OAuth endpoint which handles the LinkedIn OAuth flow
+            var oauthUrl = $"{cloudIAMApiUrl}/v1/auth/oauth/linkedin?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
             
             return Results.Redirect(oauthUrl);
         })
         .WithName("LinkedInLogin")
         .WithSummary("Initiate LinkedIn OAuth login")
-        .WithDescription("Redirects to Quasr.io LinkedIn OAuth flow")
+        .WithDescription("Redirects to Cloud IAM LinkedIn OAuth flow")
         .AllowAnonymous();
 
         // LinkedIn OAuth Callback
         group.MapGet("/linkedin/callback", async (
             [FromQuery] string code,
             [FromQuery] string state,
-            IQuasrAuthService quasrAuthService,
+            ICloudIAMAuthService cloudIAMAuthService,
             IConfiguration configuration) =>
         {
-            var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("linkedin", code, state);
+            var authResult = await cloudIAMAuthService.ValidateOAuthCallbackAsync("linkedin", code, state);
 
             if (!authResult.Success || authResult.User == null)
             {
-                var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+                var clientRedirectUrl = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Use token from Quasr.io
+            // Use token from Cloud IAM
             var token = authResult.AccessToken;
             
-            var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var clientRedirectUrl2 = configuration["CloudIAM:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
         })
         .WithName("LinkedInCallback")
         .WithSummary("Handle LinkedIn OAuth callback")
-        .WithDescription("Processes LinkedIn OAuth callback from Quasr.io")
+        .WithDescription("Processes LinkedIn OAuth callback from Cloud IAM")
         .AllowAnonymous();
     }
 

@@ -15,7 +15,7 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddOpenApi();
 
-// Add HttpClient for API calls (Quasr.io, etc.)
+// Add HttpClient for API calls (Cloud IAM, etc.)
 builder.Services.AddHttpClient();
 
 // Add CORS for frontend
@@ -34,26 +34,26 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Authentication - validate JWT tokens from Quasr.io
-var quasrApiUrl = builder.Configuration["Quasr:ApiUrl"];
-if (!string.IsNullOrEmpty(quasrApiUrl))
+// Add Authentication - validate JWT tokens from Cloud IAM
+var cloudIAMApiUrl = builder.Configuration["CloudIAM:ApiUrl"];
+if (!string.IsNullOrEmpty(cloudIAMApiUrl))
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Configure to validate tokens from Quasr.io
-            options.Authority = quasrApiUrl;
+            // Configure to validate tokens from Cloud IAM
+            options.Authority = cloudIAMApiUrl;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = false, // Quasr.io may not include audience
+                ValidateAudience = false, // Cloud IAM may not include audience
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = quasrApiUrl,
+                ValidIssuer = cloudIAMApiUrl,
                 RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
             
-            // For development, accept tokens from Quasr.io without HTTPS requirement
+            // For development, accept tokens from Cloud IAM without HTTPS requirement
             if (builder.Environment.IsDevelopment())
             {
                 options.RequireHttpsMetadata = false;
@@ -71,7 +71,7 @@ if (!string.IsNullOrEmpty(quasrApiUrl))
 }
 
 // Register authentication services
-builder.Services.AddSingleton<IQuasrAuthService, QuasrAuthService>();
+builder.Services.AddSingleton<ICloudIAMAuthService, CloudIAMAuthService>();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
