@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface VersionInfo {
@@ -124,27 +125,13 @@ export function Footer() {
         <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
           <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight flex items-center justify-center gap-1">
             <span>Made with ❤️ using React, .NET, Docker • Hosted on Scaleway</span>
-            <svg
-              className="inline-block w-4 h-4"
-              viewBox="0 0 810 540"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <rect width="810" height="540" fill="#003399" />
-              <g fill="#FFCC00">
-                <circle cx="405" cy="105" r="15" />
-                <circle cx="405" cy="435" r="15" />
-                <circle cx="298.5" cy="127.5" r="15" transform="rotate(30 405 270)" />
-                <circle cx="511.5" cy="412.5" r="15" transform="rotate(30 405 270)" />
-                <circle cx="238.5" cy="195" r="15" transform="rotate(60 405 270)" />
-                <circle cx="571.5" cy="345" r="15" transform="rotate(60 405 270)" />
-                <circle cx="225" cy="270" r="15" />
-                <circle cx="585" cy="270" r="15" />
-                <circle cx="238.5" cy="345" r="15" transform="rotate(-60 405 270)" />
-                <circle cx="571.5" cy="195" r="15" transform="rotate(-60 405 270)" />
-                <circle cx="298.5" cy="412.5" r="15" transform="rotate(-30 405 270)" />
-                <circle cx="511.5" cy="127.5" r="15" transform="rotate(-30 405 270)" />
-              </g>
-            </svg>
+            <Image
+              src="/eu-flag.png"
+              alt="EU Flag"
+              width={16}
+              height={16}
+              className="inline-block border border-slate-300 dark:border-slate-600 rounded-sm"
+            />
           </p>
           {versionInfo && (
             <p className="text-xs mt-2 text-slate-500">
