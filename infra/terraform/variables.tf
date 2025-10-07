@@ -53,9 +53,3 @@ variable "scaleway_secret_key" {
   type        = string
   sensitive   = true
 }
-
-variable "jwt_secret_key" {
-  description = "JWT secret key for authentication"
-  type        = string
-  sensitive   = true
-}
