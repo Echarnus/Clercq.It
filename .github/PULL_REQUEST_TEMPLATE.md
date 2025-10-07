@@ -39,7 +39,7 @@ Brief description of changes made in this pull request.
 ### Required Actions for Infrastructure PRs
 - [ ] **Validation**: Infrastructure pipeline validation job passed
 - [ ] **Plan Review**: Terraform plan output reviewed and approved
-- [ ] **Documentation**: Updated relevant documentation in `/infrastructure/` or `/docs/`
+- [ ] **Documentation**: Updated relevant documentation in `/infra/` or `/docs/`
 - [ ] **Environment Protection**: Production deployment will require manual approval
 
 ## Testing Performed

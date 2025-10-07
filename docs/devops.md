@@ -238,7 +238,7 @@ The application integrates with Scaleway Cockpit for centralized logging and mon
 - Use the project ID from Terraform outputs to locate your project
 
 ```bash
-cd infrastructure/terraform
+cd infra/terraform
 terraform output cockpit_project_id
 terraform output cockpit_token_id
 ```
@@ -431,4 +431,4 @@ gh secret list
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Scaleway Container Documentation](https://www.scaleway.com/en/docs/serverless/containers/)
-- [Infrastructure Setup Guide](../infrastructure/README.md)
+- [Infrastructure Setup Guide](../infra/README.md)

@@ -199,7 +199,7 @@ Connection details are retrieved from Terraform outputs during deployment.
 
 ### Infrastructure (Terraform)
 
-Database infrastructure is defined in `infrastructure/terraform/main.tf`:
+Database infrastructure is defined in `infra/terraform/main.tf`:
 
 ```hcl
 resource "scaleway_rdb_instance" "portfolio_db" {
@@ -250,7 +250,7 @@ For troubleshooting or manual operations:
 2. **Via `psql` Client:**
    ```bash
    # Get connection details from Terraform
-   cd infrastructure/terraform
+   cd infra/terraform
    terraform output database_endpoint
    terraform output database_port
    

@@ -125,7 +125,7 @@ jobs:
           echo "📊 Migration script size: $(wc -l < migration.sql) lines"
           
           # Navigate to Terraform directory and get database connection details
-          cd infrastructure/terraform
+          cd infra/terraform
           
           # Initialize Terraform backend
           export AWS_ACCESS_KEY_ID="${{ secrets.SCALEWAY_ACCESS_KEY }}"
@@ -184,7 +184,7 @@ jobs:
           fi
           
           # Navigate to Terraform directory and get container name
-          cd infrastructure/terraform
+          cd infra/terraform
           
           # Initialize Terraform backend
           export AWS_ACCESS_KEY_ID="${{ secrets.SCALEWAY_ACCESS_KEY }}"
@@ -193,7 +193,7 @@ jobs:
           echo "🔧 Initializing Terraform..."
           terraform init -input=false
           
-          # Container name is defined in Terraform IaC (infrastructure/terraform/main.tf)
+          # Container name is defined in Terraform IaC (infra/terraform/main.tf)
           CONTAINER_NAME="clercq-it-app"
           
           # Get container ID from Terraform outputs (dynamically assigned by Scaleway)

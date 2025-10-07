@@ -7,7 +7,7 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'infrastructure/**'
+      - 'infra/**'
   workflow_dispatch:
 
 env:
@@ -37,12 +37,12 @@ jobs:
 
       - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -check -recursive infrastructure/terraform/
+        run: terraform fmt -check -recursive infra/terraform/
         continue-on-error: true
 
       - name: Terraform Init
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform init
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
@@ -61,13 +61,13 @@ jobs:
       - name: Terraform Validate
         id: validate
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform validate
 
       - name: Terraform Plan
         id: plan
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform plan -no-color -out=tfplan 2>&1 | tee tfplan.txt
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
@@ -93,7 +93,7 @@ jobs:
             const fs = require('fs');
             let plan;
             try {
-              plan = fs.readFileSync('infrastructure/terraform/tfplan.txt', 'utf8');
+              plan = fs.readFileSync('infra/terraform/tfplan.txt', 'utf8');
             } catch (err) {
               plan = 'Plan output not available';
             }
@@ -141,7 +141,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform init
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
@@ -160,7 +160,7 @@ jobs:
       - name: Terraform Apply
         id: apply
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           echo "🚀 Starting infrastructure deployment..."
           terraform apply -auto-approve -no-color
         env:
@@ -182,7 +182,7 @@ jobs:
       - name: Terraform Output
         if: success()
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Outputs:" >> $GITHUB_STEP_SUMMARY

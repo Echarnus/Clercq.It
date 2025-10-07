@@ -36,7 +36,7 @@ All detailed technical information, setup guides, and architecture decisions are
 
 **Documentation Guidelines:**
 - All documentation must be placed in the `/docs` folder
-- Do NOT create per-case documentation files in other directories (e.g., infrastructure/, src/, etc.)
+- Do NOT create per-case documentation files in other directories (e.g., infra/, src/, etc.)
 - Update existing documentation files in `/docs` rather than creating new fix-specific files
 - Keep documentation centralized and organized by topic, not by individual fixes or changes
 

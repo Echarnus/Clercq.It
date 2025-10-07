@@ -115,7 +115,7 @@ env:
 # Push to main branch or manually trigger the infrastructure workflow
 
 # Option 2: Manually via Terraform
-cd infrastructure/terraform
+cd infra/terraform
 
 # Initialize Terraform
 terraform init
@@ -253,13 +253,13 @@ If issues occur after deployment:
 ### 2. Revert Infrastructure
 
 ```bash
-cd infrastructure/terraform
+cd infra/terraform
 
 # Revert to previous state
 terraform apply -target=-scaleway_object_bucket.blog_images
 
 # Or use git to checkout previous version
-git checkout <previous-commit> infrastructure/terraform/
+git checkout <previous-commit> infra/terraform/
 terraform apply
 ```
 

@@ -194,16 +194,16 @@ The application uses a **serverless-first architecture** on Scaleway with automa
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
 ### Infrastructure Management
-- **Terraform**: Infrastructure as Code in `/infrastructure/terraform/`
-- **GitHub Actions**: Automated provisioning via `infrastructure.yml` workflow
+- **Terraform**: Infrastructure as Code in `/infra/terraform/`
+- **GitHub Actions**: Automated provisioning via `infra.yml` workflow
 - **Environment Protection**: Production deployments require approval
 - **State Management**: Terraform state with proper gitignore patterns
 
 ### Quick Infrastructure Setup
 
 ```bash
-# Navigate to infrastructure directory
-cd infrastructure/terraform
+# Navigate to infra directory
+cd infra/terraform
 
 # Copy and configure variables
 cp terraform.tfvars.example terraform.tfvars
@@ -215,7 +215,7 @@ terraform plan
 terraform apply
 ```
 
-For detailed infrastructure documentation, see [`infrastructure/README.md`](infrastructure/README.md).
+For detailed infrastructure documentation, see [`infra/README.md`](infra/README.md).
 
 ## 📊 Monitoring & Observability
 
