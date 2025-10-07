@@ -220,6 +220,37 @@ Create the following roles in Auth0 dashboard (Authorization > Roles):
 3. Create an Action or Rule to add roles to the JWT token
 4. Assign roles to users via Auth0 dashboard (User Management > Roles)
 
+**Example Auth0 Action to add roles to tokens:**
+
+```javascript
+exports.onExecutePostLogin = async (event, api) => {
+  const namespace = 'https://schemas.clercq.it';
+  
+  if (event.authorization) {
+    // Get user roles
+    const roles = event.authorization.roles || [];
+    
+    // Add roles to access token
+    api.accessToken.setCustomClaim(`${namespace}/roles`, roles);
+    
+    // Add roles to ID token
+    api.idToken.setCustomClaim(`${namespace}/roles`, roles);
+  }
+};
+```
+
+### Database Connection Setup
+
+For username/password authentication:
+
+1. Navigate to Authentication > Database in Auth0 dashboard
+2. Enable "Username-Password-Authentication" connection
+3. Enable the following settings:
+   - Requires Username
+   - Password Strength: Fair (or higher)
+   - Email Verification: Enabled
+4. Link the connection to your application
+
 ## Security Considerations
 
 ### Token Validation
