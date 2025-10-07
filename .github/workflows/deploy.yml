@@ -51,12 +51,12 @@ jobs:
       - name: Calculate commit-based version
         if: github.event_name == 'workflow_run'
         id: calc_version
-        run: |
-          MAJOR=${{ steps.gitversion.outputs.major }}
-          MINOR=${{ steps.gitversion.outputs.minor }}
-          COMMITS=${{ steps.gitversion.outputs.commitsSinceVersionSource }}
-          VERSION="${MAJOR}.${MINOR}.${COMMITS}"
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        uses: ./.github/actions/calculate-version
+        with:
+          major: ${{ steps.gitversion.outputs.major }}
+          minor: ${{ steps.gitversion.outputs.minor }}
+          commits-since-version-source: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}
+          branch-name: main
 
       - name: Set deployment version
         id: version
