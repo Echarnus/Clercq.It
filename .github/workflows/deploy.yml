@@ -48,6 +48,16 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
+      - name: Calculate commit-based version
+        if: github.event_name == 'workflow_run'
+        id: calc_version
+        uses: ./.github/actions/calculate-version
+        with:
+          major: ${{ steps.gitversion.outputs.major }}
+          minor: ${{ steps.gitversion.outputs.minor }}
+          commits-since-version-source: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}
+          branch-name: main
+
       - name: Set deployment version
         id: version
         run: |
@@ -55,7 +65,7 @@ jobs:
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "source=manual" >> $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.gitversion.outputs.semVer }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.calc_version.outputs.version }}" >> $GITHUB_OUTPUT
             echo "source=automatic" >> $GITHUB_OUTPUT
           fi
 

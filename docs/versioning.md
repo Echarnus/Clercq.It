@@ -4,7 +4,15 @@ This document describes the versioning strategy and branching workflow used in t
 
 ## Overview
 
-The project uses **GitVersion** for automatic semantic versioning based on Git history and branch naming conventions. We follow **GitHub Flow** with **Continuous Deployment** mode.
+The project uses **GitVersion** combined with **commit-count-based versioning** for automatic semantic versioning. We follow **GitHub Flow** with **Continuous Deployment** mode.
+
+### Version Format
+
+- **Main branch**: `{Major}.{Minor}.{CommitCount}` (e.g., 1.0.67, 1.0.68)
+  - The patch number is the number of commits since the last major/minor tag
+  - Each commit to main gets a unique, incrementing version
+- **Feature/PR branches**: `{Major}.{Minor}.{CommitCount}-{branch-label}` (e.g., 1.0.67-copilot, 1.0.68-feature)
+- **Major/Minor versions**: Controlled via git tags (e.g., `v2.0.0`, `v1.1.0`)
 
 ## Branching Strategy (GitHub Flow)
 
@@ -27,7 +35,24 @@ The project uses **GitVersion** for automatic semantic versioning based on Git h
 
 ### Configuration File
 
-The GitVersion configuration is stored in `GitVersion.yml` at the repository root. The global mode is set to `ContinuousDeployment` to ensure each commit gets a unique version number by auto-incrementing the patch version.
+The GitVersion configuration is stored in `GitVersion.yml` at the repository root. GitVersion tracks commits and provides the commit count, which is then used by the build pipeline to construct the version number.
+
+### Version Calculation
+
+The build pipeline (`build.yml`) calculates versions using this logic:
+
+```bash
+# For main branch
+VERSION="${MAJOR}.${MINOR}.${CommitsSinceVersionSource}"
+
+# For feature/PR branches  
+VERSION="${MAJOR}.${MINOR}.${CommitsSinceVersionSource}-${branch-label}"
+```
+
+This ensures:
+- **Unique versions**: Each commit gets a unique version number
+- **Clean versions on main**: No pre-release tags (1.0.67, not 1.0.0-67)
+- **Branch identification**: Feature branches include the branch type in the version
 
 ### Branch Configuration
 
@@ -44,11 +69,12 @@ main:
   track-merge-target: false
 ```
 
-- **Mode**: ContinuousDeployment (auto-increments patch for each commit)
-- **Increment**: Patch (1.0.0 → 1.0.1, 1.0.2, 1.0.3, etc.)
+- **Mode**: ContinuousDeployment (provides commit tracking)
+- **Increment**: Patch (for major/minor control via tags)
 - **Label**: None (clean version numbers)
-- **Prevent Increment**: `of-merged-branch: false` ensures version increments on every merge to main
-- **Purpose**: Production releases with auto-incrementing version for each commit
+- **Prevent Increment**: `of-merged-branch: false` allows tracking of all commits
+- **Actual Version**: Calculated as `1.{Minor}.{CommitCount}` by the build pipeline
+- **Purpose**: Production releases with auto-incrementing version based on commit count
 
 #### Develop Branch
 
@@ -148,26 +174,30 @@ release:
 
 ```
 Initial tag: v1.0.0 (created automatically on first build)
-First commit: 1.0.1
+First commit after tag: 1.0.1
 Second commit: 1.0.2
 Third commit: 1.0.3
 ...
 After 22 commits: 1.0.22
+After 67 commits: 1.0.67
 After 100 commits: 1.0.100
 ```
 
-**Note:** Each commit to the `main` branch gets a unique version by auto-incrementing the patch number. This happens because:
-- The `main` branch is configured with `mode: ContinuousDeployment` and `increment: Patch` in GitVersion
-- GitVersion uses the latest tag as a baseline and increments the patch version for each commit
-- The version format is clean semantic versioning: `{major}.{minor}.{patch}`
-- Each commit automatically increments the patch number, giving clean versions for deployment
+**How it works:**
+- GitVersion tracks commits since the last version tag (v1.0.0)
+- The build pipeline uses `GitVersion_CommitsSinceVersionSource` as the patch number
+- Result: Each commit gets version `1.0.{CommitCount}`
+- This creates clean, incrementing versions for production deployments
 
 ### Feature Branch Examples
 
 ```
-feature/user-auth → 1.0.1-feature.user-auth.1
-feature/api-improvements → 1.0.1-feature.api-improvements.1
+feature/user-auth → 1.0.22-feature
+feature/api-improvements → 1.0.22-feature
+copilot/fix-123 → 1.0.67-copilot
 ```
+
+**Note:** Feature branches include the branch type as a label, helping identify the source of the build.
 
 ### Develop Branch Examples
 

@@ -1,0 +1,60 @@
+name: 'Calculate Version'
+description: 'Calculates semantic version based on GitVersion commit count'
+inputs:
+  major:
+    description: 'Major version number from GitVersion'
+    required: true
+  minor:
+    description: 'Minor version number from GitVersion'
+    required: true
+  commits-since-version-source:
+    description: 'Number of commits since version source from GitVersion'
+    required: true
+  branch-name:
+    description: 'Current branch name'
+    required: true
+  pre-release-label:
+    description: 'Pre-release label from GitVersion (optional)'
+    required: false
+    default: ''
+outputs:
+  version:
+    description: 'Calculated semantic version'
+    value: ${{ steps.calculate.outputs.version }}
+runs:
+  using: 'composite'
+  steps:
+    - name: Calculate version
+      id: calculate
+      shell: bash
+      run: |
+        MAJOR="${{ inputs.major }}"
+        MINOR="${{ inputs.minor }}"
+        COMMITS="${{ inputs.commits-since-version-source }}"
+        BRANCH_NAME="${{ inputs.branch-name }}"
+        PRE_RELEASE_LABEL="${{ inputs.pre-release-label }}"
+        
+        if [ "$BRANCH_NAME" == "main" ]; then
+          # For main branch: use commit count as patch version
+          VERSION="${MAJOR}.${MINOR}.${COMMITS}"
+        else
+          # For feature/PR branches: use label with commit count
+          if [ -z "$PRE_RELEASE_LABEL" ]; then
+            # If no label, determine from branch name
+            if [[ "$BRANCH_NAME" == copilot/* ]]; then
+              LABEL="copilot"
+            elif [[ "$BRANCH_NAME" == feature/* ]]; then
+              LABEL="feature"
+            elif [[ "$BRANCH_NAME" == pr/* ]] || [[ "$BRANCH_NAME" == pull/* ]]; then
+              LABEL="pr"
+            else
+              LABEL="dev"
+            fi
+          else
+            LABEL="$PRE_RELEASE_LABEL"
+          fi
+          VERSION="${MAJOR}.${MINOR}.${COMMITS}-${LABEL}"
+        fi
+        
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "📦 Calculated version: ${VERSION}" >> $GITHUB_STEP_SUMMARY
