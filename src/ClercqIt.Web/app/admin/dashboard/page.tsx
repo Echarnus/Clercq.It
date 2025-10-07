@@ -18,12 +18,14 @@ import {
   Settings,
   BarChart3,
   Image as ImageIcon,
+  Award,
 } from "lucide-react";
 
 interface UserRoles {
   hasAdminView: boolean;
   hasBlogsContributor: boolean;
   hasProjectsContributor: boolean;
+  hasCertificationsContributor: boolean;
 }
 
 export default function AdminDashboard() {
@@ -33,6 +35,7 @@ export default function AdminDashboard() {
     hasAdminView: false,
     hasBlogsContributor: false,
     hasProjectsContributor: false,
+    hasCertificationsContributor: false,
   });
   const [username, setUsername] = useState<string>("");
 
@@ -57,6 +60,7 @@ export default function AdminDashboard() {
             hasAdminView: roles.includes("Admin.View"),
             hasBlogsContributor: roles.includes("Blogs.Contributor"),
             hasProjectsContributor: roles.includes("Projects.Contributor"),
+            hasCertificationsContributor: roles.includes("Certifications.Contributor"),
           });
         } catch (e) {
           console.error("Failed to parse user data:", e);
@@ -76,7 +80,7 @@ export default function AdminDashboard() {
   }
 
   // Check if user has any admin permissions
-  const hasAnyPermission = userRoles.hasAdminView || userRoles.hasBlogsContributor || userRoles.hasProjectsContributor;
+  const hasAnyPermission = userRoles.hasAdminView || userRoles.hasBlogsContributor || userRoles.hasProjectsContributor || userRoles.hasCertificationsContributor;
 
   if (!hasAnyPermission) {
     return (
@@ -97,6 +101,7 @@ export default function AdminDashboard() {
               <li>Admin.View - Access admin area</li>
               <li>Blogs.Contributor - Manage blog posts</li>
               <li>Projects.Contributor - Manage projects</li>
+              <li>Certifications.Contributor - Manage certifications</li>
             </ul>
             <Button onClick={handleLogout} className="w-full">
               <LogOut className="mr-2 h-4 w-4" />
@@ -133,7 +138,7 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full lg:w-auto" style={{ gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasAdminView].filter(Boolean).length}, 1fr)` }}>
+          <TabsList className="grid w-full lg:w-auto" style={{ gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasCertificationsContributor, userRoles.hasAdminView].filter(Boolean).length}, 1fr)` }}>
             {userRoles.hasAdminView && (
               <TabsTrigger value="overview">
                 <BarChart3 className="h-4 w-4 mr-2" />
@@ -150,6 +155,12 @@ export default function AdminDashboard() {
               <TabsTrigger value="projects">
                 <FolderKanban className="h-4 w-4 mr-2" />
                 Projects
+              </TabsTrigger>
+            )}
+            {userRoles.hasCertificationsContributor && (
+              <TabsTrigger value="certifications">
+                <Award className="h-4 w-4 mr-2" />
+                Certifications
               </TabsTrigger>
             )}
             {userRoles.hasAdminView && (
@@ -247,6 +258,9 @@ export default function AdminDashboard() {
                     <strong>Projects:</strong> Manage your portfolio projects
                   </li>
                   <li>
+                    <strong>Certifications:</strong> Showcase your professional certifications
+                  </li>
+                  <li>
                     <strong>Settings:</strong> Configure system settings and
                     preferences
                   </li>
@@ -314,6 +328,35 @@ export default function AdminDashboard() {
           </TabsContent>
           )}
 
+          {/* Certifications Tab */}
+          {userRoles.hasCertificationsContributor && (
+            <TabsContent value="certifications" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Certification Management</CardTitle>
+                <CardDescription>
+                  Manage your professional certifications
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Award className="h-12 w-12 text-muted-foreground mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">
+                    No certifications yet
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-6">
+                    Add your first certification to showcase your expertise
+                  </p>
+                  <Button>
+                    <Award className="mr-2 h-4 w-4" />
+                    Add Certification
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          )}
+
           {/* Settings Tab */}
           {userRoles.hasAdminView && (
             <TabsContent value="settings" className="space-y-6">
@@ -337,6 +380,7 @@ export default function AdminDashboard() {
                     {userRoles.hasAdminView && "Admin.View "}
                     {userRoles.hasBlogsContributor && "Blogs.Contributor "}
                     {userRoles.hasProjectsContributor && "Projects.Contributor "}
+                    {userRoles.hasCertificationsContributor && "Certifications.Contributor "}
                   </p>
                 </div>
                 <div className="space-y-2">

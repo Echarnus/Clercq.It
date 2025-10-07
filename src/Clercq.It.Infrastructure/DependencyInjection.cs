@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IBlogRepository, BlogRepository>();
+        services.AddScoped<ICertificationRepository, CertificationRepository>();
 
         // Configure Object Storage
         var objectStorageSection = configuration.GetSection("ObjectStorage");
