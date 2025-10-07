@@ -102,28 +102,33 @@ The base API client (`baseApi.ts`) is reused by both the RTK Query layer and the
 ## API Schema
 
 ```typescript
-interface Project {
-  id: string;              // GUID
-  title: string;           // Project title
-  shortDescription: string; // Brief description
-  longDescription: string;  // Detailed description
-  image: string;           // Image URL
-  startDate: string;       // ISO date string
-  endDate: string;         // ISO date string
-  featured: boolean;       // Featured flag
-  skills: string[];        // Array of skill tags
-}
+// Zod schema with runtime validation
+const ProjectSchema = z.object({
+  id: z.string().uuid(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  shortDescription: z.string(),
+  longDescription: z.string(),
+  image: z.string().url(),
+  featured: z.boolean(),
+  title: z.string().min(1),
+  skills: z.array(z.string()),
+});
+
+// TypeScript type inferred from schema
+type Project = z.infer<typeof ProjectSchema>;
 ```
+
+**Runtime Validation**: All API responses are validated using Zod schemas, ensuring type safety and data integrity.
 
 ## Configuration
 
 ```bash
-# .env.local (development)
+# .env.local (development only)
 NEXT_PUBLIC_API_URL=http://localhost:5035
-
-# Production
-NEXT_PUBLIC_API_URL=https://api.clercq.it
 ```
+
+**Production**: The application uses relative URLs in production (same Docker container). The `NEXT_PUBLIC_API_URL` environment variable is only needed for local development.
 
 ## Screenshots
 

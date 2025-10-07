@@ -61,11 +61,14 @@ The base API client is reused by both the Redux layer (RTK Query) and the SSR la
 #### Base API Client (`/lib/api/baseApi.ts`)
 
 Shared API configuration and utilities used by both SSR and Redux:
-- `getApiUrl()` - Returns the configured API URL
+- `getApiUrl()` - Returns the configured API URL (relative in production, full URL in development)
 - `getProjectsBaseUrl()` - Returns the projects API base URL
-- `fetchProjects(endpoint)` - Base function for fetching project lists
-- `fetchProject(endpoint)` - Base function for fetching a single project
-- `Project` type definition - Shared TypeScript interface
+- `fetchProjects(endpoint)` - Base function for fetching project lists with Zod validation
+- `fetchProject(endpoint)` - Base function for fetching a single project with Zod validation
+- `ProjectSchema` - Zod schema for runtime validation of API responses
+- `Project` type - TypeScript type inferred from Zod schema
+
+**Validation**: All API responses are validated using Zod schemas to ensure type safety at runtime.
 
 #### Server-Side API (`/app/portfolio/lib/api.ts`)
 
@@ -106,18 +109,24 @@ All three layers share the same base API configuration and Project type.
 ## ProjectDto Schema
 
 ```typescript
-interface Project {
-  id: string;              // GUID
-  title: string;           // Project title
-  shortDescription: string; // Brief description
-  longDescription: string;  // Detailed description
-  image: string;           // Image URL
-  startDate: string;       // ISO date string
-  endDate: string;         // ISO date string
-  featured: boolean;       // Featured flag
-  skills: string[];        // Array of skill tags
-}
+// Zod schema with runtime validation
+const ProjectSchema = z.object({
+  id: z.string().uuid(),
+  startDate: z.string().datetime(),
+  endDate: z.string().datetime(),
+  shortDescription: z.string(),
+  longDescription: z.string(),
+  image: z.string().url(),
+  featured: z.boolean(),
+  title: z.string().min(1),
+  skills: z.array(z.string()),
+});
+
+// TypeScript type inferred from schema
+type Project = z.infer<typeof ProjectSchema>;
 ```
+
+**Validation**: All API responses are validated at runtime using Zod, ensuring type safety and catching malformed data early.
 
 ## Page Components
 
@@ -158,12 +167,11 @@ interface Project {
 ### Environment Variables
 
 ```bash
-# .env.local (development)
+# .env.local (development only)
 NEXT_PUBLIC_API_URL=http://localhost:5035
-
-# Production
-NEXT_PUBLIC_API_URL=https://api.clercq.it
 ```
+
+**Note**: In production, the application uses relative URLs (same Docker container) and does not require `NEXT_PUBLIC_API_URL`. The environment variable is only used for local development to point to the API server running on a different port.
 
 ### Redux Store Setup
 
