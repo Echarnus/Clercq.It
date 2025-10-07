@@ -24,7 +24,6 @@ The blog creation feature adds the ability to create blog posts through the API 
 2. **New Variables** (in `variables.tf`)
    - `scaleway_access_key` - S3 access key
    - `scaleway_secret_key` - S3 secret key
-   - `jwt_secret_key` - JWT signing key
 
 3. **Container Environment Variables** (in `main.tf`)
    - `ObjectStorage__Endpoint`
@@ -32,7 +31,6 @@ The blog creation feature adds the ability to create blog posts through the API 
    - `ObjectStorage__Region`
    - `ObjectStorage__AccessKey`
    - `ObjectStorage__SecretKey`
-   - `Authentication__JwtSecretKey`
 
 ### Application Code
 
@@ -82,17 +80,7 @@ Add the following secrets to your GitHub repository:
 ```
 SCW_ACCESS_KEY       - Scaleway access key (for Terraform and Object Storage)
 SCW_SECRET_KEY       - Scaleway secret key (for Terraform and Object Storage)
-JWT_SECRET_KEY       - Random string min 32 characters for JWT signing
 DATABASE_PASSWORD    - PostgreSQL database password
-```
-
-**Generate JWT Secret:**
-```bash
-# Linux/macOS
-openssl rand -base64 48
-
-# PowerShell
-[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
 ```
 
 ### 3. Update Terraform Variables
@@ -104,7 +92,6 @@ Update your Terraform workflow to pass the new variables:
 env:
   TF_VAR_scaleway_access_key: ${{ secrets.SCW_ACCESS_KEY }}
   TF_VAR_scaleway_secret_key: ${{ secrets.SCW_SECRET_KEY }}
-  TF_VAR_jwt_secret_key: ${{ secrets.JWT_SECRET_KEY }}
   TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
 ```
 
@@ -123,13 +110,11 @@ terraform init
 # Plan changes
 terraform plan -var="scaleway_access_key=$SCW_ACCESS_KEY" \
   -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="jwt_secret_key=$JWT_SECRET_KEY" \
   -var="database_password=$DB_PASSWORD"
 
 # Apply changes
 terraform apply -var="scaleway_access_key=$SCW_ACCESS_KEY" \
   -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="jwt_secret_key=$JWT_SECRET_KEY" \
   -var="database_password=$DB_PASSWORD"
 ```
 
@@ -178,49 +163,6 @@ curl -X POST https://www.clercq.it/api/blogs \
 
 ## Security Considerations
 
-### JWT Token Generation
-
-You'll need to implement a separate endpoint or admin tool to generate JWT tokens. The current implementation only validates tokens, it doesn't issue them.
-
-**Example Token Generation:**
-
-```csharp
-public class TokenService
-{
-    private readonly IConfiguration _configuration;
-
-    public TokenService(IConfiguration configuration)
-    {
-        _configuration = configuration;
-    }
-
-    public string GenerateToken(string userId, string email)
-    {
-        var securityKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Authentication:JwtSecretKey"]!));
-        
-        var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
-
-        var claims = new[]
-        {
-            new Claim(JwtRegisteredClaimNames.Sub, userId),
-            new Claim(JwtRegisteredClaimNames.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-        };
-
-        var token = new JwtSecurityToken(
-            issuer: _configuration["Authentication:Issuer"],
-            audience: _configuration["Authentication:Audience"],
-            claims: claims,
-            expires: DateTime.UtcNow.AddMinutes(
-                int.Parse(_configuration["Authentication:ExpirationMinutes"] ?? "60")),
-            signingCredentials: credentials);
-
-        return new JwtSecurityTokenHandler().WriteToken(token);
-    }
-}
-```
-
 ### Object Storage Security
 
 - Bucket has **public-read** ACL - anyone can view uploaded images
@@ -230,9 +172,9 @@ public class TokenService
 ### Environment Variables
 
 All sensitive configuration is stored in environment variables, not in code:
-- JWT secret key
 - S3 access credentials
 - Database password
+- Quasr.io API key
 
 Never commit these values to version control.
 

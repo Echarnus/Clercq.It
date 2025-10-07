@@ -85,12 +85,6 @@ The application container must be configured with the following Quasr.io-related
 Quasr__ApiUrl=https://api.quasr.io
 Quasr__ApiKey=<your-quasr-api-key>
 Quasr__ClientRedirectUrl=<frontend-url>
-
-# JWT Configuration (for token generation)
-Authentication__JwtSecretKey=<your-secret-key-min-32-chars>
-Authentication__Issuer=Clercq.It
-Authentication__Audience=Clercq.It.Api
-Authentication__ExpirationMinutes=60
 ```
 
 #### Configuration Details
@@ -112,12 +106,6 @@ Authentication__ExpirationMinutes=60
 - Production: `https://www.clercq.it`
 - Must match OAuth redirect URLs configured in Quasr.io
 
-**Authentication__JwtSecretKey**
-- Secret key used to sign JWT tokens
-- Minimum 32 characters recommended
-- Should be cryptographically random
-- **Critical**: Keep this secret and never commit to source control
-
 ### Dockerfile Configuration
 
 The containerized application automatically reads environment variables. No code changes needed for deployment.
@@ -130,10 +118,6 @@ docker run -d \
   -e Quasr__ApiUrl=https://api.quasr.io \
   -e Quasr__ApiKey=<your-api-key> \
   -e Quasr__ClientRedirectUrl=https://www.clercq.it \
-  -e Authentication__JwtSecretKey=<your-jwt-secret> \
-  -e Authentication__Issuer=Clercq.It \
-  -e Authentication__Audience=Clercq.It.Api \
-  -e Authentication__ExpirationMinutes=60 \
   echarnus/clercq-it:latest
 ```
 
@@ -151,14 +135,10 @@ resource "scaleway_container" "app" {
   environment_variables = {
     "Quasr__ApiUrl" = "https://api.quasr.io"
     "Quasr__ClientRedirectUrl" = var.client_redirect_url
-    "Authentication__Issuer" = "Clercq.It"
-    "Authentication__Audience" = "Clercq.It.Api"
-    "Authentication__ExpirationMinutes" = "60"
   }
   
   secret_environment_variables = {
     "Quasr__ApiKey" = var.quasr_api_key
-    "Authentication__JwtSecretKey" = var.jwt_secret_key
   }
 }
 ```
