@@ -32,6 +32,22 @@ public static class ProjectsEndpoints
         .WithSummary("Get featured projects")
         .WithDescription("Retrieves all featured projects from the system");
 
+        group.MapGet("/{id:guid}", async (Guid id, IMediator mediator) =>
+        {
+            var query = new GetProjectByIdQuery(id);
+            var result = await mediator.Send(query);
+            
+            if (result == null)
+            {
+                return Results.NotFound();
+            }
+            
+            return Results.Ok(result);
+        })
+        .WithName("GetProjectById")
+        .WithSummary("Get a project by ID")
+        .WithDescription("Retrieves a specific project by its ID");
+
         group.MapPost("/images", async (HttpRequest request, IMediator mediator) =>
         {
             // Read multipart form data

@@ -9,14 +9,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, ExternalLink, Github } from "lucide-react";
 import Image from "next/image";
-import { createScope } from "@/lib/services/container";
-import type { ProjectsService } from "@/lib/services/projectsService";
+import { fetchAllProjects } from "./lib/api";
 
 export default async function PortfolioPage() {
-  // Create a per-request DI scope and resolve the ProjectsService directly
-  const scope = createScope();
-  const projectsService = scope.resolve<ProjectsService>("ProjectsService");
-  const projects = await projectsService.getProjects();
+  const projects = await fetchAllProjects();
 
   return (
     <div
@@ -56,68 +52,61 @@ export default async function PortfolioPage() {
               </div>
             ) : (
               projects.map((project, index) => (
-                <Card
-                  key={index}
-                  className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 ${
-                    project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""
-                  }`}
+                <Link 
+                  key={project.id} 
+                  href={`/portfolio/${project.id}`}
+                  className="block"
                 >
-                  <div
-                    className={`relative overflow-hidden ${
-                      project.featured ? "md:order-1" : ""
+                  <Card
+                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer ${
+                      project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""
                     }`}
                   >
-                    <Image
-                      src={project.image || "/placeholder.svg"}
-                      alt={project.title}
-                      width={400}
-                      height={250}
-                      className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                        project.featured
-                          ? "h-64 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                          : "h-48 rounded-t-lg"
+                    <div
+                      className={`relative overflow-hidden ${
+                        project.featured ? "md:order-1" : ""
                       }`}
-                    />
-                  </div>
+                    >
+                      <Image
+                        src={project.image || "/placeholder.svg"}
+                        alt={project.title}
+                        width={400}
+                        height={250}
+                        className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                          project.featured
+                            ? "h-64 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none"
+                            : "h-48 rounded-t-lg"
+                        }`}
+                      />
+                    </div>
 
-                  <CardContent
-                    className={`p-6 ${
-                      project.featured
-                        ? "md:order-2 md:flex md:flex-col md:justify-center"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <CardTitle className="text-slate-900 text-xl dark:text-white">
-                        {project.title}
-                      </CardTitle>
-                      <div className="flex gap-2 ml-4">
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={project.liveUrl ?? "#"}>
-                            <ExternalLink className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                        <Button asChild size="sm" variant="outline">
-                          <Link href={project.githubUrl ?? "#"}>
-                            <Github className="h-4 w-4" />
-                          </Link>
-                        </Button>
+                    <CardContent
+                      className={`p-6 ${
+                        project.featured
+                          ? "md:order-2 md:flex md:flex-col md:justify-center"
+                          : ""
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <CardTitle className="text-slate-900 text-xl dark:text-white">
+                          {project.title}
+                        </CardTitle>
                       </div>
-                    </div>
 
-                    <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
-                      {project.description}
-                    </CardDescription>
+                      <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
+                        {project.shortDescription}
+                      </CardDescription>
 
-                    <div className="flex flex-wrap gap-2">
-                      {project.tags?.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                      <div className="flex flex-wrap gap-2">
+                        {project.skills?.map((skill) => (
+                          <Badge key={skill} variant="secondary" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
               ))
             )}
           </div>
