@@ -69,7 +69,7 @@ The Admin Backoffice is a secure, role-based content management system accessibl
 
 ### Authentication
 
-The system uses **Quasr.io Identity as a Service** for comprehensive authentication:
+The system uses **Auth0 Identity as a Service** for comprehensive authentication:
 
 #### Supported Authentication Methods
 1. **Username/Password Login**: Traditional credentials-based authentication with automatic MFA detection
@@ -87,7 +87,7 @@ The system uses **Quasr.io Identity as a Service** for comprehensive authenticat
 1. Users register at `/admin/register` with username, email, and password
 2. Email verification link sent to confirm account
 3. Account activated but without any roles assigned
-4. Administrator assigns roles via Quasr.io dashboard
+4. Administrator assigns roles via Auth0 dashboard
 
 #### Role-Based Access Control (RBAC)
 
@@ -109,16 +109,16 @@ The admin dashboard provides role-based tab visibility:
 
 ### Security Features
 - JWT token storage in browser localStorage
-- Tokens issued by Quasr.io with embedded role claims
-- Backend validates tokens using Quasr.io's public keys
+- Tokens issued by Auth0 with embedded role claims
+- Backend validates tokens using Auth0's public keys
 - No access for users without assigned roles
 
 ### OAuth Configuration
 
-OAuth providers must be configured in the Quasr.io dashboard:
-1. Create OAuth apps in GitHub and LinkedIn developer portals
-2. Add OAuth client IDs and secrets to Quasr.io
-3. Configure redirect URLs to point to the backend API
+OAuth providers must be configured in the Auth0 dashboard:
+1. Enable GitHub and LinkedIn social connections in Auth0
+2. Configure redirect URLs in Auth0 Application settings
+3. Assign roles to users via Auth0 dashboard (User Management > Roles)
 
 ### Protected Routes
 All blog and project creation/modification endpoints require valid JWT tokens with appropriate roles.

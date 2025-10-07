@@ -371,7 +371,7 @@ export default function AdminDashboard() {
                 <div className="space-y-2">
                   <h4 className="text-sm font-medium">Authentication</h4>
                   <p className="text-sm text-muted-foreground">
-                    Quasr.io Identity as a Service active
+                    Auth0 Identity as a Service active
                   </p>
                 </div>
                 <div className="space-y-2">

@@ -102,6 +102,11 @@ resource "scaleway_container" "portfolio_app" {
     "ObjectStorage__Region"       = var.scaleway_region
     "ObjectStorage__AccessKey"    = var.scaleway_access_key
     "ObjectStorage__SecretKey"    = var.scaleway_secret_key
+    "Auth0__Domain"               = var.auth0_domain
+    "Auth0__ClientId"             = var.auth0_client_id
+    "Auth0__ClientSecret"         = var.auth0_client_secret
+    "Auth0__Audience"             = var.auth0_audience
+    "Auth0__ClientRedirectUrl"    = var.auth0_client_redirect_url
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"               = "Production"
     "NODE_ENV"                             = "production"

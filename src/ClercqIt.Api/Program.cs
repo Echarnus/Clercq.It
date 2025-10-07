@@ -15,7 +15,7 @@ builder.AddServiceDefaults();
 // Add services to the container
 builder.Services.AddOpenApi();
 
-// Add HttpClient for API calls (Quasr.io, etc.)
+// Add HttpClient for API calls (Auth0, etc.)
 builder.Services.AddHttpClient();
 
 // Add CORS for frontend
@@ -34,26 +34,28 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Authentication - validate JWT tokens from Quasr.io
-var quasrApiUrl = builder.Configuration["Quasr:ApiUrl"];
-if (!string.IsNullOrEmpty(quasrApiUrl))
+// Add Authentication - validate JWT tokens from Auth0
+var auth0Domain = builder.Configuration["Auth0:Domain"];
+var auth0Audience = builder.Configuration["Auth0:Audience"];
+if (!string.IsNullOrEmpty(auth0Domain) && !string.IsNullOrEmpty(auth0Audience))
 {
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Configure to validate tokens from Quasr.io
-            options.Authority = quasrApiUrl;
+            // Configure to validate tokens from Auth0
+            options.Authority = $"https://{auth0Domain}/";
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = false, // Quasr.io may not include audience
+                ValidateAudience = true,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = quasrApiUrl,
-                RoleClaimType = System.Security.Claims.ClaimTypes.Role
+                ValidIssuer = $"https://{auth0Domain}/",
+                ValidAudience = auth0Audience,
+                RoleClaimType = "https://schemas.clercq.it/roles" // Custom claim for roles
             };
             
-            // For development, accept tokens from Quasr.io without HTTPS requirement
+            // For development, accept tokens from Auth0 without HTTPS requirement
             if (builder.Environment.IsDevelopment())
             {
                 options.RequireHttpsMetadata = false;
@@ -71,7 +73,7 @@ if (!string.IsNullOrEmpty(quasrApiUrl))
 }
 
 // Register authentication services
-builder.Services.AddSingleton<IQuasrAuthService, QuasrAuthService>();
+builder.Services.AddSingleton<IAuth0Service, Auth0Service>();
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();

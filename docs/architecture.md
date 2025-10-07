@@ -153,12 +153,14 @@ All endpoints return JSON and include OpenAPI documentation.
 
 The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
 
-JWT tokens are generated and signed by **Quasr.io** (external identity service). The backend validates these tokens using Quasr.io's Authority for public key discovery.
+JWT tokens are generated and signed by **Auth0** (external identity service). The backend validates these tokens using Auth0's Authority for public key discovery.
 
 **Configuration:**
-- `Quasr:ApiUrl` - Quasr.io API endpoint (also used as JWT Authority for token validation)
-- `Quasr:ApiKey` - API key for authenticating with Quasr.io
-- `Quasr:ClientRedirectUrl` - Frontend URL for OAuth redirects
+- `Auth0:Domain` - Auth0 tenant domain (e.g., your-tenant.auth0.com)
+- `Auth0:ClientId` - Auth0 application client ID
+- `Auth0:ClientSecret` - Auth0 application client secret
+- `Auth0:Audience` - Auth0 API identifier
+- `Auth0:ClientRedirectUrl` - Frontend URL for OAuth redirects
 
 ## Object Storage
 

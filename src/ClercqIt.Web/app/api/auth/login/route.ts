@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-// Quasr.io authentication endpoint
+// Auth0 authentication endpoint
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();

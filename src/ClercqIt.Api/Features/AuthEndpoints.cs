@@ -14,9 +14,9 @@ public static class AuthEndpoints
         // Username/Password Login
         group.MapPost("/login", async (
             [FromBody] LoginRequest request,
-            IQuasrAuthService quasrAuthService) =>
+            IAuth0Service auth0Service) =>
         {
-            var authResult = await quasrAuthService.AuthenticateAsync(
+            var authResult = await auth0Service.AuthenticateAsync(
                 request.Username,
                 request.Password,
                 request.TotpCode
@@ -39,7 +39,7 @@ public static class AuthEndpoints
                 );
             }
 
-            // Return the token from Quasr.io (not self-generated)
+            // Return the token from Auth0
             return Results.Ok(new
             {
                 token = authResult.AccessToken,
@@ -54,15 +54,15 @@ public static class AuthEndpoints
         })
         .WithName("Login")
         .WithSummary("Login with username and password")
-        .WithDescription("Authenticates using Quasr.io and returns a JWT token from Quasr.io with user roles")
+        .WithDescription("Authenticates using Auth0 and returns a JWT token from Auth0 with user roles")
         .AllowAnonymous();
 
         // User Registration
         group.MapPost("/register", async (
             [FromBody] RegisterRequest request,
-            IQuasrAuthService quasrAuthService) =>
+            IAuth0Service auth0Service) =>
         {
-            var result = await quasrAuthService.RegisterUserAsync(
+            var result = await auth0Service.RegisterUserAsync(
                 request.Username,
                 request.Email,
                 request.Password
@@ -94,85 +94,87 @@ public static class AuthEndpoints
         // GitHub OAuth Initiation
         group.MapGet("/github", (IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
-            var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var auth0Domain = configuration["Auth0:Domain"];
+            var auth0ClientId = configuration["Auth0:ClientId"];
+            var clientRedirectUrl = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
             
-            // Redirect to Quasr.io OAuth endpoint which handles the GitHub OAuth flow
-            var oauthUrl = $"{quasrApiUrl}/v1/auth/oauth/github?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
+            // Redirect to Auth0 OAuth endpoint which handles the GitHub OAuth flow
+            var oauthUrl = $"https://{auth0Domain}/authorize?response_type=code&client_id={auth0ClientId}&connection=github&redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback&scope=openid%20profile%20email";
             
             return Results.Redirect(oauthUrl);
         })
         .WithName("GitHubLogin")
         .WithSummary("Initiate GitHub OAuth login")
-        .WithDescription("Redirects to Quasr.io GitHub OAuth flow")
+        .WithDescription("Redirects to Auth0 GitHub OAuth flow")
         .AllowAnonymous();
 
         // GitHub OAuth Callback
         group.MapGet("/github/callback", async (
             [FromQuery] string code,
             [FromQuery] string state,
-            IQuasrAuthService quasrAuthService,
+            IAuth0Service auth0Service,
             IConfiguration configuration) =>
         {
-            var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("github", code, state);
+            var authResult = await auth0Service.ValidateOAuthCallbackAsync("github", code, state);
 
             if (!authResult.Success || authResult.User == null)
             {
-                var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+                var clientRedirectUrl = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Use token from Quasr.io
+            // Use token from Auth0
             var token = authResult.AccessToken;
             
-            var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var clientRedirectUrl2 = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
         })
         .WithName("GitHubCallback")
         .WithSummary("Handle GitHub OAuth callback")
-        .WithDescription("Processes GitHub OAuth callback from Quasr.io")
+        .WithDescription("Processes GitHub OAuth callback from Auth0")
         .AllowAnonymous();
 
         // LinkedIn OAuth Initiation
         group.MapGet("/linkedin", (IConfiguration configuration) =>
         {
-            var quasrApiUrl = configuration["Quasr:ApiUrl"];
-            var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var auth0Domain = configuration["Auth0:Domain"];
+            var auth0ClientId = configuration["Auth0:ClientId"];
+            var clientRedirectUrl = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
             
-            // Redirect to Quasr.io OAuth endpoint which handles the LinkedIn OAuth flow
-            var oauthUrl = $"{quasrApiUrl}/v1/auth/oauth/linkedin?redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback";
+            // Redirect to Auth0 OAuth endpoint which handles the LinkedIn OAuth flow
+            var oauthUrl = $"https://{auth0Domain}/authorize?response_type=code&client_id={auth0ClientId}&connection=linkedin&redirect_uri={Uri.EscapeDataString(clientRedirectUrl)}/admin/auth/callback&scope=openid%20profile%20email";
             
             return Results.Redirect(oauthUrl);
         })
         .WithName("LinkedInLogin")
         .WithSummary("Initiate LinkedIn OAuth login")
-        .WithDescription("Redirects to Quasr.io LinkedIn OAuth flow")
+        .WithDescription("Redirects to Auth0 LinkedIn OAuth flow")
         .AllowAnonymous();
 
         // LinkedIn OAuth Callback
         group.MapGet("/linkedin/callback", async (
             [FromQuery] string code,
             [FromQuery] string state,
-            IQuasrAuthService quasrAuthService,
+            IAuth0Service auth0Service,
             IConfiguration configuration) =>
         {
-            var authResult = await quasrAuthService.ValidateOAuthCallbackAsync("linkedin", code, state);
+            var authResult = await auth0Service.ValidateOAuthCallbackAsync("linkedin", code, state);
 
             if (!authResult.Success || authResult.User == null)
             {
-                var clientRedirectUrl = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+                var clientRedirectUrl = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
                 return Results.Redirect($"{clientRedirectUrl}/admin?error={Uri.EscapeDataString(authResult.ErrorMessage ?? "OAuth authentication failed")}");
             }
 
-            // Use token from Quasr.io
+            // Use token from Auth0
             var token = authResult.AccessToken;
             
-            var clientRedirectUrl2 = configuration["Quasr:ClientRedirectUrl"] ?? "http://localhost:3000";
+            var clientRedirectUrl2 = configuration["Auth0:ClientRedirectUrl"] ?? "http://localhost:3000";
             return Results.Redirect($"{clientRedirectUrl2}/admin/auth/callback?token={token}");
         })
         .WithName("LinkedInCallback")
         .WithSummary("Handle LinkedIn OAuth callback")
-        .WithDescription("Processes LinkedIn OAuth callback from Quasr.io")
+        .WithDescription("Processes LinkedIn OAuth callback from Auth0")
         .AllowAnonymous();
     }
 
