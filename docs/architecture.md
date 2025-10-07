@@ -153,12 +153,12 @@ All endpoints return JSON and include OpenAPI documentation.
 
 The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
 
-JWT tokens are generated and signed by **Quasr.io** (external identity service). The backend validates these tokens using Quasr.io's Authority for public key discovery.
+JWT tokens are generated and signed by **Cloud IAM** (external identity service). The backend validates these tokens using Cloud IAM's Authority for public key discovery.
 
 **Configuration:**
-- `Quasr:ApiUrl` - Quasr.io API endpoint (also used as JWT Authority for token validation)
-- `Quasr:ApiKey` - API key for authenticating with Quasr.io
-- `Quasr:ClientRedirectUrl` - Frontend URL for OAuth redirects
+- `CloudIAM:ApiUrl` - Cloud IAM API endpoint (also used as JWT Authority for token validation)
+- `CloudIAM:ApiKey` - API key for authenticating with Cloud IAM
+- `CloudIAM:ClientRedirectUrl` - Frontend URL for OAuth redirects
 
 ## Object Storage
 
