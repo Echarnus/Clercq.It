@@ -15,7 +15,10 @@ export function Footer() {
 
   useEffect(() => {
     // Fetch version info from the public version.json file
-    fetch("/version.json")
+    // Add timestamp to prevent caching
+    fetch(`/version.json?t=${Date.now()}`, {
+      cache: "no-store",
+    })
       .then((res) => res.json())
       .then((data) => setVersionInfo(data))
       .catch(() => {
