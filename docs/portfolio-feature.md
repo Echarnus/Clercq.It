@@ -22,15 +22,23 @@ The application uses Redux Toolkit with RTK Query for:
 
 ### Feature Organization
 
-Following vertical/feature-sliced architecture:
+Following vertical/feature-sliced architecture with shared API layer:
 ```
+lib/api/
+├── baseApi.ts            # Shared API client and types
+└── projectsApi.ts        # RTK Query configuration
+
 app/portfolio/
 ├── page.tsx              # Portfolio list page (SSR)
 ├── [id]/
 │   └── page.tsx          # Portfolio detail page (SSR)
 └── lib/
-    └── api.ts            # Server-side fetch utilities
+    └── api.ts            # SSR-specific wrappers
+
+lib/store/                # Redux configuration
 ```
+
+The base API client is reused by both the Redux layer (RTK Query) and the SSR layer, eliminating duplication and ensuring consistency.
 
 ## API Endpoints
 
@@ -50,19 +58,32 @@ app/portfolio/
 
 ### Frontend API Layer
 
-#### Server-Side Fetch (`/app/portfolio/lib/api.ts`)
+#### Base API Client (`/lib/api/baseApi.ts`)
 
-Used for SSR data fetching:
+Shared API configuration and utilities used by both SSR and Redux:
+- `getApiUrl()` - Returns the configured API URL
+- `getProjectsBaseUrl()` - Returns the projects API base URL
+- `fetchProjects(endpoint)` - Base function for fetching project lists
+- `fetchProject(endpoint)` - Base function for fetching a single project
+- `Project` type definition - Shared TypeScript interface
+
+#### Server-Side API (`/app/portfolio/lib/api.ts`)
+
+Server-side wrapper functions that use the base API client:
 - `fetchAllProjects()` - Fetches and sorts all projects
 - `fetchFeaturedProjects()` - Fetches featured projects
 - `fetchProjectById(id)` - Fetches single project
 
+These functions add business logic (like sorting) on top of the base API.
+
 #### RTK Query (`/lib/api/projectsApi.ts`)
 
-Available for client-side state management:
+Redux Toolkit Query configuration that uses the base API client:
 - `useGetAllProjectsQuery()` - React hook for all projects
 - `useGetFeaturedProjectsQuery()` - React hook for featured projects
 - `useGetProjectByIdQuery(id)` - React hook for project by ID
+
+All three layers share the same base API configuration and Project type.
 
 ## Data Flow
 

@@ -55,20 +55,24 @@ This implementation adds a complete portfolio feature to the Clercq.It applicati
 
 ### Vertical/Feature-Sliced Organization
 ```
+lib/api/
+├── baseApi.ts            # Shared API client and types
+└── projectsApi.ts        # RTK Query configuration
+
 app/portfolio/
 ├── page.tsx              # Portfolio list (SSR)
 ├── [id]/
 │   └── page.tsx          # Portfolio detail (SSR)
 └── lib/
-    └── api.ts            # Server-side fetch utilities
+    └── api.ts            # SSR-specific wrappers
 
-lib/
-├── api/
-│   └── projectsApi.ts    # RTK Query API client
-└── store/
-    ├── index.ts          # Redux store configuration
-    └── StoreProvider.tsx # Redux provider component
+lib/store/
+├── index.ts              # Redux store configuration
+└── StoreProvider.tsx     # Redux provider component
 ```
+
+**Key Architectural Benefit:**
+The base API client (`baseApi.ts`) is reused by both the RTK Query layer and the SSR layer, eliminating code duplication and ensuring consistency across the application.
 
 ### Data Flow
 

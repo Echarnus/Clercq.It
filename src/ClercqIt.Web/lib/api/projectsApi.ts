@@ -1,22 +1,12 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { getApiUrl, type Project } from './baseApi';
 
-export interface Project {
-  id: string;
-  startDate: string;
-  endDate: string;
-  shortDescription: string;
-  longDescription: string;
-  image: string;
-  featured: boolean;
-  title: string;
-  skills: string[];
-}
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5035';
+// Re-export Project type for convenience
+export type { Project };
 
 export const projectsApi = createApi({
   reducerPath: 'projectsApi',
-  baseQuery: fetchBaseQuery({ baseUrl: `${API_URL}/api` }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${getApiUrl()}/api` }),
   endpoints: (builder) => ({
     getAllProjects: builder.query<Project[], void>({
       query: () => '/projects',
