@@ -245,6 +245,11 @@ jobs:
           if scw container container get "$CONTAINER_ID" --output json > /dev/null 2>&1; then
             echo "✅ Container found: $CONTAINER_NAME (ID: $CONTAINER_ID)"
             
+            # Get the image digest from Docker Hub to verify later
+            echo "🔍 Fetching image digest from registry..."
+            EXPECTED_DIGEST=$(docker manifest inspect "${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}" | jq -r '.config.digest // .manifests[0].digest' 2>/dev/null || echo "unknown")
+            echo "📦 Expected image digest: $EXPECTED_DIGEST"
+            
             # Update container with new image
             echo "🔄 Updating container image to: ${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
             scw container container update \
@@ -252,11 +257,25 @@ jobs:
               registry-image=${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }} \
               --wait
             
-            # Redeploy the container to force pull the new image
-            echo "🔄 Redeploying container to force image pull..."
-            scw container container redeploy "$CONTAINER_ID" --wait
+            # Force container recreation to bypass Scaleway's image cache
+            # This is necessary because containers with min_scale=0 may cache images
+            echo "🔄 Forcing container recreation to bypass image cache..."
+            echo "  Step 1: Scaling to min_scale=1 to force new instance..."
+            scw container container update \
+              "$CONTAINER_ID" \
+              min-scale=1 \
+              --wait
             
-            echo "✅ Container redeployment successful"
+            echo "  Step 2: Waiting for container to stabilize..."
+            sleep 15
+            
+            echo "  Step 3: Scaling back to min_scale=0..."
+            scw container container update \
+              "$CONTAINER_ID" \
+              min-scale=0 \
+              --wait
+            
+            echo "✅ Container recreation completed - image cache bypassed"
           else
             echo "❌ Container not found in Scaleway"
             echo "Container ID: $CONTAINER_ID"
@@ -323,6 +342,25 @@ jobs:
             
             if [[ "$HEALTH_CHECK_PASSED" == "true" ]]; then
               echo "✅ Health checks passed"
+              
+              # Verify deployed version matches expected version
+              echo "🔍 Verifying deployed version..."
+              DEPLOYED_VERSION=$(curl -s "https://$CONTAINER_URL" | grep -oP 'Version \K[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "unknown")
+              EXPECTED_VERSION="${{ steps.version.outputs.version }}"
+              
+              echo "📊 Expected version: $EXPECTED_VERSION"
+              echo "📊 Deployed version: $DEPLOYED_VERSION"
+              
+              if [[ "$DEPLOYED_VERSION" == "$EXPECTED_VERSION" ]]; then
+                echo "✅ Version verification successful - correct version is deployed"
+              else
+                echo "⚠️ WARNING: Version mismatch detected!"
+                echo "  Expected: $EXPECTED_VERSION"
+                echo "  Deployed: $DEPLOYED_VERSION"
+                echo "  This may indicate image caching issues."
+                echo "  The container may need a few minutes to fully update."
+                echo "  Please verify the version at https://$CONTAINER_URL after a few minutes."
+              fi
             else
               echo "⚠️ Health checks failed after $MAX_RETRIES attempts"
               echo "Container may still be starting up. Check Scaleway console for details."
