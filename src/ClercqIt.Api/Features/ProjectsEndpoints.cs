@@ -32,33 +32,6 @@ public static class ProjectsEndpoints
         .WithSummary("Get featured projects")
         .WithDescription("Retrieves all featured projects from the system");
 
-        group.MapPost("/images", async (HttpRequest request, IMediator mediator) =>
-        {
-            // Read multipart form data
-            var form = await request.ReadFormAsync();
-            
-            var imageFile = form.Files["image"];
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return Results.BadRequest(new { error = "Image file is required" });
-            }
-
-            using var imageStream = imageFile.OpenReadStream();
-            var command = new UploadProjectImageCommand(
-                imageStream,
-                imageFile.FileName,
-                imageFile.ContentType
-            );
-
-            var result = await mediator.Send(command);
-            return Results.Ok(result);
-        })
-        .RequireAuthorization()
-        .WithName("UploadProjectImage")
-        .WithSummary("Upload a project image")
-        .WithDescription("Uploads an image for a project. Returns the image URL. Requires authentication.")
-        .DisableAntiforgery();
-
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
             // Read multipart form data
@@ -109,7 +82,7 @@ public static class ProjectsEndpoints
         .RequireAuthorization()
         .WithName("CreateProject")
         .WithSummary("Create a new project")
-        .WithDescription("Creates a new project with markdown content. Image must be uploaded separately via /api/projects/images. Requires authentication.")
+        .WithDescription("Creates a new project with markdown content. Image must be uploaded separately via /api/images. Requires authentication.")
         .DisableAntiforgery();
     }
 }

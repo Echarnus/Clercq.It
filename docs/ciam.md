@@ -26,7 +26,7 @@ Clercq.It uses **Quasr.io** as an external Identity as a Service (IDaaS) provide
 6. **Role Retrieval**: Upon successful authentication, backend retrieves user roles from Quasr.io
 7. **JWT Generation**: Backend generates a JWT token containing:
    - User ID and username from Quasr.io
-   - Assigned roles (e.g., `Admin.View`, `Blogs.Contributor`, `Projects.Contributor`)
+   - Assigned roles (e.g., `Admin.View`, `Blogs.Contributor`, `Projects.Contributor`, `Certifications.Contributor`)
    - Standard claims (issuer, audience, expiration)
 8. **Token Response**: JWT returned to frontend and stored in browser localStorage
 9. **Subsequent Requests**: Frontend includes JWT in `Authorization: Bearer <token>` header for protected endpoints
@@ -194,10 +194,14 @@ Create the following roles in Quasr.io dashboard:
    - Description: Create, edit, and delete projects
    - Assigned to: Portfolio managers
 
+4. **Certifications.Contributor**
+   - Description: Create, edit, and delete certifications
+   - Assigned to: Portfolio managers
+
 ### Optional Group Setup
 
-Create an "Admin" group with all three roles for convenience:
-- Assign all three roles to the group
+Create an "Admin" group with all four roles for convenience:
+- Assign all four roles to the group
 - Add administrators to this group for full access
 
 ## Security Considerations
