@@ -70,32 +70,32 @@ public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task AuthToken_WithoutCredentials_ReturnsUnauthorized()
+    public async Task AuthLogin_WithoutCredentials_ReturnsUnauthorized()
     {
         // Arrange
         var content = new StringContent(
-            "{\"accessKey\":\"\",\"secretKey\":\"\"}",
+            "{\"username\":\"\",\"password\":\"\"}",
             System.Text.Encoding.UTF8,
             "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/token", content);
+        var response = await _client.PostAsync("/api/auth/login", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 
     [Fact]
-    public async Task AuthToken_WithInvalidCredentials_ReturnsUnauthorized()
+    public async Task AuthLogin_WithInvalidCredentials_ReturnsUnauthorized()
     {
         // Arrange
         var content = new StringContent(
-            "{\"accessKey\":\"INVALID_KEY\",\"secretKey\":\"invalid_secret\"}",
+            "{\"username\":\"invalid_user\",\"password\":\"invalid_password\"}",
             System.Text.Encoding.UTF8,
             "application/json");
 
         // Act
-        var response = await _client.PostAsync("/api/auth/token", content);
+        var response = await _client.PostAsync("/api/auth/login", content);
 
         // Assert
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);

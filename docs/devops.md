@@ -314,6 +314,25 @@ Each deployment provides detailed status information:
 - **Cause**: Code compilation or test errors
 - **Solution**: Run tests locally first with `dotnet test` and `pnpm test`
 
+**Issue**: Next.js build fails with "useSearchParams() should be wrapped in a suspense boundary"
+- **Cause**: Next.js 15 requires components using `useSearchParams()` to be wrapped in a Suspense boundary for static page generation
+- **Error message**: `⨯ useSearchParams() should be wrapped in a suspense boundary at page "/admin"`
+- **Solution**: Extract the component logic that uses `useSearchParams()` into a separate component and wrap it with `<Suspense>` in the page's default export. For example:
+  ```tsx
+  function MyPageContent() {
+    const searchParams = useSearchParams();
+    // ... component logic
+  }
+  
+  export default function MyPage() {
+    return (
+      <Suspense fallback={<div>Loading...</div>}>
+        <MyPageContent />
+      </Suspense>
+    );
+  }
+  ```
+
 #### Infrastructure Pipeline
 
 **Issue**: Terraform fails with "Invalid index" for load_balancer
