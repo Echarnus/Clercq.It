@@ -123,7 +123,7 @@ export function Footer() {
         </div>
         <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
           <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight">
-            Made with ❤️ using React, .NET, Docker • Hosted on Scaleway
+            Made with ❤️ using React, .NET, Docker • Hosted on Scaleway 🇪🇺
           </p>
           {versionInfo && (
             <p className="text-xs mt-2 text-slate-500">
