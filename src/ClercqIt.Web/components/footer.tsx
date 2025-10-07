@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface VersionInfo {
@@ -122,8 +123,15 @@ export function Footer() {
           </div>
         </div>
         <div className="text-center mt-8 pt-8 border-t border-slate-800 text-slate-400 dark:border-slate-700">
-          <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight">
-            Made with ❤️ using React, .NET, Docker • Hosted on Scaleway
+          <p className="text-[clamp(0.7rem,1.2vw,0.95rem)] md:text-base leading-tight flex items-center justify-center gap-1">
+            <span>Made with ❤️ using React, .NET, Docker • Hosted on Scaleway</span>
+            <Image
+              src="/eu-flag.png"
+              alt="EU Flag"
+              width={16}
+              height={16}
+              className="inline-block border border-slate-300 dark:border-slate-600 rounded-sm"
+            />
           </p>
           {versionInfo && (
             <p className="text-xs mt-2 text-slate-500">
