@@ -34,29 +34,27 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Install GitVersion
+      - name: Download version artifact
         if: github.event_name == 'workflow_run'
-        uses: gittools/actions/gitversion/setup@v1
+        uses: actions/download-artifact@v4
         with:
-          versionSpec: '6.0.x'
+          name: version
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Determine Version
+      - name: Read version from artifact
         if: github.event_name == 'workflow_run'
-        uses: gittools/actions/gitversion/execute@v1
-        id: gitversion
-
-      - name: Calculate commit-based version
-        if: github.event_name == 'workflow_run'
-        id: calc_version
-        uses: ./.github/actions/calculate-version
-        with:
-          major: ${{ steps.gitversion.outputs.major }}
-          minor: ${{ steps.gitversion.outputs.minor }}
-          commits-since-version-source: ${{ steps.gitversion.outputs.commitsSinceVersionSource }}
-          branch-name: main
+        id: read_version
+        run: |
+          if [ -f version.txt ]; then
+            VERSION=$(cat version.txt)
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "Read version from artifact: $VERSION"
+          else
+            echo "Error: version.txt not found"
+            exit 1
+          fi
 
       - name: Set deployment version
         id: version
@@ -65,7 +63,7 @@ jobs:
             echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
             echo "source=manual" >> $GITHUB_OUTPUT
           else
-            echo "version=${{ steps.calc_version.outputs.version }}" >> $GITHUB_OUTPUT
+            echo "version=${{ steps.read_version.outputs.version }}" >> $GITHUB_OUTPUT
             echo "source=automatic" >> $GITHUB_OUTPUT
           fi
 
