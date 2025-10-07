@@ -174,7 +174,7 @@ curl -X POST https://www.clercq.it/api/blogs \
 All sensitive configuration is stored in environment variables, not in code:
 - S3 access credentials
 - Database password
-- Quasr.io API key
+- Auth0 client secret
 
 Never commit these values to version control.
 
