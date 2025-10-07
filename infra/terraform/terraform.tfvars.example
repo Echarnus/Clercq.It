@@ -14,8 +14,12 @@ scaleway_region          = "fr-par"
 scaleway_access_key = "your-scaleway-access-key"
 scaleway_secret_key = "your-scaleway-secret-key"
 
-# Authentication Configuration
-jwt_secret_key = "your-jwt-secret-key-min-32-characters"
+# Auth0 Configuration
+auth0_domain               = "your-tenant.auth0.com"
+auth0_client_id            = "your-auth0-client-id"
+auth0_client_secret        = "your-auth0-client-secret"
+auth0_audience             = "your-auth0-api-identifier"
+auth0_client_redirect_url  = "https://www.clercq.it"
 
 # Application Configuration
 container_image     = "echarnus/clercq-it:latest"

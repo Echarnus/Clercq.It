@@ -97,7 +97,7 @@ export default function AdminRegisterPage() {
                 Click the verification link in the email to activate your account.
               </p>
               <p className="text-xs">
-                Note: Your account will have no admin permissions until an administrator assigns them in the Quasr.io dashboard.
+                Note: Your account will have no admin permissions until an administrator assigns them in the Auth0 dashboard.
               </p>
             </div>
           </CardContent>
