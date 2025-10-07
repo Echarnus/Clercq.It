@@ -24,7 +24,7 @@ The blog creation feature adds the ability to create blog posts through the API 
 2. **New Variables** (in `variables.tf`)
    - `scaleway_access_key` - S3 access key
    - `scaleway_secret_key` - S3 secret key
-   - `jwt_secret_key` - JWT signing key
+   - `jwt_secret_key` - JWT signing key (legacy, not used with Quasr.io)
 
 3. **Container Environment Variables** (in `main.tf`)
    - `ObjectStorage__Endpoint`
@@ -32,7 +32,7 @@ The blog creation feature adds the ability to create blog posts through the API 
    - `ObjectStorage__Region`
    - `ObjectStorage__AccessKey`
    - `ObjectStorage__SecretKey`
-   - `Authentication__JwtSecretKey`
+   - `Authentication__JwtSecretKey` (legacy, not used with Quasr.io)
 
 ### Application Code
 
@@ -82,18 +82,11 @@ Add the following secrets to your GitHub repository:
 ```
 SCW_ACCESS_KEY       - Scaleway access key (for Terraform and Object Storage)
 SCW_SECRET_KEY       - Scaleway secret key (for Terraform and Object Storage)
-JWT_SECRET_KEY       - Random string min 32 characters for JWT signing
+JWT_SECRET_KEY       - (Legacy) Not used with Quasr.io authentication
 DATABASE_PASSWORD    - PostgreSQL database password
 ```
 
-**Generate JWT Secret:**
-```bash
-# Linux/macOS
-openssl rand -base64 48
-
-# PowerShell
-[Convert]::ToBase64String((1..48 | ForEach-Object { Get-Random -Minimum 0 -Maximum 256 }))
-```
+> **Note:** The `JWT_SECRET_KEY` secret is from a legacy implementation and is no longer used. The application now uses Quasr.io for authentication, which manages its own JWT signing keys.
 
 ### 3. Update Terraform Variables
 
@@ -180,7 +173,12 @@ curl -X POST https://www.clercq.it/api/blogs \
 
 ### JWT Token Generation
 
-You'll need to implement a separate endpoint or admin tool to generate JWT tokens. The current implementation only validates tokens, it doesn't issue them.
+> **Note:** This section describes an older implementation. The application now uses **Quasr.io** for authentication and token generation. See [CIAM Documentation](./ciam.md) for current implementation details.
+
+<details>
+<summary>Legacy JWT Implementation (for reference only)</summary>
+
+The example below shows how JWT tokens were manually generated before Quasr.io integration. This code is **not used** in the current implementation.
 
 **Example Token Generation:**
 
@@ -221,6 +219,8 @@ public class TokenService
 }
 ```
 
+</details>
+
 ### Object Storage Security
 
 - Bucket has **public-read** ACL - anyone can view uploaded images
@@ -230,9 +230,9 @@ public class TokenService
 ### Environment Variables
 
 All sensitive configuration is stored in environment variables, not in code:
-- JWT secret key
 - S3 access credentials
 - Database password
+- Quasr.io API key
 
 Never commit these values to version control.
 
