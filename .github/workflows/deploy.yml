@@ -3,7 +3,7 @@ name: Deploy to Scaleway
 
 "on":
   workflow_run:
-    workflows: ["build", "Deploy Infra"]
+    workflows: ["build"]
     branches: [main]
     types: [completed]
   workflow_dispatch:
