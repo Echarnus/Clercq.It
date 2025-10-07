@@ -109,6 +109,8 @@ interface Project {
 - Featured projects displayed prominently
 - Responsive grid layout
 
+![Portfolio List Page](screenshots/portfolio-list.png)
+
 ### Portfolio Detail (`/app/portfolio/[id]/page.tsx`)
 
 **Features:**
@@ -118,6 +120,8 @@ interface Project {
 - Skill badges
 - Back navigation to portfolio list
 
+![Portfolio Detail Page](screenshots/portfolio-detail.png)
+
 ### Home Page Featured Projects (`/app/home/page.tsx`)
 
 **Features:**
@@ -125,6 +129,8 @@ interface Project {
 - Display up to 3 featured projects
 - Click to navigate to detail page
 - Link to full portfolio
+
+![Home Page Featured Projects](screenshots/home-featured-projects.png)
 
 ## Configuration
 
