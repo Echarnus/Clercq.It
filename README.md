@@ -202,7 +202,7 @@ The application uses a **serverless-first architecture** on Scaleway with automa
 ### Quick Infrastructure Setup
 
 ```bash
-# Navigate to infrastructure directory
+# Navigate to infra directory
 cd infra/terraform
 
 # Copy and configure variables

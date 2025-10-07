@@ -141,7 +141,7 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd infrastructure/terraform
+          cd infra/terraform
           terraform init
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
