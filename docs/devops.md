@@ -166,11 +166,12 @@ gh workflow run infra.yml
 #### deploy
 - Validates Docker image exists
 - Updates Scaleway container configuration with new image tag
-- Redeploys container to force pull of new Docker image
+- Forces container recreation to bypass image cache (scales min_scale: 0→1→0)
 - Performs health checks
+- Verifies deployed version matches expected version
 - Reports deployment status
 
-**Note**: The deployment uses `scw container container redeploy` to ensure the container pulls the latest image from the registry, preventing stale cached images from being used.
+**Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
 
 ### Manual Deployment
 
@@ -375,12 +376,31 @@ Each deployment provides detailed status information:
 - **Solution**: Ensure Docker Hub credentials are configured
 
 **Issue**: Version not updating after deployment
-- **Cause**: Container was using cached Docker image instead of pulling the new version
-- **Solution**: Changed deployment to use `scw container container redeploy` instead of `deploy`, which forces the container to pull the latest image from the registry
+- **Cause**: Scaleway Serverless Containers with `min_scale=0` cache Docker images. When containers scale down to zero and back up, they may use cached images instead of pulling fresh ones from the registry, even after `scw container container redeploy`.
+- **Solution**: The deployment pipeline now implements a cache-busting strategy:
+  1. Updates the container image tag
+  2. Forces container recreation by temporarily scaling to `min_scale=1`, then back to `0`
+  3. This forces Scaleway to pull a fresh image from the registry
+  4. Includes post-deployment version verification to detect any caching issues
+- **Note**: The force-recreation step adds ~20-30 seconds to deployment time but ensures the correct version is always deployed
 
 **Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"
 - **Cause**: Manual Terraform installation attempting to use GPG in non-interactive environment
 - **Solution**: This has been fixed to use the official `hashicorp/setup-terraform` action instead of manual installation
+
+**Issue**: Old version still running despite successful deployment (image caching)
+- **Cause**: This is a known issue with Scaleway Serverless Containers that have `min_scale=0`. When containers scale to zero, Scaleway caches the Docker image. When they scale back up, they may reuse the cached image instead of pulling the latest version from the registry, even if the image tag has been updated.
+- **Root Cause**: Scaleway's image caching optimization for containers with `min_scale=0` doesn't always invalidate the cache when the same tag points to a new image digest
+- **Solution**: The deploy workflow now implements a force-recreation strategy that is automatically applied on every deployment:
+  - Updates the container with the new image tag
+  - Forces recreation by scaling to `min_scale=1` (creates new instance with fresh image)
+  - Scales back to `min_scale=0` (preserves original scaling configuration)
+  - Verifies the deployed version matches the expected version
+- **Prevention**: 
+  - Always use version-specific tags (e.g., `1.0.1`) instead of `latest` for production deployments
+  - Monitor the deployment logs for version verification warnings
+  - If version mismatch is detected, the container typically updates within 2-3 minutes as Scaleway's cache expires
+- **Manual Fix**: If the issue persists, manually trigger a deployment with the specific version: `gh workflow run deploy.yml -f version=X.Y.Z`
 
 **Issue**: Bad Gateway (502) errors during container startup
 - **Cause**: nginx was auto-starting before the .NET API and Next.js services were ready, causing proxy errors
