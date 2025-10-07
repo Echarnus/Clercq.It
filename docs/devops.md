@@ -375,7 +375,14 @@ Each deployment provides detailed status information:
 - **Solution**: Ensure Docker Hub credentials are configured
 
 **Issue**: Version not updating after deployment
-- **Cause**: Container was using cached Docker image instead of pulling the new version
+- **Cause**: The `/version.json` file was being cached by browsers and CDN, preventing the display of updated version information even after successful deployments
+- **Solution**: 
+  1. Added nginx cache-control headers for `/version.json` to prevent caching (`no-store, no-cache, must-revalidate`)
+  2. Added timestamp query parameter to frontend fetch request (`/version.json?t=${Date.now()}`)
+  3. Set `cache: "no-store"` option on the fetch request for additional cache prevention
+  4. This dual approach ensures version updates are immediately visible after deployment
+
+**Previous Issue**: Container was using cached Docker image instead of pulling the new version
 - **Solution**: Changed deployment to use `scw container container redeploy` instead of `deploy`, which forces the container to pull the latest image from the registry
 
 **Issue**: Deploy fails with "gpg: cannot open '/dev/tty': No such device or address"

@@ -267,6 +267,13 @@ The Next.js frontend fetches this file at runtime and displays the version in th
 
 The version is displayed as: `Version 1.0.1 (abc1234)`
 
+**Cache Prevention:** To ensure version information is always up-to-date after deployments:
+1. The nginx configuration sets cache-control headers on `/version.json` to prevent browser caching
+2. The frontend fetch request includes a timestamp query parameter as an additional cache-busting mechanism
+3. The fetch request uses `cache: "no-store"` option to bypass the browser cache
+
+This dual approach ensures that users always see the correct version immediately after a new deployment.
+
 ### Build Arguments
 
 The Dockerfile accepts the following build arguments to generate the version file:
