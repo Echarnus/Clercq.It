@@ -18,6 +18,8 @@ export function Navigation() {
       ? "home"
       : pathname === "/portfolio"
       ? "portfolio"
+      : pathname === "/blogs"
+      ? "blogs"
       : null;
   };
 
@@ -44,6 +46,16 @@ export function Navigation() {
         }
       >
         Portfolio
+      </Link>
+      <Link
+        href="/blogs"
+        className={
+          currentPage === "blogs"
+            ? "text-slate-900 font-medium border-b-2 border-slate-900 dark:text-white dark:border-white"
+            : "text-slate-600 hover:text-slate-900 transition-colors hover:border-b-2 hover:border-slate-600 dark:text-slate-400 dark:hover:text-white dark:hover:border-slate-400"
+        }
+      >
+        Blogs
       </Link>
     </nav>
   );
