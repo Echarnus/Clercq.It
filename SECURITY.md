@@ -54,11 +54,6 @@ The project uses multiple automated security scanning tools:
 
 #### Code Analysis
 - **CodeQL**: Advanced semantic code analysis for C# and JavaScript/TypeScript
-- **Semgrep**: Static analysis security scanning
-  - Security audit rulesets
-  - OWASP Top 10 detection
-  - CWE Top 25 coverage
-  - Secret detection patterns
 - **Security linting**: ESLint security rules for frontend code
 
 #### Container Security

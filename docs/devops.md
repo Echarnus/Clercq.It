@@ -126,16 +126,6 @@ gh workflow run build.yml
 - Only reports verified secrets
 - Prevents credential exposure
 
-#### semgrep-scan
-- Runs Semgrep static analysis security scanner
-- Uses multiple security rulesets:
-  - Security audit patterns
-  - Secret detection rules
-  - OWASP Top 10 checks
-  - CWE Top 25 vulnerability patterns
-- Uploads SARIF results to GitHub Security
-- Supports C#, JavaScript, TypeScript, and more
-
 #### security-scorecard
 - Runs OpenSSF Scorecard evaluation
 - Assesses security best practices
@@ -398,13 +388,6 @@ The CI/CD pipeline includes comprehensive automated security scanning:
   - Analyzes JavaScript/TypeScript code
   - Runs extended security query suite
   - Scheduled weekly scans
-- **Semgrep**: Static analysis security scanning
-  - Multi-language support (C#, JavaScript, TypeScript, and more)
-  - Security audit rulesets
-  - OWASP Top 10 detection
-  - CWE Top 25 vulnerability patterns
-  - Secret detection patterns
-  - Results uploaded to GitHub Security tab
 - **Security linting**: ESLint security rules for frontend code
 
 #### Container Security
@@ -456,7 +439,6 @@ Comprehensive security scanning workflow:
   - .NET security analysis
   - npm security audit
   - Secret scanning with TruffleHog
-  - Semgrep static analysis
   - OpenSSF Scorecard
 
 #### codeql.yml

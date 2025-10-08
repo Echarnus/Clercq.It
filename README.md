@@ -236,7 +236,6 @@ The project implements comprehensive security measures across all stages of deve
 ### Automated Security Scanning
 - **Trivy Container Scanning**: Vulnerability scanning of Docker images and filesystems
 - **CodeQL Analysis**: Advanced semantic code analysis for C# and JavaScript/TypeScript
-- **Semgrep**: Static analysis security scanning with OWASP Top 10 and CWE Top 25 coverage
 - **Dependabot**: Automated dependency updates across all ecosystems (NuGet, npm, Docker, Terraform, GitHub Actions)
 - **Secret Scanning**: TruffleHog detects accidentally committed secrets
 - **OpenSSF Scorecard**: Continuous evaluation of security best practices
