@@ -652,6 +652,12 @@ gh secret list
 
 ## Resources
 
+### Security & Compliance
+- [Security Compliance Guide](./security-compliance.md) - NIST, PCI DSS, ISO 27001 alignment
+- [Security Policy](../SECURITY.md) - Vulnerability reporting and security measures
+- [OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It) - Live security score
+
+### Development & Deployment
 - [GitHub Flow Documentation](https://docs.github.com/en/get-started/quickstart/github-flow)
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
