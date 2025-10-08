@@ -1,0 +1,116 @@
+version: 2
+updates:
+  # .NET dependencies
+  - package-ecosystem: "nuget"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "dotnet"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Node.js dependencies for Next.js app
+  - package-ecosystem: "npm"
+    directory: "/src/ClercqIt.Web"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 10
+    labels:
+      - "dependencies"
+      - "frontend"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Node.js dependencies for frontend tests
+  - package-ecosystem: "npm"
+    directory: "/tests/ClercqIt.Web.Tests"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "testing"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci/cd"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Docker base images
+  - package-ecosystem: "docker"
+    directory: "/src"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "docker"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+
+  # Terraform providers
+  - package-ecosystem: "terraform"
+    directory: "/infra/terraform"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "infrastructure"
+    assignees:
+      - "Echarnus"
+    reviewers:
+      - "Echarnus"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"

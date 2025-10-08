@@ -4,6 +4,8 @@
 [![Build](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/build.yml)
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
 [![Infra](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml)
+[![Security Scanning](https://github.com/Echarnus/Clercq.It/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/security-scan.yml)
+[![CodeQL](https://github.com/Echarnus/Clercq.It/actions/workflows/codeql.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/codeql.yml)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 
 A modern full-stack web application showcasing enterprise-grade development practices with Clean Architecture, Domain-Driven Design, and automated CI/CD pipelines. This project demonstrates proficiency in .NET, Next.js, containerization, and cloud deployment.
@@ -12,10 +14,13 @@ A modern full-stack web application showcasing enterprise-grade development prac
 
 All CI/CD pipelines have been fixed and are operational:
 
-- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components
-- ✅ **Build Pipeline**: Builds Docker images (requires Docker Hub credentials for push)  
+- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components with dependency security checks
+- ✅ **Build Pipeline**: Builds Docker images with Trivy vulnerability scanning (requires Docker Hub credentials for push)  
+- ✅ **Security Scanning**: Comprehensive security analysis with Trivy, CodeQL, and dependency audits
+- ✅ **CodeQL Analysis**: Advanced semantic code analysis for C# and JavaScript/TypeScript
 - ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
 - ✅ **Deploy Pipeline**: Orchestrates application deployment to production
+- ✅ **Dependabot**: Automated dependency updates for all package ecosystems
 
 > **Note**: Some pipelines require repository secrets to be configured for full functionality. See the [DevOps guide](./docs/devops.md#required-secrets) for configuration details.
 
@@ -226,10 +231,42 @@ For detailed infrastructure documentation, see [`infra/README.md`](infra/README.
 
 ## 🔒 Security
 
-- **Container Security**: Non-root execution, minimal attack surface
-- **Build Attestation**: Signed build provenance  
-- **Secret Management**: GitHub Secrets for sensitive data
-- **Dependency Scanning**: Automated vulnerability detection
+The project implements comprehensive security measures across all stages of development and deployment:
+
+### Automated Security Scanning
+- **Trivy Container Scanning**: Vulnerability scanning of Docker images and filesystems
+- **CodeQL Analysis**: Advanced semantic code analysis for C# and JavaScript/TypeScript
+- **Dependabot**: Automated dependency updates across all ecosystems (NuGet, npm, Docker, Terraform, GitHub Actions)
+- **Secret Scanning**: TruffleHog detects accidentally committed secrets
+- **OpenSSF Scorecard**: Continuous evaluation of security best practices
+
+### Dependency Security
+- **npm audit**: Automated security audits for Node.js dependencies
+- **dotnet list package --vulnerable**: Checks for known .NET vulnerabilities
+- **Weekly automated updates**: Dependabot creates PRs for security updates
+- **Transitive dependency scanning**: Includes indirect dependencies
+
+### Build & Container Security
+- **Container Security**: Non-root execution, minimal attack surface with Alpine/Debian slim images
+- **Build Attestation**: Signed build provenance for supply chain security
+- **Multi-platform builds**: Secure builds for AMD64 and ARM64
+- **Vulnerability scanning**: Every build scanned with Trivy before deployment
+
+### Application Security
+- **JWT Authentication**: Secure token-based authentication
+- **Input Validation**: FluentValidation on all API requests
+- **Parameterized Queries**: Entity Framework prevents SQL injection
+- **HTTPS Enforcement**: TLS/SSL in production
+- **Secret Management**: GitHub Secrets and environment variables
+- **CORS Configuration**: Proper cross-origin resource sharing
+
+### CI/CD Security
+- **Least Privilege**: Minimal GitHub Actions permissions
+- **Secret Protection**: Sensitive data never exposed in logs
+- **Security Workflows**: Daily automated security scans
+- **Pull Request Checks**: Security validation before merge
+
+For detailed security information, see [SECURITY.md](./SECURITY.md) and the [DevOps Security Guide](./docs/devops.md#security-features).
 
 ## 🚀 Deployment
 

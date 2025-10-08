@@ -1,0 +1,217 @@
+---
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run daily at 2:00 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  trivy-container-scan:
+    name: Trivy Container Scan
+    runs-on: ubuntu-latest
+    if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image for scanning
+        run: |
+          docker build -t clercq-it:scan ./src
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'clercq-it:scan'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-container'
+
+      - name: Run Trivy with table output
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: 'clercq-it:scan'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+
+  trivy-filesystem-scan:
+    name: Trivy Filesystem Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scanner
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-fs-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+          ignore-unfixed: true
+
+      - name: Upload Trivy filesystem results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-fs-results.sarif'
+          category: 'trivy-filesystem'
+
+  dotnet-security-scan:
+    name: .NET Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Install security scanning tools
+        run: |
+          dotnet tool install --global security-scan --version 5.6.7
+
+      - name: Restore dependencies
+        run: |
+          cd src
+          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+
+      - name: Run security scan
+        run: |
+          cd src
+          security-scan ClercqIt.Api/ClercqIt.Api.csproj --excl-dev=true || echo "Security scan completed with findings"
+
+      - name: Check for known vulnerabilities
+        run: |
+          cd src
+          dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive || true
+          
+      - name: Generate vulnerability report
+        run: |
+          cd src
+          dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive 2>&1 | tee ../vulnerability-report.txt || true
+          
+      - name: Upload vulnerability report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dotnet-vulnerability-report
+          path: vulnerability-report.txt
+          retention-days: 30
+
+  npm-security-scan:
+    name: npm Security Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+
+      - name: Install pnpm
+        run: npm install -g pnpm@10.12.4
+
+      - name: Setup pnpm cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23'
+          cache: 'pnpm'
+          cache-dependency-path: 'src/ClercqIt.Web/pnpm-lock.yaml'
+
+      - name: Install dependencies
+        working-directory: ./src/ClercqIt.Web
+        run: pnpm install --frozen-lockfile
+
+      - name: Run npm audit
+        working-directory: ./src/ClercqIt.Web
+        run: |
+          pnpm audit --audit-level=moderate || echo "Audit completed with findings"
+          
+      - name: Generate audit report
+        working-directory: ./src/ClercqIt.Web
+        run: |
+          pnpm audit --json > ../../npm-audit-report.json || true
+          
+      - name: Upload audit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: npm-audit-report
+          path: npm-audit-report.json
+          retention-days: 30
+
+  secrets-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scanner
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  security-scorecard:
+    name: OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@v2.4.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload Scorecard results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: results.sarif
