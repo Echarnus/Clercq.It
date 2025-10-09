@@ -6,11 +6,12 @@ namespace Clercq.It.Api.Features;
 
 public static class ProjectsEndpoints
 {
-    public static void MapProjectsEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapProjectsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/projects")
             .WithTags("Projects")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireRateLimiting("api");
 
         group.MapGet("/", async (IMediator mediator) =>
         {
@@ -100,5 +101,7 @@ public static class ProjectsEndpoints
         .WithSummary("Create a new project")
         .WithDescription("Creates a new project with markdown content. Image must be uploaded separately via /api/images. Requires authentication.")
         .DisableAntiforgery();
+
+        return endpoints;
     }
 }

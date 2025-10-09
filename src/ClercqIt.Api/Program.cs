@@ -195,11 +195,11 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 // Map feature endpoints with rate limiting
-app.MapAuthEndpoints().RequireRateLimiting("auth");
-app.MapImagesEndpoints().RequireRateLimiting("api");
-app.MapProjectsEndpoints().RequireRateLimiting("api");
-app.MapBlogsEndpoints().RequireRateLimiting("api");
-app.MapCertificationsEndpoints().RequireRateLimiting("api");
+app.MapAuthEndpoints();
+app.MapImagesEndpoints();
+app.MapProjectsEndpoints();
+app.MapBlogsEndpoints();
+app.MapCertificationsEndpoints();
 
 app.Run();
 

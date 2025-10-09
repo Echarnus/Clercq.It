@@ -5,11 +5,12 @@ namespace Clercq.It.Api.Features;
 
 public static class ImagesEndpoints
 {
-    public static void MapImagesEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapImagesEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/images")
             .WithTags("Images")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireRateLimiting("api");
 
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
@@ -36,5 +37,7 @@ public static class ImagesEndpoints
         .WithSummary("Upload an image")
         .WithDescription("Uploads an image to object storage. Returns the image URL. Requires authentication.")
         .DisableAntiforgery();
+
+        return endpoints;
     }
 }
