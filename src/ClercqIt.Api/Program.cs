@@ -6,6 +6,8 @@ using Scalar.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.AspNetCore.RateLimiting;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,6 +19,45 @@ builder.Services.AddOpenApi();
 
 // Add HttpClient for API calls (Cloud IAM, etc.)
 builder.Services.AddHttpClient();
+
+// Bank-grade security: Add rate limiting to prevent DDoS attacks
+builder.Services.AddRateLimiter(options =>
+{
+    // Global rate limit: 100 requests per minute per IP
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    
+    // API endpoints rate limit: 30 requests per minute
+    options.AddPolicy("api", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 30,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    
+    // Authentication endpoints: stricter limit (10 requests per minute)
+    options.AddPolicy("auth", context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 10,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+    
+    options.RejectionStatusCode = 429; // Too Many Requests
+});
 
 // Add CORS for frontend
 builder.Services.AddCors(options =>
@@ -57,6 +98,11 @@ if (!string.IsNullOrEmpty(cloudIAMApiUrl))
             if (builder.Environment.IsDevelopment())
             {
                 options.RequireHttpsMetadata = false;
+            }
+            else
+            {
+                // Production: Require HTTPS
+                options.RequireHttpsMetadata = true;
             }
         });
 
@@ -106,21 +152,50 @@ if (app.Environment.IsDevelopment())
     app.MapScalarApiReference();
 }
 
+// Bank-grade security: Add security headers middleware
+app.Use(async (context, next) =>
+{
+    // Remove server header for security through obscurity
+    context.Response.Headers.Remove("Server");
+    context.Response.Headers.Remove("X-Powered-By");
+    
+    // Add security headers
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Add("Referrer-Policy", "strict-origin-when-cross-origin");
+    context.Response.Headers.Add("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    
+    if (!app.Environment.IsDevelopment())
+    {
+        // HSTS - Force HTTPS for 1 year in production
+        context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    }
+    
+    // Content Security Policy for API
+    context.Response.Headers.Add("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'");
+    
+    await next();
+});
+
 app.UseHttpsRedirection();
 
 // Use CORS
 app.UseCors("AllowFrontend");
 
+// Bank-grade security: Enable rate limiting
+app.UseRateLimiter();
+
 // Use authentication and authorization
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Map feature endpoints
-app.MapAuthEndpoints();
-app.MapImagesEndpoints();
-app.MapProjectsEndpoints();
-app.MapBlogsEndpoints();
-app.MapCertificationsEndpoints();
+// Map feature endpoints with rate limiting
+app.MapAuthEndpoints().RequireRateLimiting("auth");
+app.MapImagesEndpoints().RequireRateLimiting("api");
+app.MapProjectsEndpoints().RequireRateLimiting("api");
+app.MapBlogsEndpoints().RequireRateLimiting("api");
+app.MapCertificationsEndpoints().RequireRateLimiting("api");
 
 app.Run();
 

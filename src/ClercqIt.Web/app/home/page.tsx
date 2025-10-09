@@ -10,17 +10,10 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Code, Cloud, GitBranch } from "lucide-react";
 import Image from "next/image";
+import { fetchFeaturedProjects } from "../portfolio/lib/api";
 
-export default function HomePage() {
-  const featuredProjects = [
-    {
-      title: "E-Commerce Platform",
-      description:
-        "Full-stack e-commerce solution built with React, .NET Core, and Azure",
-      image: "/placeholder.svg?height=200&width=300",
-      tags: ["React", ".NET Core", "Azure", "Docker"],
-    },
-  ];
+export default async function HomePage() {
+  const featuredProjects = await fetchFeaturedProjects();
 
   const skills = [
     {
@@ -124,39 +117,50 @@ export default function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          {featuredProjects.map((project, index) => (
-            <Card
-              key={index}
-              className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20"
-            >
-              <CardHeader className="p-0">
-                <div className="relative overflow-hidden rounded-t-lg">
-                  <Image
-                    src={project.image || "/placeholder.svg"}
-                    alt={project.title}
-                    width={300}
-                    height={200}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="p-6">
-                <CardTitle className="text-slate-900 mb-2 dark:text-white">
-                  {project.title}
-                </CardTitle>
-                <CardDescription className="text-slate-600 mb-4 dark:text-slate-400">
-                  {project.description}
-                </CardDescription>
-                <div className="flex flex-wrap gap-2">
-                  {project.tags.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {featuredProjects.length === 0 ? (
+            <div className="col-span-3 text-center text-slate-600 dark:text-slate-400">
+              No featured projects available.
+            </div>
+          ) : (
+            featuredProjects.slice(0, 3).map((project) => (
+              <Link 
+                key={project.id} 
+                href={`/portfolio/${project.id}`}
+                className="block"
+              >
+                <Card
+                  className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer"
+                >
+                  <CardHeader className="p-0">
+                    <div className="relative overflow-hidden rounded-t-lg">
+                      <Image
+                        src={project.image || "/placeholder.svg"}
+                        alt={project.title}
+                        width={300}
+                        height={200}
+                        className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <CardTitle className="text-slate-900 mb-2 dark:text-white">
+                      {project.title}
+                    </CardTitle>
+                    <CardDescription className="text-slate-600 mb-4 dark:text-slate-400">
+                      {project.shortDescription}
+                    </CardDescription>
+                    <div className="flex flex-wrap gap-2">
+                      {project.skills.map((skill) => (
+                        <Badge key={skill} variant="outline" className="text-xs">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))
+          )}
         </div>
 
         <div className="text-center mt-12">

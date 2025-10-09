@@ -8,12 +8,16 @@ The CI/CD pipeline is built using **GitHub Actions** and follows **GitHub Flow**
 
 ## Pipeline Workflows
 
-The project uses four main workflows:
+The project uses six main workflows:
 
-1. **Test Pipeline** (`test.yml`) - Runs on every push and PR
-2. **Build Pipeline** (`build.yml`) - Builds and publishes Docker images
-3. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
-4. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+1. **Test Pipeline** (`test.yml`) - Runs on every push and PR with security checks
+2. **Build Pipeline** (`build.yml`) - Builds and publishes Docker images with vulnerability scanning
+3. **Security Scanning** (`security-scan.yml`) - Comprehensive security analysis
+4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
+5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
+6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+
+Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
 
 ## Test Pipeline (`test.yml`)
 
@@ -77,6 +81,95 @@ echarnus/clercq-it:abc1234    # Short SHA
 # Runs automatically on push to main
 # Or manually trigger with
 gh workflow run build.yml
+```
+
+## Security Scanning Pipeline (`security-scan.yml`)
+
+### Triggers
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+- Daily schedule at 2:00 AM UTC
+- Manual workflow dispatch
+
+### Jobs
+
+#### trivy-container-scan
+- Builds Docker image for scanning
+- Runs Trivy vulnerability scanner
+- Uploads results to GitHub Security tab
+- Scans for CRITICAL, HIGH, and MEDIUM severity vulnerabilities
+- Fails on CRITICAL and HIGH vulnerabilities
+
+#### trivy-filesystem-scan
+- Scans entire repository filesystem
+- Detects IaC misconfigurations
+- Identifies dependency vulnerabilities
+- Uploads SARIF results to GitHub Security
+
+#### dotnet-security-scan
+- Installs security-scan tool for .NET
+- Analyzes .NET projects for security issues
+- Checks for known vulnerable packages
+- Generates vulnerability reports
+- Uploads reports as artifacts
+
+#### npm-security-scan
+- Runs pnpm audit on Node.js dependencies
+- Checks for known vulnerabilities
+- Generates JSON audit reports
+- Uploads reports as artifacts
+- Fails on moderate or higher severity issues
+
+#### secrets-scan
+- Uses TruffleHog to scan for leaked secrets
+- Checks git history for credentials
+- Only reports verified secrets
+- Prevents credential exposure
+
+#### security-scorecard
+- Runs OpenSSF Scorecard evaluation
+- Assesses security best practices
+- Publishes results to GitHub Security
+- Provides security posture visibility
+
+### Example
+
+```bash
+# Runs automatically on push/PR and daily
+# Or manually trigger with
+gh workflow run security-scan.yml
+```
+
+## CodeQL Analysis Pipeline (`codeql.yml`)
+
+### Triggers
+- Push to `main` or `develop` branches
+- Pull requests to `main` or `develop`
+- Weekly schedule on Mondays at 8:00 AM UTC
+- Manual workflow dispatch
+
+### Jobs
+
+#### analyze-csharp
+- Initializes CodeQL for C# language
+- Uses security-extended query suite
+- Builds .NET projects
+- Performs deep semantic analysis
+- Uploads results to GitHub Security tab
+
+#### analyze-javascript
+- Initializes CodeQL for JavaScript/TypeScript
+- Uses security-extended query suite
+- Analyzes Next.js frontend code
+- Detects security vulnerabilities
+- Uploads results to GitHub Security tab
+
+### Example
+
+```bash
+# Runs automatically on schedule and push/PR
+# Or manually trigger with
+gh workflow run codeql.yml
 ```
 
 ## Infrastructure Pipeline (`infra.yml`)
@@ -275,16 +368,91 @@ Each deployment provides detailed status information:
 
 ## Security Features
 
+### Automated Security Scanning
+
+The CI/CD pipeline includes comprehensive automated security scanning:
+
+#### Dependency Security
+- **Dependabot**: Automated dependency updates across all ecosystems
+  - .NET NuGet packages
+  - Node.js npm packages  
+  - GitHub Actions
+  - Docker base images
+  - Terraform providers
+- **npm audit**: Security audits for Node.js dependencies in test pipeline
+- **dotnet list package --vulnerable**: Checks for known .NET vulnerabilities in test pipeline
+
+#### Code Security Analysis
+- **CodeQL**: Advanced semantic code analysis
+  - Analyzes C# code for security vulnerabilities
+  - Analyzes JavaScript/TypeScript code
+  - Runs extended security query suite
+  - Scheduled weekly scans
+- **Security linting**: ESLint security rules for frontend code
+
+#### Container Security
+- **Trivy vulnerability scanner**: Comprehensive container security
+  - Scans Docker images for OS vulnerabilities
+  - Scans application dependencies
+  - Filesystem scanning for IaC misconfigurations
+  - Integrated into build pipeline with severity filtering
+  - Results uploaded to GitHub Security tab
+- **.NET security scanning**: Automated checks with security-scan tool
+  - Analyzes .NET projects for security issues
+  - Excludes development dependencies
+  - Generates vulnerability reports
+
+#### Secret Detection
+- **TruffleHog**: Scans for accidentally committed secrets
+  - Runs on every push
+  - Checks verified secrets only
+  - Prevents credential leaks
+- **GitHub Secret Scanning**: Native GitHub protection
+
+#### Security Posture
+- **OpenSSF Scorecard**: Evaluates repository security practices
+  - Automated scoring of security best practices
+  - Published results for transparency
+  - Regular automated assessments
+
 ### Build Security
 - **Build attestation**: Signed build provenance for container images
 - **Multi-platform builds**: Support for AMD64 and ARM64 architectures
-- **Vulnerability scanning**: Automated security checks
+- **Vulnerability scanning**: Trivy scans on every build
 - **Secret management**: Sensitive data stored in GitHub Secrets
+- **Least privilege**: Minimal permissions for GitHub Actions
 
 ### Container Security
 - **Non-root execution**: Containers run with non-privileged users
 - **Minimal attack surface**: Alpine-based images with minimal packages
 - **Health checks**: Built-in container health monitoring
+- **Image attestation**: Signed provenance for supply chain security
+
+### Security Workflows
+
+#### security-scan.yml
+Comprehensive security scanning workflow:
+- **Triggers**: Push, PR, daily schedule, manual
+- **Jobs**:
+  - Trivy container scanning
+  - Trivy filesystem scanning
+  - .NET security analysis
+  - npm security audit
+  - Secret scanning with TruffleHog
+  - OpenSSF Scorecard
+
+#### codeql.yml
+Advanced code analysis:
+- **Triggers**: Push, PR, weekly schedule, manual
+- **Languages**: C#, JavaScript/TypeScript
+- **Analysis**: Security-extended queries
+
+#### Dependabot
+Automated dependency updates:
+- **Schedule**: Weekly on Mondays at 8:00 AM UTC
+- **Ecosystems**: NuGet, npm, GitHub Actions, Docker, Terraform
+- **Auto-assignment**: PRs assigned to repository owner
+- **Labeling**: Categorized by dependency type
 
 ## Best Practices
 
@@ -301,10 +469,34 @@ Each deployment provides detailed status information:
 4. Keep production deployments during low-traffic hours
 
 ### Security
-1. Regularly update dependencies
-2. Monitor security alerts
-3. Use least-privilege access for secrets
-4. Review build logs for suspicious activity
+1. **Review Dependabot PRs promptly**: Keep dependencies up to date
+2. **Monitor security alerts**: Check GitHub Security tab regularly
+3. **Run local security scans**: Test before pushing changes
+4. **Never commit secrets**: Use environment variables and GitHub Secrets
+5. **Review security scan results**: Address findings before merging
+6. **Use least-privilege access**: Minimal permissions for secrets and tokens
+7. **Keep base images updated**: Review Docker base image updates
+8. **Validate input**: Always validate user input in code
+9. **Follow OWASP guidelines**: Apply security best practices
+
+### Security Testing Locally
+
+```bash
+# Check .NET for vulnerable packages
+cd src
+dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive
+
+# Run npm audit
+cd src/ClercqIt.Web
+pnpm audit
+
+# Scan Docker image with Trivy (if installed)
+docker build -t clercq-it:local ./src
+trivy image clercq-it:local --severity HIGH,CRITICAL
+
+# Scan for secrets with TruffleHog (if installed)
+trufflehog filesystem . --only-verified
+```
 
 ## Troubleshooting
 
@@ -460,6 +652,12 @@ gh secret list
 
 ## Resources
 
+### Security & Compliance
+- [Security Compliance Guide](./security-compliance.md) - NIST, PCI DSS, ISO 27001 alignment
+- [Security Policy](../SECURITY.md) - Vulnerability reporting and security measures
+- [OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It) - Live security score
+
+### Development & Deployment
 - [GitHub Flow Documentation](https://docs.github.com/en/get-started/quickstart/github-flow)
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
