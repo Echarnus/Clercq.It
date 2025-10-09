@@ -161,6 +161,15 @@ jobs:
           subject-digest: ${{ steps.build.outputs.digest }}
           push-to-registry: true
 
+      - name: Run Trivy vulnerability scanner on built image
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '0'
+          ignore-unfixed: true
+
       - name: Output build information
         run: |
           echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
@@ -171,3 +180,4 @@ jobs:
           echo "- **Version**: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.gitversion.outputs.shortSha }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Security**: ✅ Vulnerability scan completed" >> $GITHUB_STEP_SUMMARY
