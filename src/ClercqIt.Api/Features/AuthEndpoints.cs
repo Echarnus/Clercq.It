@@ -5,11 +5,12 @@ namespace Clercq.It.Api.Features;
 
 public static class AuthEndpoints
 {
-    public static void MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/auth")
             .WithTags("Authentication")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireRateLimiting("auth");
 
         // Username/Password Login
         group.MapPost("/login", async (
@@ -174,6 +175,8 @@ public static class AuthEndpoints
         .WithSummary("Handle LinkedIn OAuth callback")
         .WithDescription("Processes LinkedIn OAuth callback from Cloud IAM")
         .AllowAnonymous();
+
+        return endpoints;
     }
 
     public record LoginRequest(string Username, string Password, string? TotpCode = null);

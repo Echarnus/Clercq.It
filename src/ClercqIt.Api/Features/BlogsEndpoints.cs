@@ -7,11 +7,12 @@ namespace Clercq.It.Api.Features;
 
 public static class BlogsEndpoints
 {
-    public static void MapBlogsEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapBlogsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/blogs")
             .WithTags("Blogs")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireRateLimiting("api");
 
         group.MapGet("/", async (IMediator mediator) =>
         {
@@ -59,5 +60,7 @@ public static class BlogsEndpoints
         .WithSummary("Create a new blog")
         .WithDescription("Creates a new blog post with markdown content and an image. Requires authentication.")
         .DisableAntiforgery();
+
+        return endpoints;
     }
 }

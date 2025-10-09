@@ -6,11 +6,12 @@ namespace Clercq.It.Api.Features;
 
 public static class CertificationsEndpoints
 {
-    public static void MapCertificationsEndpoints(this IEndpointRouteBuilder endpoints)
+    public static IEndpointRouteBuilder MapCertificationsEndpoints(this IEndpointRouteBuilder endpoints)
     {
         var group = endpoints.MapGroup("/api/certifications")
             .WithTags("Certifications")
-            .WithOpenApi();
+            .WithOpenApi()
+            .RequireRateLimiting("api");
 
         group.MapGet("/", async (IMediator mediator) =>
         {
@@ -78,5 +79,7 @@ public static class CertificationsEndpoints
         .WithSummary("Create a new certification")
         .WithDescription("Creates a new certification with an image. Requires authentication.")
         .DisableAntiforgery();
+
+        return endpoints;
     }
 }
