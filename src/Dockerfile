@@ -71,7 +71,7 @@ RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"
 RUN pnpm run build || npm run build
 
 # Final runtime stage starting from nginx
-FROM nginx:1.25-bookworm AS final
+FROM nginx:1.29-bookworm AS final
 WORKDIR /app
 
 # Accept version build arguments again for final stage
