@@ -53,3 +53,21 @@ variable "scaleway_secret_key" {
   type        = string
   sensitive   = true
 }
+
+variable "cloud_iam_api_url" {
+  description = "Cloud IAM API URL for authentication"
+  type        = string
+  default     = "https://api.cloud-iam.com"
+}
+
+variable "cloud_iam_api_key" {
+  description = "Cloud IAM API key for authentication"
+  type        = string
+  sensitive   = true
+}
+
+variable "cloud_iam_client_redirect_url" {
+  description = "Frontend URL for OAuth redirects"
+  type        = string
+  default     = "https://www.clercq.it"
+}

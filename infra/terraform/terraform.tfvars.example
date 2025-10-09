@@ -14,8 +14,13 @@ scaleway_region          = "fr-par"
 scaleway_access_key = "your-scaleway-access-key"
 scaleway_secret_key = "your-scaleway-secret-key"
 
-# Authentication Configuration
-jwt_secret_key = "your-jwt-secret-key-min-32-characters"
+# Cloud IAM Configuration
+cloud_iam_api_url             = "https://api.cloud-iam.com"
+cloud_iam_api_key             = "your-cloud-iam-api-key"
+cloud_iam_client_redirect_url = "https://www.clercq.it"
+
+# Authentication Configuration (deprecated - using Cloud IAM instead)
+# jwt_secret_key = "your-jwt-secret-key-min-32-characters"
 
 # Application Configuration
 container_image     = "echarnus/clercq-it:latest"
