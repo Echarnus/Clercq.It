@@ -39,7 +39,7 @@ RUN dotnet build ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/build
 RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
-FROM node:23-slim AS node-base
+FROM node:24-slim AS node-base
 # Configure npm for restricted environments
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
 RUN npm config set strict-ssl false || true
