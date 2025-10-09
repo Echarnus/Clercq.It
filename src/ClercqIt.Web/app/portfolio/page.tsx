@@ -7,7 +7,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, ExternalLink, Github } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import { fetchAllProjects } from "./lib/api";
 
@@ -51,7 +51,7 @@ export default async function PortfolioPage() {
                 src/ClercqIt.Web/content/projects
               </div>
             ) : (
-              projects.map((project, index) => (
+              projects.map((project) => (
                 <Link 
                   key={project.id} 
                   href={`/portfolio/${project.id}`}
