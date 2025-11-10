@@ -1,13 +1,13 @@
-using Clercq.It.Application;
-using Clercq.It.Infrastructure;
+using System.Text;
+using System.Threading.RateLimiting;
 using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
-using Scalar.AspNetCore;
+using Clercq.It.Application;
+using Clercq.It.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
 using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
+using Microsoft.IdentityModel.Tokens;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,7 +33,7 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 100,
                 Window = TimeSpan.FromMinutes(1)
             }));
-    
+
     // API endpoints rate limit: 30 requests per minute
     options.AddPolicy("api", context =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -44,7 +44,7 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 30,
                 Window = TimeSpan.FromMinutes(1)
             }));
-    
+
     // Authentication endpoints: stricter limit (10 requests per minute)
     options.AddPolicy("auth", context =>
         RateLimitPartition.GetFixedWindowLimiter(
@@ -55,20 +55,17 @@ builder.Services.AddRateLimiter(options =>
                 PermitLimit = 10,
                 Window = TimeSpan.FromMinutes(1)
             }));
-    
+
     options.RejectionStatusCode = 429; // Too Many Requests
 });
 
 // Add CORS for frontend
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins(
-            "http://localhost:3000",
-            "https://localhost:3000",
-            "https://www.clercq.it"
-        )
+        policy.WithOrigins(corsOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod()
         .AllowCredentials();
@@ -93,7 +90,7 @@ if (!string.IsNullOrEmpty(cloudIAMApiUrl))
                 ValidIssuer = cloudIAMApiUrl,
                 RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
-            
+
             // For development, accept tokens from Cloud IAM without HTTPS requirement
             if (builder.Environment.IsDevelopment())
             {
@@ -158,23 +155,23 @@ app.Use(async (context, next) =>
     // Remove server header for security through obscurity
     context.Response.Headers.Remove("Server");
     context.Response.Headers.Remove("X-Powered-By");
-    
+
     // Add security headers using indexer to avoid warnings
     context.Response.Headers["X-Content-Type-Options"] = "nosniff";
     context.Response.Headers["X-Frame-Options"] = "DENY";
     context.Response.Headers["X-XSS-Protection"] = "1; mode=block";
     context.Response.Headers["Referrer-Policy"] = "strict-origin-when-cross-origin";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-    
+
     if (!app.Environment.IsDevelopment())
     {
         // HSTS - Force HTTPS for 1 year in production
         context.Response.Headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
     }
-    
+
     // Content Security Policy for API
     context.Response.Headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'";
-    
+
     await next();
 });
 
