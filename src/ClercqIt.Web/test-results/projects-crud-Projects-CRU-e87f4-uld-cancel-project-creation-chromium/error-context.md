@@ -1,0 +1,84 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e7] [cursor=pointer]:
+    - img [ref=e8]
+  - alert [ref=e11]
+  - generic [ref=e12]:
+    - banner [ref=e13]:
+      - generic [ref=e14]:
+        - generic [ref=e15]:
+          - heading "Clercq.It Admin" [level=1] [ref=e16]
+          - paragraph [ref=e17]: Content Management System • Welcome, admin
+        - button "Logout" [ref=e18] [cursor=pointer]:
+          - img
+          - text: Logout
+    - main [ref=e19]:
+      - generic [ref=e20]:
+        - tablist [ref=e21]:
+          - tab "Overview" [selected] [ref=e22] [cursor=pointer]:
+            - img [ref=e23]
+            - text: Overview
+          - tab "Blogs" [ref=e25] [cursor=pointer]:
+            - img [ref=e26]
+            - text: Blogs
+          - tab "Projects" [ref=e29] [cursor=pointer]:
+            - img [ref=e30]
+            - text: Projects
+          - tab "Certifications" [ref=e32] [cursor=pointer]:
+            - img [ref=e33]
+            - text: Certifications
+          - tab "Settings" [ref=e36] [cursor=pointer]:
+            - img [ref=e37]
+            - text: Settings
+        - tabpanel "Overview" [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: Total Blogs
+                - img [ref=e45]
+              - generic [ref=e48]:
+                - generic [ref=e49]: "0"
+                - paragraph [ref=e50]: Published blog posts
+            - generic [ref=e51]:
+              - generic [ref=e52]:
+                - generic [ref=e53]: Total Projects
+                - img [ref=e54]
+              - generic [ref=e56]:
+                - generic [ref=e57]: "0"
+                - paragraph [ref=e58]: Portfolio projects
+            - generic [ref=e59]:
+              - generic [ref=e60]:
+                - generic [ref=e61]: Media Files
+                - img [ref=e62]
+              - generic [ref=e66]:
+                - generic [ref=e67]: "0"
+                - paragraph [ref=e68]: Images in storage
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: System Status
+                - img [ref=e72]
+              - generic [ref=e75]:
+                - generic [ref=e76]: Healthy
+                - paragraph [ref=e77]: All systems operational
+          - generic [ref=e78]:
+            - generic [ref=e79]:
+              - generic [ref=e80]: Welcome to the Admin Panel
+              - generic [ref=e81]: Manage your content, projects, and settings from this dashboard.
+            - generic [ref=e82]:
+              - paragraph [ref=e83]: "Use the tabs above to navigate between different sections:"
+              - list [ref=e84]:
+                - listitem [ref=e85]:
+                  - strong [ref=e86]: "Blogs:"
+                  - text: Create, edit, and manage blog posts
+                - listitem [ref=e87]:
+                  - strong [ref=e88]: "Projects:"
+                  - text: Manage your portfolio projects
+                - listitem [ref=e89]:
+                  - strong [ref=e90]: "Certifications:"
+                  - text: Showcase your professional certifications
+                - listitem [ref=e91]:
+                  - strong [ref=e92]: "Settings:"
+                  - text: Configure system settings and preferences
+```

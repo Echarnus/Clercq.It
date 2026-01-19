@@ -78,7 +78,30 @@ builder.Services.AddCors(options =>
 var keycloakServiceUrl = builder.Configuration["services:keycloak:http:0"];
 bool useLocalKeycloak = !string.IsNullOrEmpty(keycloakServiceUrl);
 
-if (useLocalKeycloak)
+// Check if running in test environment (WebApplicationFactory sets this)
+bool isTestEnvironment = builder.Environment.EnvironmentName == "Test" ||
+    builder.Configuration["ASPNETCORE_TEST_CONTENTROOT_CLERCQIT_API"] != null;
+
+if (isTestEnvironment)
+{
+    // Test environment: Use minimal auth that doesn't require external services
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = false
+            };
+        });
+
+    // Register a mock auth service for tests
+    builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
+}
+else if (useLocalKeycloak)
 {
     // Local development with Keycloak
     var keycloakRealm = builder.Configuration["Keycloak:Realm"] ?? "clercqit";
