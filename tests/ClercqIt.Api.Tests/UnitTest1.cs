@@ -1,14 +1,13 @@
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
 
 namespace ClercqIt.Api.Tests;
 
-public class ApiEndpointTests : IClassFixture<WebApplicationFactory<Program>>
+public class ApiEndpointTests : IClassFixture<CustomWebApplicationFactory>
 {
-    private readonly WebApplicationFactory<Program> _factory;
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
-    public ApiEndpointTests(WebApplicationFactory<Program> factory)
+    public ApiEndpointTests(CustomWebApplicationFactory factory)
     {
         _factory = factory;
         _client = _factory.CreateClient();
