@@ -4,8 +4,10 @@ using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
+using ClercqIt.Api.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
@@ -72,59 +74,99 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Add Authentication - validate JWT tokens from Cloud IAM
-var cloudIAMApiUrl = builder.Configuration["CloudIAM:ApiUrl"];
-if (!string.IsNullOrEmpty(cloudIAMApiUrl))
+// Determine if running with local Keycloak (Aspire provides service URL as services__keycloak__http__0)
+var keycloakServiceUrl = builder.Configuration["services:keycloak:http:0"];
+bool useLocalKeycloak = !string.IsNullOrEmpty(keycloakServiceUrl);
+
+if (useLocalKeycloak)
 {
+    // Local development with Keycloak
+    var keycloakRealm = builder.Configuration["Keycloak:Realm"] ?? "clercqit";
+    var keycloakAuthority = $"{keycloakServiceUrl}/realms/{keycloakRealm}";
+
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
         {
-            // Configure to validate tokens from Cloud IAM
-            options.Authority = cloudIAMApiUrl;
+            options.Authority = keycloakAuthority;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
-                ValidateAudience = false, // Cloud IAM may not include audience
+                ValidateAudience = false,
                 ValidateLifetime = true,
                 ValidateIssuerSigningKey = true,
-                ValidIssuer = cloudIAMApiUrl,
+                ValidIssuer = keycloakAuthority,
+                RoleClaimType = "roles" // Use our custom roles claim
+            };
+            options.RequireHttpsMetadata = false; // Keycloak runs on HTTP locally
+        });
+
+    // Register local Keycloak auth service
+    builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
+
+    // Log that we're using local Keycloak
+    Console.WriteLine($"[Auth] Using local Keycloak at: {keycloakServiceUrl}");
+}
+else
+{
+    // Production: Use Cloud IAM
+    builder.Services.AddOptions<CloudIAMSettings>()
+        .BindConfiguration(CloudIAMSettings.SectionName)
+        .ValidateDataAnnotations()
+        .ValidateOnStart();
+
+    var cloudIAMSettings = builder.Configuration
+        .GetSection(CloudIAMSettings.SectionName)
+        .Get<CloudIAMSettings>() ?? throw new InvalidOperationException(
+            "Cloud IAM configuration is missing. See docs/ciam.md for configuration instructions.");
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(options =>
+        {
+            options.Authority = cloudIAMSettings.ApiUrl;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = false,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = cloudIAMSettings.ApiUrl,
                 RoleClaimType = System.Security.Claims.ClaimTypes.Role
             };
 
-            // For development, accept tokens from Cloud IAM without HTTPS requirement
             if (builder.Environment.IsDevelopment())
             {
                 options.RequireHttpsMetadata = false;
             }
             else
             {
-                // Production: Require HTTPS
                 options.RequireHttpsMetadata = true;
             }
         });
 
-    builder.Services.AddAuthorization(options =>
-    {
-        // Fine-grained role-based policies
-        options.AddPolicy("AdminView", policy => policy.RequireRole("Admin.View"));
-        options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
-        options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
-        options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
-    });
+    // Register Cloud IAM auth service
+    builder.Services.AddSingleton<ICloudIAMAuthService, CloudIAMAuthService>();
 }
 
-// Register authentication services
-builder.Services.AddSingleton<ICloudIAMAuthService, CloudIAMAuthService>();
+// Add Authorization
+builder.Services.AddAuthorization(options =>
+{
+    // Fine-grained role-based policies
+    options.AddPolicy("AdminView", policy => policy.RequireRole("Admin.View"));
+    options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
+    options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
+    options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
+});
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
 
-// Check if we're running under Aspire (has the connection string name)
-bool useAspire = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("ConnectionStrings__ClercqItDb"));
+// Check if we're running under Aspire (connection string is set by Aspire orchestration)
+var aspireConnectionString = builder.Configuration.GetConnectionString("ClercqItDb");
+bool useAspire = !string.IsNullOrEmpty(aspireConnectionString);
 if (useAspire)
 {
-    // Add Aspire PostgreSQL integration
-    builder.Services.AddNpgsqlDataSource("ClercqItDb");
+    // Add Aspire PostgreSQL EF Core integration directly
+    builder.AddNpgsqlDbContext<Clercq.It.Infrastructure.Data.ApplicationDbContext>("ClercqItDb");
     builder.Services.AddInfrastructure(builder.Configuration, useAspirePostgreSQL: true);
 }
 else
@@ -175,7 +217,11 @@ app.Use(async (context, next) =>
     await next();
 });
 
-app.UseHttpsRedirection();
+// Only use HTTPS redirection in production (Aspire uses HTTP internally)
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
 
 // Use CORS
 app.UseCors("AllowFrontend");

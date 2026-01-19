@@ -19,7 +19,34 @@ public class CreateProjectCommandValidatorTests
             "Test Project",
             "Valid short description",
             "# Valid Long Description\n\nThis is markdown content.",
-            "https://example.com/image.jpg",
+            new MemoryStream(),
+            "image.jpg",
+            "image/jpeg",
+            DateTime.UtcNow.AddMonths(-6),
+            DateTime.UtcNow.AddMonths(-3),
+            true,
+            new[] { "C#", "React" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+        result.Errors.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Validate_ShouldPass_WithoutImage()
+    {
+        // Arrange
+        var command = new CreateProjectCommand(
+            "Test Project",
+            "Valid short description",
+            "# Valid Long Description\n\nThis is markdown content.",
+            null,
+            null,
+            null,
             DateTime.UtcNow.AddMonths(-6),
             DateTime.UtcNow.AddMonths(-3),
             true,
@@ -42,7 +69,9 @@ public class CreateProjectCommandValidatorTests
             "",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -66,7 +95,9 @@ public class CreateProjectCommandValidatorTests
             longTitle,
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -78,8 +109,8 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Title" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Title" &&
             e.ErrorMessage.Contains("200"));
     }
 
@@ -91,7 +122,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -115,7 +148,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             longDescription,
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -127,8 +162,8 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ShortDescription" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ShortDescription" &&
             e.ErrorMessage.Contains("500"));
     }
 
@@ -140,7 +175,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -155,41 +192,22 @@ public class CreateProjectCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "LongDescription");
     }
 
-    [Fact]
-    public void Validate_ShouldFail_WhenImageUrlIsEmpty()
-    {
-        // Arrange
-        var command = new CreateProjectCommand(
-            "Title",
-            "Short description",
-            "Long description",
-            "",
-            DateTime.UtcNow,
-            DateTime.UtcNow.AddDays(1),
-            false,
-            new[] { "Skill1" }
-        );
-
-        // Act
-        var result = _validator.Validate(command);
-
-        // Assert
-        result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ImageUrl");
-    }
-
     [Theory]
-    [InlineData("https://example.com/image.jpg")]
-    [InlineData("http://example.com/image.png")]
-    [InlineData("https://s3.amazonaws.com/bucket/image.webp")]
-    public void Validate_ShouldPass_WhenImageUrlIsValid(string imageUrl)
+    [InlineData("image.jpg")]
+    [InlineData("image.jpeg")]
+    [InlineData("image.png")]
+    [InlineData("image.gif")]
+    [InlineData("image.webp")]
+    public void Validate_ShouldPass_WhenImageFileNameHasValidExtension(string fileName)
     {
         // Arrange
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            imageUrl,
+            new MemoryStream(),
+            fileName,
+            "image/jpeg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -204,18 +222,20 @@ public class CreateProjectCommandValidatorTests
     }
 
     [Theory]
-    [InlineData("not-a-url")]
-    [InlineData("ftp://example.com/image.jpg")]
-    [InlineData("//example.com/image.jpg")]
-    [InlineData("example.com/image.jpg")]
-    public void Validate_ShouldFail_WhenImageUrlIsInvalid(string imageUrl)
+    [InlineData("image.exe")]
+    [InlineData("image.pdf")]
+    [InlineData("image.txt")]
+    [InlineData("image.doc")]
+    public void Validate_ShouldFail_WhenImageFileNameHasInvalidExtension(string fileName)
     {
         // Arrange
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            imageUrl,
+            new MemoryStream(),
+            fileName,
+            "image/jpeg",
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -227,7 +247,63 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ImageUrl");
+        result.Errors.Should().Contain(e => e.PropertyName == "ImageFileName");
+    }
+
+    [Theory]
+    [InlineData("image/jpeg")]
+    [InlineData("image/png")]
+    [InlineData("image/gif")]
+    [InlineData("image/webp")]
+    public void Validate_ShouldPass_WhenImageContentTypeIsValid(string contentType)
+    {
+        // Arrange
+        var command = new CreateProjectCommand(
+            "Title",
+            "Short description",
+            "Long description",
+            new MemoryStream(),
+            "image.jpg",
+            contentType,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(1),
+            false,
+            new[] { "Skill1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("application/pdf")]
+    [InlineData("text/plain")]
+    [InlineData("video/mp4")]
+    public void Validate_ShouldFail_WhenImageContentTypeIsInvalid(string contentType)
+    {
+        // Arrange
+        var command = new CreateProjectCommand(
+            "Title",
+            "Short description",
+            "Long description",
+            new MemoryStream(),
+            "image.jpg",
+            contentType,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(1),
+            false,
+            new[] { "Skill1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "ImageContentType");
     }
 
     [Fact]
@@ -236,12 +312,14 @@ public class CreateProjectCommandValidatorTests
         // Arrange
         var startDate = DateTime.UtcNow;
         var endDate = startDate.AddDays(-1);
-        
+
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             startDate,
             endDate,
             false,
@@ -253,8 +331,8 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "EndDate" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "EndDate" &&
             e.ErrorMessage.Contains("greater than or equal"));
     }
 
@@ -263,12 +341,14 @@ public class CreateProjectCommandValidatorTests
     {
         // Arrange
         var date = DateTime.UtcNow;
-        
+
         var command = new CreateProjectCommand(
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             date,
             date,
             false,
@@ -290,7 +370,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -313,7 +395,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -325,8 +409,8 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Skills" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Skills" &&
             e.ErrorMessage.Contains("At least one"));
     }
 
@@ -339,7 +423,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,
@@ -351,8 +437,8 @@ public class CreateProjectCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Skills" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Skills" &&
             e.ErrorMessage.Contains("Maximum 20"));
     }
 
@@ -365,7 +451,9 @@ public class CreateProjectCommandValidatorTests
             "Title",
             "Short description",
             "Long description",
-            "https://example.com/image.jpg",
+            null,
+            null,
+            null,
             DateTime.UtcNow,
             DateTime.UtcNow.AddDays(1),
             false,

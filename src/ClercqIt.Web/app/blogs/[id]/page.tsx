@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
-import Image from "next/image";
 import { fetchBlogById } from "../lib/api";
 import { notFound } from "next/navigation";
 
@@ -42,41 +42,41 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
           {/* Blog Header */}
           <div className="mb-8">
-            <div className="flex items-center gap-4 text-slate-600 dark:text-slate-400 mb-6">
+            <h1 className="text-4xl font-bold text-slate-900 mb-4 dark:text-white">
+              {blog.shortDescription}
+            </h1>
+
+            <div className="flex items-center gap-4 text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span>{formatDate(blog.publishDate)}</span>
               </div>
             </div>
-
-            <div className="flex flex-wrap gap-2 mb-6">
-              {blog.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
           </div>
 
-          {/* Blog Image */}
-          <div className="mb-8 rounded-lg overflow-hidden shadow-lg">
-            <Image
+          {/* Blog Content with Image */}
+          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 rounded-lg shadow-lg p-8">
+            <BlurImage
               src={blog.image || "/placeholder.svg"}
               alt={blog.shortDescription}
-              width={800}
-              height={500}
-              className="w-full object-cover"
+              width={250}
+              height={250}
+              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md flex-shrink-0"
             />
-          </div>
 
-          {/* Blog Content */}
-          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 rounded-lg shadow-lg p-8">
-            <div className="text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-              <p className="mb-4 text-lg font-medium text-slate-700 dark:text-slate-300">
-                {blog.shortDescription}
-              </p>
+            <div className="text-slate-600 dark:text-slate-400 leading-relaxed">
               <div className="prose dark:prose-invert max-w-none">
                 <p className="whitespace-pre-line">{blog.longDescription}</p>
+              </div>
+            </div>
+
+            <div className="clear-both pt-6">
+              <div className="flex flex-wrap gap-2">
+                {blog.tags.map((tag) => (
+                  <Badge key={tag} variant="secondary">
+                    {tag}
+                  </Badge>
+                ))}
               </div>
             </div>
           </div>

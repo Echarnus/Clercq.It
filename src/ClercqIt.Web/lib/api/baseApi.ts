@@ -2,13 +2,14 @@ import { z } from 'zod';
 
 // Base API client configuration
 // In production, use relative URLs. In development, use the full API URL.
+// Default port 5000 matches the Aspire AppHost configuration
 const getBaseApiUrl = () => {
   if (typeof window !== 'undefined') {
     // Client-side: use relative URL in production
-    return process.env.NODE_ENV === 'production' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5035');
+    return process.env.NODE_ENV === 'production' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001');
   }
   // Server-side: always use full URL for SSR
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5035';
+  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
 };
 
 export const getApiUrl = () => getBaseApiUrl();
@@ -22,7 +23,7 @@ export const ProjectSchema = z.object({
   endDate: z.string().datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
-  image: z.string().url(),
+  image: z.string(), // Can be empty string or URL
   featured: z.boolean(),
   title: z.string().min(1),
   skills: z.array(z.string()),
@@ -38,7 +39,7 @@ export const BlogSchema = z.object({
   publishDate: z.string().datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
-  image: z.string().url(),
+  image: z.string(), // Can be empty string or URL
   tags: z.array(z.string()),
 });
 

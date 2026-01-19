@@ -12,15 +12,22 @@ const nextConfig = {
   },
   // Bank-grade security headers
   async headers() {
+    const isDevelopment = process.env.NODE_ENV === 'development';
+
+    // Allow localhost API in development, only production API in production
+    const connectSrc = isDevelopment
+      ? "'self' http://localhost:5001 http://localhost:5000 ws://localhost:* wss://localhost:*"
+      : "'self' https://api.clercq.it";
+
     return [
       {
         source: '/:path*',
         headers: [
-          // Strict Transport Security - Force HTTPS for 1 year
-          {
+          // Strict Transport Security - Force HTTPS for 1 year (skip in development)
+          ...(isDevelopment ? [] : [{
             key: 'Strict-Transport-Security',
             value: 'max-age=31536000; includeSubDomains; preload'
-          },
+          }]),
           // Content Security Policy - Prevent XSS attacks
           {
             key: 'Content-Security-Policy',
@@ -28,9 +35,9 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline/eval
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
+              "img-src 'self' data: https: http://localhost:*",
               "font-src 'self' data:",
-              "connect-src 'self' https://api.clercq.it",
+              `connect-src ${connectSrc}`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'"

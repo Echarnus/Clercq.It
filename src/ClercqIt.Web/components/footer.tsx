@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { getApiUrl } from "@/lib/api/baseApi";
 
 interface VersionInfo {
   version: string;
@@ -10,8 +11,14 @@ interface VersionInfo {
   buildDate: string;
 }
 
+interface FeaturedProject {
+  id: string;
+  title: string;
+}
+
 export function Footer() {
   const [versionInfo, setVersionInfo] = useState<VersionInfo | null>(null);
+  const [featuredProjects, setFeaturedProjects] = useState<FeaturedProject[]>([]);
 
   useEffect(() => {
     // Fetch version info from the public version.json file
@@ -22,6 +29,21 @@ export function Footer() {
         // If version.json doesn't exist (e.g., in dev), ignore the error
         console.log("Version info not available");
       });
+
+    // Fetch featured projects
+    fetch(`${getApiUrl()}/api/projects/featured`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setFeaturedProjects(data.slice(0, 4).map((p: { id: string; title: string }) => ({
+            id: p.id,
+            title: p.title,
+          })));
+        }
+      })
+      .catch(() => {
+        console.log("Featured projects not available");
+      });
   }, []);
 
   return (
@@ -29,32 +51,29 @@ export function Footer() {
       <div className="container mx-auto px-4">
         <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           <div>
-            <h4 className="font-semibold mb-4">Portfolio</h4>
+            <h4 className="font-semibold mb-4">Featured Projects</h4>
             <ul className="space-y-2 text-slate-300 dark:text-slate-400">
-              <li>
-                <Link
-                  href="/portfolio"
-                  className="hover:text-white transition-colors"
-                >
-                  All Projects
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/portfolio"
-                  className="hover:text-white transition-colors"
-                >
-                  Web Applications
-                </Link>
-              </li>
-              <li>
-                <Link
-                  href="/portfolio"
-                  className="hover:text-white transition-colors"
-                >
-                  Cloud Solutions
-                </Link>
-              </li>
+              {featuredProjects.length > 0 ? (
+                featuredProjects.map((project) => (
+                  <li key={project.id}>
+                    <Link
+                      href={`/portfolio/${project.id}`}
+                      className="hover:text-white transition-colors"
+                    >
+                      {project.title}
+                    </Link>
+                  </li>
+                ))
+              ) : (
+                <li>
+                  <Link
+                    href="/portfolio"
+                    className="hover:text-white transition-colors"
+                  >
+                    View All Projects
+                  </Link>
+                </li>
+              )}
             </ul>
           </div>
           <div>
@@ -73,8 +92,22 @@ export function Footer() {
                   Portfolio
                 </Link>
               </li>
-              <li></li>
-              <li></li>
+              <li>
+                <Link
+                  href="/blogs"
+                  className="hover:text-white transition-colors"
+                >
+                  Blogs
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/certifications"
+                  className="hover:text-white transition-colors"
+                >
+                  Certifications
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

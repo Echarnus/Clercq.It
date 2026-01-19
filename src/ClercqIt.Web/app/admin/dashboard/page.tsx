@@ -20,6 +20,10 @@ import {
   Image as ImageIcon,
   Award,
 } from "lucide-react";
+import { BlogList } from "@/components/admin/BlogList";
+import { ProjectList } from "@/components/admin/ProjectList";
+import { CertificationList } from "@/components/admin/CertificationList";
+import { fetchAllBlogs, fetchAllProjects, fetchAllCertifications } from "@/lib/api/adminApi";
 
 interface UserRoles {
   hasAdminView: boolean;
@@ -38,6 +42,28 @@ export default function AdminDashboard() {
     hasCertificationsContributor: false,
   });
   const [username, setUsername] = useState<string>("");
+  const [stats, setStats] = useState({ blogs: 0, projects: 0, certifications: 0 });
+
+  // Fetch stats when authenticated
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const [blogs, projects, certifications] = await Promise.all([
+          fetchAllBlogs(),
+          fetchAllProjects(),
+          fetchAllCertifications(),
+        ]);
+        setStats({
+          blogs: blogs.length,
+          projects: projects.length,
+          certifications: certifications.length,
+        });
+      } catch (error) {
+        console.error("Failed to load stats:", error);
+      }
+    };
+    loadStats();
+  }, []);
 
   useEffect(() => {
     // Check if user is authenticated
@@ -183,7 +209,7 @@ export default function AdminDashboard() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">0</div>
+                  <div className="text-2xl font-bold">{stats.blogs}</div>
                   <p className="text-xs text-muted-foreground">
                     Published blog posts
                   </p>
@@ -198,7 +224,7 @@ export default function AdminDashboard() {
                   <FolderKanban className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">0</div>
+                  <div className="text-2xl font-bold">{stats.projects}</div>
                   <p className="text-xs text-muted-foreground">
                     Portfolio projects
                   </p>
@@ -208,14 +234,14 @@ export default function AdminDashboard() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Media Files
+                    Certifications
                   </CardTitle>
-                  <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                  <Award className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">0</div>
+                  <div className="text-2xl font-bold">{stats.certifications}</div>
                   <p className="text-xs text-muted-foreground">
-                    Images in storage
+                    Professional certifications
                   </p>
                 </CardContent>
               </Card>
@@ -273,88 +299,52 @@ export default function AdminDashboard() {
           {/* Blogs Tab */}
           {userRoles.hasBlogsContributor && (
             <TabsContent value="blogs" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Blog Management</CardTitle>
-                <CardDescription>
-                  Create and manage your blog posts
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    No blogs yet
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Create your first blog post to get started
-                  </p>
-                  <Button>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Create Blog Post
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Blog Management</CardTitle>
+                  <CardDescription>
+                    Create and manage your blog posts
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <BlogList />
+                </CardContent>
+              </Card>
+            </TabsContent>
           )}
 
           {/* Projects Tab */}
           {userRoles.hasProjectsContributor && (
             <TabsContent value="projects" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Management</CardTitle>
-                <CardDescription>
-                  Manage your portfolio projects
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    No projects yet
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Add your first project to showcase your work
-                  </p>
-                  <Button>
-                    <FolderKanban className="mr-2 h-4 w-4" />
-                    Add Project
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Project Management</CardTitle>
+                  <CardDescription>
+                    Manage your portfolio projects
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProjectList />
+                </CardContent>
+              </Card>
+            </TabsContent>
           )}
 
           {/* Certifications Tab */}
           {userRoles.hasCertificationsContributor && (
             <TabsContent value="certifications" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Certification Management</CardTitle>
-                <CardDescription>
-                  Manage your professional certifications
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <Award className="h-12 w-12 text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-semibold mb-2">
-                    No certifications yet
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-6">
-                    Add your first certification to showcase your expertise
-                  </p>
-                  <Button>
-                    <Award className="mr-2 h-4 w-4" />
-                    Add Certification
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Certification Management</CardTitle>
+                  <CardDescription>
+                    Manage your professional certifications
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <CertificationList />
+                </CardContent>
+              </Card>
+            </TabsContent>
           )}
 
           {/* Settings Tab */}

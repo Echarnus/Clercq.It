@@ -8,11 +8,15 @@ var configuration = new ConfigurationBuilder()
     .AddEnvironmentVariables()
     .Build();
 
-var connectionString = configuration.GetConnectionString("DefaultConnection");
+// Try Aspire connection string first (ClercqItDb), then fall back to DefaultConnection
+var connectionString = configuration.GetConnectionString("ClercqItDb")
+    ?? configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    Console.Error.WriteLine("Error: Connection string 'DefaultConnection' not found.");
+    Console.Error.WriteLine("Error: Connection string 'ClercqItDb' or 'DefaultConnection' not found.");
+    Console.Error.WriteLine("Available connection strings: " +
+        string.Join(", ", configuration.GetSection("ConnectionStrings").GetChildren().Select(c => c.Key)));
     return 1;
 }
 

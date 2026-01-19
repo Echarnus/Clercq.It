@@ -18,12 +18,8 @@ public static class DependencyInjection
     {
         if (useAspirePostgreSQL)
         {
-            // This will be configured by Aspire's AddNpgsqlDataSource
-            // NOTE: MigrationsAssembly is configured for EF Core tooling (dotnet ef) only.
-            // Migrations are NEVER executed at runtime in production.
-            // Production migrations are applied via SQL scripts in the deployment pipeline.
-            services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseNpgsql(x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            // DbContext is registered by Aspire's AddNpgsqlDbContext in Program.cs
+            // We only register repository dependencies here
         }
         else
         {
@@ -45,16 +41,19 @@ public static class DependencyInjection
         var objectStorageSection = configuration.GetSection("ObjectStorage");
         var objectStorageSettings = new ObjectStorageSettings();
         objectStorageSection.Bind(objectStorageSettings);
-        
+
         services.Configure<ObjectStorageSettings>(opts => objectStorageSection.Bind(opts));
-        
+
         if (!string.IsNullOrEmpty(objectStorageSettings.AccessKey))
         {
-            // Configure AWS S3 client for Scaleway Object Storage
+            // Configure AWS S3 client for S3-compatible storage
+            // Works with both MinIO (local dev) and Scaleway Object Storage (production)
             var s3Config = new AmazonS3Config
             {
                 ServiceURL = objectStorageSettings.Endpoint,
-                ForcePathStyle = true,
+                // UsePathStyle is required for MinIO and recommended for S3-compatible services
+                // MinIO: true, Scaleway: true (both use path-style URLs)
+                ForcePathStyle = objectStorageSettings.UsePathStyle,
                 AuthenticationRegion = objectStorageSettings.Region
             };
 
@@ -64,7 +63,7 @@ public static class DependencyInjection
 
             services.AddSingleton<IAmazonS3>(new AmazonS3Client(credentials, s3Config));
         }
-        
+
         // Always register the service (even if credentials are missing for tests)
         services.AddScoped<IObjectStorageService, ObjectStorageService>();
 

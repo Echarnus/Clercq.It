@@ -2,11 +2,18 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Card, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BlurImage } from "@/components/ui/blur-image";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Pagination,
   PaginationContent,
@@ -105,18 +112,16 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
           ) : (
             paginatedBlogs.map((blog) => (
               <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
-                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer md:grid md:grid-cols-3 md:gap-6">
-                  <div className="relative overflow-hidden">
-                    <Image
-                      src={blog.image || "/placeholder.svg"}
-                      alt={blog.shortDescription}
-                      width={400}
-                      height={250}
-                      className="w-full h-48 md:h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                    />
-                  </div>
+                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer md:flex md:flex-row">
+                  <BlurImage
+                    src={blog.image || "/placeholder.svg"}
+                    alt={blog.shortDescription}
+                    width={200}
+                    height={200}
+                    containerClassName="w-full md:w-48 h-48 flex-shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                  />
 
-                  <CardContent className="p-6 md:col-span-2 md:flex md:flex-col md:justify-center">
+                  <CardContent className="p-6 md:flex-1 flex flex-col justify-center">
                     <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
                       {formatDate(blog.publishDate)}
                     </div>
@@ -208,16 +213,65 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
 
             {/* Date Filter */}
             <div className="mb-6">
-              <Label htmlFor="date-filter" className="text-slate-700 dark:text-slate-300">
+              <Label className="text-slate-700 dark:text-slate-300">
                 Filter by Month
               </Label>
-              <Input
-                id="date-filter"
-                type="month"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="mt-2"
-              />
+              <div className="grid grid-cols-2 gap-2 mt-2">
+                <Select
+                  value={dateFilter ? dateFilter.split("-")[0] : ""}
+                  onValueChange={(year) => {
+                    if (year) {
+                      const month = dateFilter ? dateFilter.split("-")[1] : "01";
+                      setDateFilter(`${year}-${month}`);
+                    } else {
+                      setDateFilter("");
+                    }
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Year" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 10 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={dateFilter ? dateFilter.split("-")[1] : ""}
+                  onValueChange={(month) => {
+                    if (month && dateFilter) {
+                      const year = dateFilter.split("-")[0];
+                      setDateFilter(`${year}-${month}`);
+                    }
+                  }}
+                  disabled={!dateFilter}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Month" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, i) => (
+                      <SelectItem key={month} value={String(i + 1).padStart(2, "0")}>
+                        {month}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              {dateFilter && (
+                <button
+                  onClick={() => setDateFilter("")}
+                  className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-2 underline"
+                >
+                  Clear date filter
+                </button>
+              )}
             </div>
 
             {/* Tags Filter */}
@@ -230,7 +284,11 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                   <Badge
                     key={tag}
                     variant={selectedTags.includes(tag) ? "default" : "outline"}
-                    className="cursor-pointer hover:opacity-80 transition-opacity"
+                    className={`cursor-pointer transition-all ${
+                      selectedTags.includes(tag)
+                        ? "bg-slate-900 text-white hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                        : "border-slate-300 text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+                    }`}
                     onClick={() => handleTagToggle(tag)}
                   >
                     {tag}

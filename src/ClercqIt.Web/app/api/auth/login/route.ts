@@ -15,6 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Call the backend authentication endpoint
+    // Default port 5000 matches the Aspire AppHost configuration
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
     
     const response = await fetch(`${apiUrl}/api/auth/login`, {

@@ -7,8 +7,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft } from "lucide-react";
-import Image from "next/image";
 import { fetchAllProjects } from "./lib/api";
 
 export default async function PortfolioPage() {
@@ -43,55 +43,32 @@ export default async function PortfolioPage() {
 
       {/* Projects Grid */}
       <section className="container mx-auto px-4 pb-16">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid gap-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="grid gap-6">
             {projects.length === 0 ? (
-              <div className="text-center text-slate-600 dark:text-slate-400">
-                No projects found. Add markdown files to
-                src/ClercqIt.Web/content/projects
+              <div className="text-center text-slate-600 dark:text-slate-400 py-12">
+                No projects found. Check back soon for new portfolio items!
               </div>
             ) : (
               projects.map((project) => (
-                <Link 
-                  key={project.id} 
+                <Link
+                  key={project.id}
                   href={`/portfolio/${project.id}`}
                   className="block"
                 >
-                  <Card
-                    className={`group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer ${
-                      project.featured ? "md:grid md:grid-cols-2 md:gap-8" : ""
-                    }`}
-                  >
-                    <div
-                      className={`relative overflow-hidden ${
-                        project.featured ? "md:order-1" : ""
-                      }`}
-                    >
-                      <Image
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        width={400}
-                        height={250}
-                        className={`w-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                          project.featured
-                            ? "h-64 md:h-full rounded-t-lg md:rounded-l-lg md:rounded-t-none"
-                            : "h-48 rounded-t-lg"
-                        }`}
-                      />
-                    </div>
+                  <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer md:flex md:flex-row">
+                    <BlurImage
+                      src={project.image || "/placeholder.svg"}
+                      alt={project.title}
+                      width={200}
+                      height={200}
+                      containerClassName="w-full md:w-48 h-48 flex-shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                    />
 
-                    <CardContent
-                      className={`p-6 ${
-                        project.featured
-                          ? "md:order-2 md:flex md:flex-col md:justify-center"
-                          : ""
-                      }`}
-                    >
-                      <div className="flex items-start justify-between mb-4">
-                        <CardTitle className="text-slate-900 text-xl dark:text-white">
-                          {project.title}
-                        </CardTitle>
-                      </div>
+                    <CardContent className="p-6 md:flex-1 flex flex-col justify-center">
+                      <CardTitle className="text-slate-900 text-xl mb-2 dark:text-white">
+                        {project.title}
+                      </CardTitle>
 
                       <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
                         {project.shortDescription}
