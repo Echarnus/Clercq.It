@@ -55,7 +55,7 @@ export function BlogList() {
     try {
       const data = await fetchAllBlogs();
       setBlogs(data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load blogs",

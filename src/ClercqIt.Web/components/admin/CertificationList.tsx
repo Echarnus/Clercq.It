@@ -55,7 +55,7 @@ export function CertificationList() {
     try {
       const data = await fetchAllCertifications();
       setCertifications(data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load certifications",

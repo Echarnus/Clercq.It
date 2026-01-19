@@ -55,7 +55,7 @@ export function ProjectList() {
     try {
       const data = await fetchAllProjects();
       setProjects(data);
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to load projects",

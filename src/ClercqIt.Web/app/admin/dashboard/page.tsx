@@ -17,7 +17,6 @@ import {
   FolderKanban,
   Settings,
   BarChart3,
-  Image as ImageIcon,
   Award,
 } from "lucide-react";
 import { BlogList } from "@/components/admin/BlogList";
