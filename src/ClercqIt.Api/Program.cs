@@ -74,9 +74,11 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Determine if running with local Keycloak (Aspire provides service URL as services__keycloak__http__0)
-var keycloakServiceUrl = builder.Configuration["services:keycloak:http:0"];
-bool useLocalKeycloak = !string.IsNullOrEmpty(keycloakServiceUrl);
+// Determine Keycloak URL from Aspire service reference or configuration
+var keycloakServiceUrl = builder.Configuration["services:keycloak:http:0"];  // Aspire local
+var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];             // External Keycloak
+var effectiveKeycloakUrl = keycloakServiceUrl ?? keycloakBaseUrl;
+bool useKeycloak = !string.IsNullOrEmpty(effectiveKeycloakUrl);
 
 // Check if running in test environment (WebApplicationFactory sets this)
 bool isTestEnvironment = builder.Environment.EnvironmentName == "Test" ||
@@ -101,11 +103,12 @@ if (isTestEnvironment)
     // Register a mock auth service for tests
     builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
 }
-else if (useLocalKeycloak)
+else if (useKeycloak)
 {
-    // Local development with Keycloak
+    // Keycloak authentication (local Aspire or external)
     var keycloakRealm = builder.Configuration["Keycloak:Realm"] ?? "clercqit";
-    var keycloakAuthority = $"{keycloakServiceUrl}/realms/{keycloakRealm}";
+    var keycloakAuthority = $"{effectiveKeycloakUrl}/realms/{keycloakRealm}";
+    var isLocalKeycloak = !string.IsNullOrEmpty(keycloakServiceUrl);
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
@@ -120,18 +123,19 @@ else if (useLocalKeycloak)
                 ValidIssuer = keycloakAuthority,
                 RoleClaimType = "roles" // Use our custom roles claim
             };
-            options.RequireHttpsMetadata = false; // Keycloak runs on HTTP locally
+            // Only disable HTTPS for local development Keycloak
+            options.RequireHttpsMetadata = !isLocalKeycloak;
         });
 
-    // Register local Keycloak auth service
+    // Register Keycloak auth service
     builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
 
-    // Log that we're using local Keycloak
-    Console.WriteLine($"[Auth] Using local Keycloak at: {keycloakServiceUrl}");
+    // Log which Keycloak is being used
+    Console.WriteLine($"[Auth] Using {(isLocalKeycloak ? "local" : "external")} Keycloak at: {effectiveKeycloakUrl}");
 }
 else
 {
-    // Production: Use Cloud IAM
+    // Fallback: Use Cloud IAM (custom auth API)
     builder.Services.AddOptions<CloudIAMSettings>()
         .BindConfiguration(CloudIAMSettings.SectionName)
         .ValidateDataAnnotations()
@@ -140,7 +144,8 @@ else
     var cloudIAMSettings = builder.Configuration
         .GetSection(CloudIAMSettings.SectionName)
         .Get<CloudIAMSettings>() ?? throw new InvalidOperationException(
-            "Cloud IAM configuration is missing. See docs/ciam.md for configuration instructions.");
+            "Authentication configuration is missing. Either configure Keycloak:BaseUrl for Keycloak, " +
+            "or CloudIAM settings for custom authentication. See docs/ciam.md for instructions.");
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options =>
