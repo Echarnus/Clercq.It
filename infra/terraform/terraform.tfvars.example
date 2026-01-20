@@ -27,3 +27,17 @@ container_image     = "echarnus/clercq-it:latest"
 database_password   = "your-secure-database-password"
 custom_domain       = "www.clercq.it"  # Custom domain for the web application
 environment         = "portfolio"
+
+# =============================================================================
+# Administration API Configuration
+# =============================================================================
+
+# Docker image for the Administration API
+administration_container_image = "echarnus/clercq-it-administration:latest"
+
+# Database user for Administration app (uses separate schema)
+administration_database_user     = "admin_app_user"
+administration_database_password = "your-secure-admin-database-password"
+
+# OAuth redirect URL for Administration frontend
+administration_client_redirect_url = "https://admin.clercq.it"

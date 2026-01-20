@@ -97,11 +97,11 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
-    "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
-    "ObjectStorage__BucketName"   = scaleway_object_bucket.blog_images.name
-    "ObjectStorage__Region"       = var.scaleway_region
-    "ObjectStorage__AccessKey"    = var.scaleway_access_key
-    "ObjectStorage__SecretKey"    = var.scaleway_secret_key
+    "ObjectStorage__Endpoint"              = "https://s3.${var.scaleway_region}.scw.cloud"
+    "ObjectStorage__BucketName"            = scaleway_object_bucket.blog_images.name
+    "ObjectStorage__Region"                = var.scaleway_region
+    "ObjectStorage__AccessKey"             = var.scaleway_access_key
+    "ObjectStorage__SecretKey"             = var.scaleway_secret_key
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
     "ASPNETCORE_ENVIRONMENT"               = "Production"
     "NODE_ENV"                             = "production"
@@ -154,4 +154,72 @@ resource "scaleway_cockpit_token" "portfolio_logs_token" {
     query_metrics = true
     write_metrics = true
   }
+}
+
+# =============================================================================
+# Administration API Resources
+# =============================================================================
+
+# Database user for the Administration application
+# Uses the same database instance but will be restricted to the 'administration' schema
+resource "scaleway_rdb_user" "administration_app_user" {
+  instance_id = scaleway_rdb_instance.portfolio_db.id
+  name        = var.administration_database_user
+  password    = var.administration_database_password
+  is_admin    = false
+}
+
+# Grant privileges to the Administration user on the portfolio database
+# Note: Schema-level permissions (administration schema only) must be set via SQL migration
+# This grants database-level access; the SQL migration will restrict to the administration schema
+resource "scaleway_rdb_privilege" "administration_app_user_privilege" {
+  instance_id   = scaleway_rdb_instance.portfolio_db.id
+  user_name     = scaleway_rdb_user.administration_app_user.name
+  database_name = scaleway_rdb_database.portfolio_app_db.name
+  permission    = "all"
+}
+
+# Serverless Container for the Administration API
+resource "scaleway_container" "administration_api" {
+  name           = "administration-api"
+  namespace_id   = data.scaleway_container_namespace.portfolio.id
+  registry_image = var.administration_container_image
+  port           = 8080
+  protocol       = "http1"
+  http_option    = "redirected"
+
+  min_scale = 0
+  max_scale = 1
+
+  # Resource limits - API only, lighter than portfolio app
+  memory_limit = 256 # 256MB
+  cpu_limit    = 250 # 250 mvcpu
+
+  timeout = 30
+
+  environment_variables = {
+    # Database connection (same instance, administration schema via SearchPath)
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=${scaleway_rdb_user.administration_app_user.name};Password=${var.administration_database_password};SearchPath=administration"
+
+    # ASP.NET Core settings
+    "ASPNETCORE_ENVIRONMENT" = "Production"
+    "ASPNETCORE_URLS"        = "http://+:8080"
+
+    # OpenTelemetry (shared Cockpit token)
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
+    "OTEL_SERVICE_NAME"           = "administration-api"
+
+    # Cloud IAM / Keycloak (shared authentication)
+    "CloudIAM__ApiUrl"            = var.cloud_iam_api_url
+    "CloudIAM__ApiKey"            = var.cloud_iam_api_key
+    "CloudIAM__ClientRedirectUrl" = var.administration_client_redirect_url
+  }
+
+  tags = [
+    "project=clercq-it-administration",
+    "environment=production",
+    "namespace=Portfolio"
+  ]
 }

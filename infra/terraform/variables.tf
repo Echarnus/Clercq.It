@@ -71,3 +71,31 @@ variable "cloud_iam_client_redirect_url" {
   type        = string
   default     = "https://www.clercq.it"
 }
+
+# =============================================================================
+# Administration API Variables
+# =============================================================================
+
+variable "administration_container_image" {
+  description = "Docker image for the Administration API container"
+  type        = string
+  default     = "echarnus/clercq-it-administration:latest"
+}
+
+variable "administration_database_user" {
+  description = "Database user for the Administration app"
+  type        = string
+  default     = "admin_app_user"
+}
+
+variable "administration_database_password" {
+  description = "Database password for the Administration app user"
+  type        = string
+  sensitive   = true
+}
+
+variable "administration_client_redirect_url" {
+  description = "Frontend URL for Administration OAuth redirects"
+  type        = string
+  default     = "https://admin.clercq.it"
+}
