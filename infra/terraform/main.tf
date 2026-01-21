@@ -108,9 +108,12 @@ resource "scaleway_container" "portfolio_app" {
     "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"
     "OTEL_EXPORTER_OTLP_PROTOCOL"          = "grpc"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
-    "CloudIAM__ApiUrl"                     = var.cloud_iam_api_url
-    "CloudIAM__ApiKey"                     = var.cloud_iam_api_key
-    "CloudIAM__ClientRedirectUrl"          = var.cloud_iam_client_redirect_url
+    "Keycloak__BaseUrl"                    = var.keycloak_base_url
+    "Keycloak__Realm"                      = var.keycloak_realm
+    "Keycloak__ClientId"                   = "clercqit-web"
+    "Keycloak__ClientSecret"               = var.keycloak_web_client_secret
+    "Keycloak__AdminClientId"              = "clercqit-admin"
+    "Keycloak__AdminClientSecret"          = var.keycloak_admin_client_secret
   }
 
   tags = [
@@ -211,10 +214,13 @@ resource "scaleway_container" "administration_api" {
     "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "OTEL_SERVICE_NAME"           = "administration-api"
 
-    # Cloud IAM / Keycloak (shared authentication)
-    "CloudIAM__ApiUrl"            = var.cloud_iam_api_url
-    "CloudIAM__ApiKey"            = var.cloud_iam_api_key
-    "CloudIAM__ClientRedirectUrl" = var.administration_client_redirect_url
+    # Keycloak (admin client)
+    "Keycloak__BaseUrl"           = var.keycloak_base_url
+    "Keycloak__Realm"             = var.keycloak_realm
+    "Keycloak__ClientId"          = "clercqit-admin"
+    "Keycloak__ClientSecret"      = var.keycloak_admin_client_secret
+    "Keycloak__AdminClientId"     = "clercqit-admin"
+    "Keycloak__AdminClientSecret" = var.keycloak_admin_client_secret
   }
 
   tags = [

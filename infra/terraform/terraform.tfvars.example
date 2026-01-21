@@ -14,13 +14,11 @@ scaleway_region          = "fr-par"
 scaleway_access_key = "your-scaleway-access-key"
 scaleway_secret_key = "your-scaleway-secret-key"
 
-# Cloud IAM Configuration
-cloud_iam_api_url             = "https://api.cloud-iam.com"
-cloud_iam_api_key             = "your-cloud-iam-api-key"
-cloud_iam_client_redirect_url = "https://www.clercq.it"
-
-# Authentication Configuration (deprecated - using Cloud IAM instead)
-# jwt_secret_key = "your-jwt-secret-key-min-32-characters"
+# Keycloak Configuration (Cloud IAM)
+keycloak_base_url            = "https://lemur-6.cloud-iam.com/auth"
+keycloak_realm               = "clercqit"
+keycloak_web_client_secret   = "your-clercqit-web-client-secret"
+keycloak_admin_client_secret = "your-clercqit-admin-client-secret"
 
 # Application Configuration
 container_image     = "echarnus/clercq-it:latest"
@@ -38,6 +36,3 @@ administration_container_image = "echarnus/clercq-it-administration:latest"
 # Database user for Administration app (uses separate schema)
 administration_database_user     = "admin_app_user"
 administration_database_password = "your-secure-admin-database-password"
-
-# OAuth redirect URL for Administration frontend
-administration_client_redirect_url = "https://admin.clercq.it"

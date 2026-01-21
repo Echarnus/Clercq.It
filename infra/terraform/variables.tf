@@ -54,22 +54,27 @@ variable "scaleway_secret_key" {
   sensitive   = true
 }
 
-variable "cloud_iam_api_url" {
-  description = "Cloud IAM API URL for authentication"
+variable "keycloak_base_url" {
+  description = "Keycloak base URL (e.g., https://lemur-6.cloud-iam.com/auth)"
   type        = string
-  default     = "https://api.cloud-iam.com"
 }
 
-variable "cloud_iam_api_key" {
-  description = "Cloud IAM API key for authentication"
+variable "keycloak_realm" {
+  description = "Keycloak realm name"
+  type        = string
+  default     = "clercqit"
+}
+
+variable "keycloak_web_client_secret" {
+  description = "Keycloak client secret for clercqit-web client"
   type        = string
   sensitive   = true
 }
 
-variable "cloud_iam_client_redirect_url" {
-  description = "Frontend URL for OAuth redirects"
+variable "keycloak_admin_client_secret" {
+  description = "Keycloak client secret for clercqit-admin client"
   type        = string
-  default     = "https://www.clercq.it"
+  sensitive   = true
 }
 
 # =============================================================================
@@ -94,8 +99,3 @@ variable "administration_database_password" {
   sensitive   = true
 }
 
-variable "administration_client_redirect_url" {
-  description = "Frontend URL for Administration OAuth redirects"
-  type        = string
-  default     = "https://admin.clercq.it"
-}

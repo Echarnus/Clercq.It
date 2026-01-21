@@ -10,6 +10,9 @@ on:
     branches: [main]
     paths:
       - 'infra/**'
+  workflow_run:
+    workflows: ["Deploy to Scaleway"]
+    types: [completed]
   workflow_dispatch:
 
 env:
@@ -88,6 +91,11 @@ jobs:
           TF_VAR_scaleway_secret_key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+          TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
+          TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
+          TF_VAR_keycloak_web_client_secret: ${{ secrets.KEYCLOAK_WEB_CLIENT_SECRET }}
+          TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
+          TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
 
       - name: Comment PR
         continue-on-error: true
@@ -129,8 +137,8 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event_name == 'push' ||
-      github.event_name == 'pull_request' ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     environment: 
       name: production
     
@@ -184,6 +192,11 @@ jobs:
           TF_VAR_scaleway_secret_key: ${{ secrets.SCALEWAY_SECRET_KEY }}
           TF_VAR_container_image: ${{ vars.CONTAINER_IMAGE || 'echarnus/clercq-it:latest' }}
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
+          TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
+          TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
+          TF_VAR_keycloak_web_client_secret: ${{ secrets.KEYCLOAK_WEB_CLIENT_SECRET }}
+          TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
+          TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
 
       - name: Terraform Output
         if: success()
