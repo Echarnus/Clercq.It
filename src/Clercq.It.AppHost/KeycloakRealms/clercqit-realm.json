@@ -131,7 +131,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "admin123",
+          "value": "admin",
           "temporary": false
         }
       ],
@@ -143,7 +143,64 @@
       ]
     },
     {
-      "username": "testuser",
+      "username": "blogger",
+      "email": "blogger@clercq.it",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Blog",
+      "lastName": "Contributor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "blogger",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "Admin.View",
+        "Blogs.Contributor"
+      ]
+    },
+    {
+      "username": "projects",
+      "email": "projects@clercq.it",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Project",
+      "lastName": "Contributor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "projects",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "Admin.View",
+        "Projects.Contributor"
+      ]
+    },
+    {
+      "username": "certs",
+      "email": "certs@clercq.it",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Certification",
+      "lastName": "Contributor",
+      "credentials": [
+        {
+          "type": "password",
+          "value": "certs",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "Admin.View",
+        "Certifications.Contributor"
+      ]
+    },
+    {
+      "username": "test",
       "email": "test@clercq.it",
       "emailVerified": true,
       "enabled": true,
@@ -152,7 +209,7 @@
       "credentials": [
         {
           "type": "password",
-          "value": "test123",
+          "value": "test",
           "temporary": false
         }
       ],
