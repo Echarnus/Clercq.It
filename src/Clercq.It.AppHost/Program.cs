@@ -1,3 +1,5 @@
+using Clercq.It.AppHost;
+
 var builder = DistributedApplication.CreateBuilder(args);
 
 // Add PostgreSQL database
@@ -12,6 +14,9 @@ var database = postgres.AddDatabase("ClercqItDb");
 var keycloak = builder.AddKeycloak("keycloak", 8080)
     .WithDataVolume()
     .WithRealmImport("./KeycloakRealms");
+
+// Seed test users after Keycloak is ready (idempotent - safe to run on every start)
+builder.SeedUsersWhenReady(keycloak);
 
 // MinIO for local S3-compatible object storage is run separately for fixed port binding:
 // docker run -d --name minio-dev -p 9100:9000 -p 9101:9001 -e "MINIO_ROOT_USER=minioadmin" -e "MINIO_ROOT_PASSWORD=minioadmin" -v minio-data:/data minio/minio server /data --console-address ":9001"
