@@ -1,5 +1,5 @@
 # Build stage for .NET API
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
 WORKDIR /src
 
 # Accept version build arguments
