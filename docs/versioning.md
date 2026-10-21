@@ -9,7 +9,7 @@ Clercq.It uses **trunk-based development with continuous deployment to productio
 - Work branches merge back through a pull request once the required checks pass (squash merge). See [Contributing](./contributing.md) for the full issue → PR → production loop.
 - Unfinished work that must merge early is hidden behind a feature flag instead of living on a long branch.
 - A fix for production is a normal work branch (`fix/...`) merged to `main`; there is no separate hotfix flow.
-- Rollback = redeploy the image of an earlier release (`Deploy to Scaleway` → Run workflow → version).
+- Rollback = redeploy the image of an earlier release (`Deploy to Scaleway` → Run workflow → version). A failed post-deploy smoke test rolls back automatically ([devops.md](./devops.md#smoke-test-and-rollback)).
 
 Not used, on purpose: `develop`, `release/*`, `hotfix/*`, `support/*`. If one appears, it is a mistake.
 

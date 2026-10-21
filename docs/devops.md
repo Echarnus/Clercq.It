@@ -55,6 +55,10 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - Pull requests only
 - Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`
 
+#### deploy-scripts
+- Pull requests only
+- Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI)
+
 ### Example
 
 ```bash
@@ -279,10 +283,10 @@ gh workflow run infra.yml
 
 #### deploy
 - Validates Docker image exists
-- Updates Scaleway container configuration with new image tag
-- Forces container recreation to bypass image cache (scales min_scale: 0→1→0)
-- Performs health checks
-- Verifies deployed version matches expected version
+- Records the image the container runs now (`PREVIOUS_IMAGE`)
+- Sets the new image and forces container recreation to bypass the image cache (scales min_scale: 0→1→0), with `.github/scripts/set-container-image.sh`
+- Runs the smoke test (see [Smoke test and rollback](#smoke-test-and-rollback))
+- On a failed smoke test: rolls back to `PREVIOUS_IMAGE`, opens a p1 bug issue and fails the run, so no release is tagged
 - Reports deployment status
 
 #### release
@@ -302,12 +306,38 @@ gh workflow run deploy.yml -f version=1.0.1
 gh workflow run deploy.yml -f version=latest
 ```
 
-### Health Checks
+### Smoke test and rollback
 
-The pipeline includes comprehensive health checks:
-- Endpoint availability testing
-- Retry logic with exponential backoff
-- Detailed error reporting
+Every deploy, automatic or manual, ends with `.github/scripts/smoke-test.sh https://www.clercq.it <version>`. It passes when, within 10 tries 15 seconds apart (to cover cold starts):
+
+| Check | Passes when |
+|-------|-------------|
+| `/version.json` | `version` equals the version just deployed |
+| `/` | HTTP 200 |
+| `/api/projects` | HTTP 200 with a JSON body (so the API and database work) |
+
+If it fails, the pipeline:
+
+1. Sets the container back to the image it ran before the deploy (`set-container-image.sh`). If there was no previous image, it skips this step and says so in the issue.
+2. Opens an issue `Production smoke test failed for <version>` labelled `type:bug`, `priority:p1`, `status:ready`, with the failed checks and the run link (`open-smoke-issue.sh`), so an agent picks it up.
+3. Fails the run. The `release` job does not run, so the broken version gets no `prod-` tag.
+
+#### Rolling back by hand
+
+Redeploy an earlier version. It goes through the same smoke test:
+
+```bash
+gh workflow run deploy.yml -f version=1.0.189
+```
+
+Or directly with the Scaleway CLI, when the pipeline itself is broken:
+
+```bash
+scw container container list name=clercq-it-app            # find the container ID
+.github/scripts/set-container-image.sh <container-id> echarnus/clercq-it:1.0.189
+```
+
+Released versions are listed as GitHub Releases (`prod-<version>` tags).
 
 ## Required Secrets
 
