@@ -56,7 +56,7 @@ Open `coverage/report/index.html` for line-by-line coverage. In a Claude Code cl
 `tests/ClercqIt.Api.Tests` boots the real API (`WebApplicationFactory<Program>`, environment `Production`) against containers that Testcontainers starts once for the whole test run (`CustomWebApplicationFactory`, shared by the `Api` xUnit collection):
 
 - **PostgreSQL** `postgres:17-alpine`. The fixture applies the real EF migrations. Test classes that write data call `ResetDatabaseAsync()` in `InitializeAsync`, which empties every table except `__EFMigrationsHistory` with Respawn.
-- **Keycloak** `keycloak/keycloak:26.4`, importing the local realm `src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`. Tests sign in as real realm users with the password grant on `clercqit-web` and send the real access token, so signature, issuer, lifetime and role checks all run. `CreateClientForUserAsync("blogger")` returns an authenticated client.
+- **Keycloak** `keycloak/keycloak:26.4`, importing the local realm `src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`. Tests sign in as real realm users with the password grant on the local-only `clercqit-tests` client (`clercqit-web` itself only allows the authorization code flow with PKCE) and send the real access token, so signature, issuer, lifetime and role checks all run. `CreateClientForUserAsync("blogger")` returns an authenticated client.
 
 | User | Roles | Use it for |
 | --- | --- | --- |

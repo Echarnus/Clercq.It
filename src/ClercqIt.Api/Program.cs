@@ -45,17 +45,6 @@ builder.Services.AddRateLimiter(options =>
                 Window = TimeSpan.FromMinutes(1)
             }));
 
-    // Authentication endpoints: stricter limit (10 requests per minute)
-    options.AddPolicy("auth", context =>
-        RateLimitPartition.GetFixedWindowLimiter(
-            partitionKey: context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
-            factory: partition => new FixedWindowRateLimiterOptions
-            {
-                AutoReplenishment = true,
-                PermitLimit = 10,
-                Window = TimeSpan.FromMinutes(1)
-            }));
-
     options.RejectionStatusCode = 429; // Too Many Requests
 });
 
@@ -105,8 +94,9 @@ if (useKeycloak)
             options.RequireHttpsMetadata = !isLocalKeycloak;
         });
 
-    // Register Keycloak auth service
-    builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
+    // The admin UI's authorization code + PKCE settings (GET /api/auth/config)
+    builder.Services.AddSingleton(new KeycloakClientSettings(
+        keycloakAuthority, builder.Configuration["Keycloak:ClientId"] ?? "clercqit-web"));
 
     // Log which Keycloak is being used
     Console.WriteLine($"[Auth] Using {(isLocalKeycloak ? "local" : "external")} Keycloak at: {effectiveKeycloakUrl}");

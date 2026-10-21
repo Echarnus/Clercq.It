@@ -21,4 +21,10 @@ export const handlers = [
   ),
   // Every feature flag is off unless a test turns it on.
   http.get(`${API}/api/features`, () => HttpResponse.json({})),
+  http.get(`${API}/api/auth/config`, () =>
+    HttpResponse.json({
+      authority: "http://localhost:8080/realms/clercqit",
+      clientId: "clercqit-web",
+    }),
+  ),
 ];

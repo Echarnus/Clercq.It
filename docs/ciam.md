@@ -4,7 +4,9 @@ This document describes how to configure [Cloud IAM](https://www.cloud-iam.com) 
 
 ## Key Insight
 
-Because Cloud IAM is standard Keycloak, the same `LocalKeycloakAuthService` used for local development works in production. No separate auth service implementation is needed - the only difference is the base URL.
+Because Cloud IAM is standard Keycloak, local development (the Aspire Keycloak container) and production use the same code; the only difference is the base URL.
+
+The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`.
 
 ## Cloud IAM Setup Guide
 
@@ -40,9 +42,11 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Client ID**: `clercqit-web`
 - **Client Authentication**: Off (public client)
 - **Standard Flow**: Enabled
-- **Direct Access Grants**: Enabled
-- **Valid Redirect URIs**: `https://www.clercq.it/*`
-- **Web Origins**: `https://www.clercq.it`
+- **Direct Access Grants**: **Disabled** (no password grant; issue #257)
+- **Advanced > Proof Key for Code Exchange Code Challenge Method**: `S256`
+- **Valid Redirect URIs**: `https://www.clercq.it/admin/callback`
+- **Valid Post Logout Redirect URIs**: `https://www.clercq.it/admin`
+- **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
 
 #### `clercqit-admin` (Service Account)
@@ -104,7 +108,7 @@ Keycloak__AdminClientId=clercqit-admin
 Keycloak__AdminClientSecret={production-admin-secret}
 ```
 
-When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API uses `LocalKeycloakAuthService` which talks to the standard Keycloak OIDC/Admin endpoints - works identically for both local and Cloud IAM.
+When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` are no longer read since the password grant was removed (#257); they can be dropped from the container configuration and Secret Manager later.
 
 ### Scaleway Container Deployment
 

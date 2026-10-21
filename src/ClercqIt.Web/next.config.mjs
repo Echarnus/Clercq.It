@@ -8,10 +8,11 @@ const nextConfig = {
   async headers() {
     const isDevelopment = process.env.NODE_ENV === "development";
 
-    // Allow localhost API in development, only production API in production
+    // The API is same-origin in production. The admin sign-in (issue #257) calls
+    // Keycloak's token endpoint: Cloud IAM in production, the Aspire container locally.
     const connectSrc = isDevelopment
-      ? "'self' http://localhost:5001 http://localhost:5000 ws://localhost:* wss://localhost:*"
-      : "'self' https://api.clercq.it";
+      ? "'self' http://localhost:* ws://localhost:* wss://localhost:*"
+      : "'self' https://*.cloud-iam.com";
 
     return [
       {

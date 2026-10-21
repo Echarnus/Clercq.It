@@ -7,10 +7,12 @@ namespace ClercqIt.Api.Tests;
 [Collection(ApiTestGroup.Name)]
 public class AuthEndpointTests : IAsyncLifetime
 {
+    private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
 
     public AuthEndpointTests(CustomWebApplicationFactory factory)
     {
+        _factory = factory;
         _client = factory.CreateClient();
     }
 
@@ -30,6 +32,25 @@ public class AuthEndpointTests : IAsyncLifetime
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact(DisplayName = "POST /api/auth/login does not exist, so no endpoint accepts a password")]
+    public async Task Login_Password_ReturnsNotFoundOrMethodNotAllowed()
+    {
+        var response = await _client.PostAsJsonAsync("/api/auth/login", new { username = "admin", password = "admin" });
+
+        response.StatusCode.Should().BeOneOf(HttpStatusCode.NotFound, HttpStatusCode.MethodNotAllowed);
+    }
+
+    [Fact(DisplayName = "GET /api/auth/config returns the issuer and public client for the PKCE sign-in")]
+    public async Task Config_Anonymous_ReturnsAuthorityAndClient()
+    {
+        var config = await _client.GetFromJsonAsync<AuthConfig>("/api/auth/config");
+
+        config!.Authority.Should().Be($"{_factory.KeycloakUrl}/realms/{CustomWebApplicationFactory.Realm}");
+        config.ClientId.Should().Be(CustomWebApplicationFactory.WebClientId);
+    }
+
+    private sealed record AuthConfig(string Authority, string ClientId);
 
     [Theory(DisplayName = "Social login endpoints do not exist")]
     [InlineData("/api/auth/github")]

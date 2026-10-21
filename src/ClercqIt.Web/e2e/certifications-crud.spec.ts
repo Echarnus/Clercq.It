@@ -1,31 +1,5 @@
 import { test, expect, Page } from "@playwright/test";
-
-// Helper function to login with retry
-async function login(page: Page, retries = 3) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    await page.goto("/admin");
-    await page.evaluate(() => {
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
-    });
-    await page.reload();
-
-    await page.fill("input#username", "admin");
-    await page.fill("input#password", "admin123");
-    await page.click('button[type="submit"]');
-
-    try {
-      await page.waitForURL("**/admin/dashboard", { timeout: 20000 });
-      return; // Success
-    } catch (e) {
-      if (attempt === retries) {
-        throw e;
-      }
-      // Wait before retry
-      await page.waitForTimeout(2000);
-    }
-  }
-}
+import { signInAsAdmin } from "./auth";
 
 // Helper function to navigate to certifications tab
 async function navigateToCertificationsTab(page: Page) {
@@ -38,7 +12,7 @@ async function navigateToCertificationsTab(page: Page) {
 
 test.describe("Certifications CRUD Operations", () => {
   test.beforeEach(async ({ page }) => {
-    await login(page);
+    await signInAsAdmin(page);
   });
 
   test("should display certifications tab and list", async ({ page }) => {

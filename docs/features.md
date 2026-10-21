@@ -106,7 +106,8 @@ The admin dashboard provides role-based tab visibility:
 - **Settings**: Visible to users with `Admin.View` role
 
 ### Security Features
-- JWT token storage in browser localStorage
+- Sign-in with the authorization code flow and PKCE: Keycloak (Cloud IAM) shows the login page, including MFA; the site never sees a password (issue #257)
+- Tokens are kept in memory only, never in localStorage; after a reload the Keycloak session signs the admin in again without a prompt
 - Tokens issued by Cloud IAM with embedded role claims
 - Backend validates tokens using Cloud IAM's public keys
 - No access for users without assigned roles
