@@ -76,6 +76,8 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     return null
   }
 
+  // The CSS is built from the chart config in code, never from user input.
+  // nosemgrep: semgrep.no-dangerously-set-inner-html-without-sanitising
   return (
     <style
       dangerouslySetInnerHTML={{

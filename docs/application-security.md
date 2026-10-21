@@ -198,6 +198,74 @@ proxy_busy_buffers_size 8k;
 ```
 Limits buffer sizes to prevent memory exhaustion attacks.
 
+## Static analysis (SAST)
+
+With no human review, these checks are what stops insecure code reaching `main` (issue #237). Each one fails its check on a finding.
+
+| Check | Workflow | Blocks on | Scope |
+|-------|----------|-----------|-------|
+| **Semgrep** | `sast.yml` | Any `ERROR` finding | Registry packs `p/csharp`, `p/typescript`, `p/react`, `p/nextjs`, `p/owasp-top-ten`, `p/secrets`, `p/dockerfile`, `p/terraform`, plus the repo rules in `.semgrep/` |
+| **gitleaks** | `sast.yml` | Any secret | PR: the PR's commits. `main`: full history |
+| **CodeQL gate** | `codeql.yml` | An open `high` or `critical` CodeQL alert on the PR's merge ref | C# and JS/TS, `security-extended` + `security-and-quality` |
+| **Vulnerable NuGet packages** | `security-scan.yml` | High or Critical advisory | All projects in `Clercq.It.CI.slnf`, transitive included |
+
+Results from Semgrep, CodeQL and Trivy are also in the repository's **Security** tab.
+
+### Repo rules (`.semgrep/clercq.yml`)
+
+| Rule | Catches |
+|------|---------|
+| `no-tls-verification-bypass` | `NODE_TLS_REJECT_UNAUTHORIZED=0` anywhere |
+| `efcore-raw-sql-interpolation` | `FromSqlRaw`/`ExecuteSqlRaw`/`SqlQueryRaw` with an interpolated, concatenated or `string.Format` string (use `FromSql`/`ExecuteSql`, which parameterise) |
+| `no-dangerously-set-inner-html-without-sanitising` | `dangerouslySetInnerHTML` with anything but a literal or `DOMPurify.sanitize(...)` |
+
+### Run locally
+
+```bash
+pip install semgrep            # or: brew install semgrep
+semgrep scan --config p/csharp --config p/typescript --config p/react --config p/nextjs \
+  --config p/owasp-top-ten --config p/secrets --config p/dockerfile --config p/terraform \
+  --config .semgrep --severity ERROR --error
+
+gitleaks git . --log-opts="origin/main..HEAD"   # your branch's commits
+dotnet list Clercq.It.CI.slnf package --vulnerable --include-transitive
+```
+
+### Suppressing a finding
+
+Fix the code first. A suppression is only for a false positive or an accepted risk that has its own issue, and it always says why:
+
+- **Semgrep**: a comment on the line above, with the reason on the line before it:
+  ```ts
+  // The CSS is built from the chart config in code, never from user input.
+  // nosemgrep: semgrep.no-dangerously-set-inner-html-without-sanitising
+  ```
+  Whole paths go in `.semgrepignore`, each with a reason.
+- **gitleaks**: add the finding's fingerprint (printed by gitleaks) to `.gitleaksignore` under a comment with the reason.
+- **CodeQL**: dismiss the alert in the Security tab as "False positive" or "Won't fix", with a comment.
+
+Never weaken a rule or a severity threshold to get a PR green.
+
+### Current suppressions
+
+| Where | What | Why |
+|-------|------|-----|
+| `src/Dockerfile` | Semgrep `missing-user`, `missing-user-entrypoint` | The image runs as root; moving to a non-root user is #280 |
+| `components/ui/chart.tsx` | `dangerouslySetInnerHTML` | CSS generated from the chart config in code |
+| `.gitleaksignore` | 5 findings in old docs commits | Placeholder `YOUR_JWT_TOKEN` and a truncated example JWT |
+
+### What does not block yet
+
+- **npm audit** and **Trivy** (filesystem and image) still report only. The Next.js dependency tree has about 57 high/critical advisories whose fixes need the Next.js upgrade; making these blocking is #281.
+- **IaC scanning**: Checkov and Trivy have no Scaleway checks, so `infra/terraform` is covered only by Semgrep's `p/terraform` and by review of the Terraform plan on the PR.
+
+### Repository settings (owner)
+
+These are GitHub settings, not code. The owner turns them on once:
+
+1. **Settings → Code security → Secret Protection**: enable it, and enable **Push protection**.
+2. **Settings → Rules → Rulesets** (or branch protection for `main`): add the required checks `Semgrep`, `gitleaks`, `CodeQL gate` and `.NET Security Scan`. Rulesets as code follow in #245.
+
 ## Security Layers Summary
 
 ### Defense in Depth

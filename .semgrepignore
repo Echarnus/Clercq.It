@@ -1,0 +1,11 @@
+# Paths Semgrep skips (.github/workflows/sast.yml). Every entry needs a reason.
+
+# The rule definitions quote the patterns they look for.
+.semgrep/
+# Dependencies and build output, not our code.
+node_modules/
+.next/
+bin/
+obj/
+# Generated EF Core migrations.
+src/Clercq.It.Infrastructure/EF/Migrations/

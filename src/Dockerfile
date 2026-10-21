@@ -187,5 +187,9 @@ ENV DOTNET_RUNNING_IN_CONTAINER=true
 
 # Override nginx's default entrypoint to prevent auto-start
 # This ensures nginx only starts when our script explicitly launches it
+# The image still runs as root (nginx binds port 80 and start.sh supervises
+# three processes); moving to a non-root user is issue #280.
+# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint, dockerfile.security.missing-user-entrypoint
 ENTRYPOINT []
+# nosemgrep: dockerfile.security.missing-user.missing-user, dockerfile.security.missing-user
 CMD ["/app/start.sh"]

@@ -18,6 +18,7 @@ The project uses six main workflows:
 6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
 7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
 8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
+9. **SAST** (`sast.yml`) - Semgrep and gitleaks on every PR and on `main`, blocking (see [Application security](./application-security.md#static-analysis-sast))
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md).
 
@@ -132,24 +133,18 @@ gh workflow run build.yml
 - Uploads SARIF results to GitHub Security
 
 #### dotnet-security-scan
-- Installs security-scan tool for .NET
-- Analyzes .NET projects for security issues
-- Checks for known vulnerable packages
-- Generates vulnerability reports
-- Uploads reports as artifacts
+- Lists vulnerable NuGet packages (direct and transitive) for `Clercq.It.CI.slnf`
+- **Fails on High or Critical**; Low and Moderate are listed only
+- Uploads the list as an artifact
 
 #### npm-security-scan
 - Runs pnpm audit on Node.js dependencies
 - Checks for known vulnerabilities
 - Generates JSON audit reports
 - Uploads reports as artifacts
-- Fails on moderate or higher severity issues
+- Report-only for now; see [Application security](./application-security.md#what-does-not-block-yet)
 
-#### secrets-scan
-- Uses TruffleHog to scan for leaked secrets
-- Checks git history for credentials
-- Only reports verified secrets
-- Prevents credential exposure
+Secret scanning moved to gitleaks in `sast.yml` (see [Application security](./application-security.md#static-analysis-sast)).
 
 #### security-scorecard
 - Runs OpenSSF Scorecard evaluation
@@ -462,16 +457,11 @@ The CI/CD pipeline includes comprehensive automated security scanning:
   - Filesystem scanning for IaC misconfigurations
   - Integrated into build pipeline with severity filtering
   - Results uploaded to GitHub Security tab
-- **.NET security scanning**: Automated checks with security-scan tool
-  - Analyzes .NET projects for security issues
-  - Excludes development dependencies
-  - Generates vulnerability reports
+- **.NET vulnerable packages**: `dotnet list package --vulnerable`, blocking on High/Critical
+- **Semgrep, gitleaks, CodeQL gate**: blocking SAST on every PR, see [Application security](./application-security.md#static-analysis-sast)
 
 #### Secret Detection
-- **TruffleHog**: Scans for accidentally committed secrets
-  - Runs on every push
-  - Checks verified secrets only
-  - Prevents credential leaks
+- **gitleaks** (`sast.yml`): scans the PR's commits, and the full history on `main`; blocking
 - **GitHub Secret Scanning**: Native GitHub protection
 
 #### Security Posture
@@ -503,7 +493,6 @@ Comprehensive security scanning workflow:
   - Trivy filesystem scanning
   - .NET security analysis
   - npm security audit
-  - Secret scanning with TruffleHog
   - OpenSSF Scorecard
 
 #### codeql.yml
@@ -552,7 +541,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 ```bash
 # Check .NET for vulnerable packages
 cd src
-dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive
+dotnet list ../Clercq.It.CI.slnf package --vulnerable --include-transitive
 
 # Run npm audit
 cd src/ClercqIt.Web
@@ -562,8 +551,7 @@ pnpm audit
 docker build -t clercq-it:local ./src
 trivy image clercq-it:local --severity HIGH,CRITICAL
 
-# Scan for secrets with TruffleHog (if installed)
-trufflehog filesystem . --only-verified
+# SAST and secrets: see docs/application-security.md#run-locally
 ```
 
 ## Troubleshooting

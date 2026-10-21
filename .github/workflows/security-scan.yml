@@ -89,7 +89,7 @@ jobs:
   dotnet-security-scan:
     name: .NET Security Scan
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -99,30 +99,22 @@ jobs:
         with:
           dotnet-version: '9.0.x'
 
-      - name: Install security scanning tools
-        run: |
-          dotnet tool install --global security-scan --version 5.6.7
-
       - name: Restore dependencies
-        run: |
-          cd src
-          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+        run: dotnet restore Clercq.It.CI.slnf
 
-      - name: Run security scan
+      - name: Check for vulnerable packages
+        # Blocking on High and Critical (issue #237); Low and Moderate are listed only.
         run: |
-          cd src
-          security-scan ClercqIt.Api/ClercqIt.Api.csproj --excl-dev=true || echo "Security scan completed with findings"
+          dotnet list Clercq.It.CI.slnf package --vulnerable --include-transitive --format json > vulnerable.json
+          jq -r '[.projects[].frameworks[]? | (.topLevelPackages // []) + (.transitivePackages // []) | .[]
+                  | select(.vulnerabilities) | .vulnerabilities[] as $v
+                  | "\($v.severity)\t\(.id) \(.resolvedVersion)\t\($v.advisoryurl)"] | unique | .[]' vulnerable.json \
+            | tee vulnerability-report.txt
+          if grep -qE '^(High|Critical)' vulnerability-report.txt; then
+            echo "::error::High or critical vulnerable NuGet packages. Update them (or the package that pulls them in)."
+            exit 1
+          fi
 
-      - name: Check for known vulnerabilities
-        run: |
-          cd src
-          dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive || true
-          
-      - name: Generate vulnerability report
-        run: |
-          cd src
-          dotnet list ClercqIt.Api/ClercqIt.Api.csproj package --vulnerable --include-transitive 2>&1 | tee ../vulnerability-report.txt || true
-          
       - name: Upload vulnerability report
         uses: actions/upload-artifact@v4
         if: always()
@@ -159,6 +151,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run npm audit
+        # Report-only until the Next.js dependency upgrades land (see docs/application-security.md).
         working-directory: ./src/ClercqIt.Web
         run: |
           pnpm audit --audit-level=moderate || echo "Audit completed with findings"
@@ -175,24 +168,6 @@ jobs:
           name: npm-audit-report
           path: npm-audit-report.json
           retention-days: 30
-
-  secrets-scan:
-    name: Secret Scanning
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: TruffleHog Secret Scanner
-        uses: trufflesecurity/trufflehog@main
-        with:
-          path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
-          extra_args: --only-verified
 
   security-scorecard:
     name: OpenSSF Scorecard
