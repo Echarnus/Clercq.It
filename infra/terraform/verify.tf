@@ -1,0 +1,198 @@
+# =============================================================================
+# Verify environment (issue #243)
+# =============================================================================
+#
+# deploy.yml runs every image here before production: migrations, content
+# import, smoke test. Production is only updated when this passes. It shares
+# the RDB instance and container namespace with production (so it costs
+# almost nothing), but never a database, user, bucket, key or secret.
+# See docs/devops.md#verify-stage.
+
+locals {
+  verify_secret_path = "/clercq-it/verify"
+
+  verify_secret_names = toset([
+    "db-password",
+    "keycloak-web-client-secret",
+    "keycloak-admin-client-secret",
+  ])
+
+  # Keycloak client secrets for the verify clients cannot be generated here;
+  # the owner replaces the placeholders in the console (docs/devops.md#verify-stage).
+  verify_secret_seeds = {
+    "db-password"                  = random_password.db_verify.result
+    "keycloak-web-client-secret"   = "replace-me"
+    "keycloak-admin-client-secret" = "replace-me"
+  }
+
+  verify_secrets = { for name, version in data.scaleway_secret_version.verify : name => base64decode(version.data) }
+
+  verify_db_user = "clercqit_verify_user"
+}
+
+resource "random_password" "db_verify" {
+  length  = 32
+  special = false
+}
+
+resource "scaleway_secret" "verify" {
+  for_each = local.verify_secret_names
+
+  name        = each.key
+  path        = local.verify_secret_path
+  region      = var.scaleway_region
+  project_id  = var.scaleway_project_id
+  description = "Clercq.It verify ${each.key} (managed by infra/terraform/verify.tf)"
+  tags        = ["clercq-it", "terraform", "verify"]
+}
+
+resource "scaleway_secret_version" "verify_seed" {
+  for_each = local.verify_secret_names
+
+  secret_id   = scaleway_secret.verify[each.key].id
+  region      = var.scaleway_region
+  description = "Initial value seeded by Terraform"
+  data        = local.verify_secret_seeds[each.key]
+
+  lifecycle {
+    ignore_changes = [data, description]
+  }
+}
+
+data "scaleway_secret_version" "verify" {
+  for_each = local.verify_secret_names
+
+  secret_id = scaleway_secret.verify[each.key].id
+  region    = var.scaleway_region
+  revision  = "latest_enabled"
+
+  depends_on = [scaleway_secret_version.verify_seed]
+}
+
+# Separate database and user on the production instance
+resource "scaleway_rdb_database" "verify" {
+  instance_id = scaleway_rdb_instance.portfolio_db.id
+  name        = "clercqit_verify"
+}
+
+resource "scaleway_rdb_user" "verify" {
+  instance_id = scaleway_rdb_instance.portfolio_db.id
+  name        = local.verify_db_user
+  password    = local.verify_secrets["db-password"]
+  is_admin    = false
+}
+
+resource "scaleway_rdb_privilege" "verify" {
+  instance_id   = scaleway_rdb_instance.portfolio_db.id
+  user_name     = scaleway_rdb_user.verify.name
+  database_name = scaleway_rdb_database.verify.name
+  permission    = "all"
+}
+
+# Separate bucket and storage key, so the content import in verify never
+# writes to the production bucket.
+resource "scaleway_object_bucket" "verify_images" {
+  name   = "clercq-it-verify-images"
+  region = var.scaleway_region
+
+  tags = {
+    project     = "clercq-it"
+    environment = "verify"
+    purpose     = "blog-images"
+  }
+}
+
+resource "scaleway_object_bucket_acl" "verify_images_acl" {
+  bucket = scaleway_object_bucket.verify_images.name
+  region = var.scaleway_region
+  acl    = "public-read"
+}
+
+resource "scaleway_iam_application" "verify_storage" {
+  name        = "clercq-it-verify-storage"
+  description = "Clercq.It verify container: read/write images in the verify bucket"
+  tags        = ["clercq-it", "terraform", "verify"]
+}
+
+resource "scaleway_iam_policy" "verify_storage" {
+  name           = "clercq-it-verify-storage"
+  description    = "Object storage access for the Clercq.It verify container"
+  application_id = scaleway_iam_application.verify_storage.id
+
+  rule {
+    project_ids          = [var.scaleway_project_id]
+    permission_set_names = ["ObjectStorageFullAccess"]
+  }
+}
+
+resource "scaleway_iam_api_key" "verify_storage" {
+  application_id     = scaleway_iam_application.verify_storage.id
+  description        = "Clercq.It verify object storage key (managed by Terraform)"
+  default_project_id = var.scaleway_project_id
+}
+
+resource "scaleway_cockpit_token" "verify_logs_token" {
+  project_id = var.scaleway_project_id
+  name       = "verify-container-logs"
+
+  scopes {
+    query_logs    = false
+    write_logs    = true
+    query_metrics = false
+    write_metrics = true
+  }
+}
+
+resource "scaleway_container" "verify_app" {
+  name           = "clercq-it-verify"
+  namespace_id   = data.scaleway_container_namespace.portfolio.id
+  registry_image = var.container_image
+  port           = 80
+  protocol       = "http1"
+  http_option    = "redirected"
+
+  # Scales to zero between deploys
+  min_scale = 0
+  max_scale = 1
+
+  memory_limit = 512
+  cpu_limit    = 500
+  timeout      = 30
+
+  environment_variables = {
+    "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
+    "ObjectStorage__BucketName"   = scaleway_object_bucket.verify_images.name
+    "ObjectStorage__Region"       = var.scaleway_region
+    "ASPNETCORE_ENVIRONMENT"      = "Production"
+    "NODE_ENV"                    = "production"
+    "OTEL_SERVICE_NAME"           = "clercq-it-verify"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
+    "Keycloak__Realm"             = var.keycloak_realm
+    "Keycloak__ClientId"          = "clercqit-web-verify"
+    "Keycloak__AdminClientId"     = "clercqit-admin-verify"
+  }
+
+  secret_environment_variables = {
+    "ObjectStorage__AccessKey"             = scaleway_iam_api_key.verify_storage.access_key
+    "ObjectStorage__SecretKey"             = scaleway_iam_api_key.verify_storage.secret_key
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=${scaleway_rdb_database.verify.name};Username=${local.verify_db_user};Password=${local.verify_secrets["db-password"]}"
+    "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.verify_logs_token.secret_key}"
+    "Keycloak__ClientSecret"               = local.verify_secrets["keycloak-web-client-secret"]
+    "Keycloak__AdminClientSecret"          = local.verify_secrets["keycloak-admin-client-secret"]
+  }
+
+  tags = [
+    "project=clercq-it",
+    "environment=verify",
+    "namespace=Portfolio"
+  ]
+
+  # deploy.yml owns the running image (verified digest, issue #243). Without
+  # this, every infra apply would reset it to var.container_image (":latest",
+  # which the build pushes before verification).
+  lifecycle {
+    ignore_changes = [registry_image]
+  }
+}

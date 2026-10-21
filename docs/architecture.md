@@ -197,6 +197,15 @@ Project and blog images are stored in Scaleway Object Storage (S3-compatible).
 - **Scaleway** - Cloud hosting platform
 - **Terraform** - Infrastructure as Code
 
+### Environments
+
+| Environment | Container | Database | Bucket | Secrets |
+|-------------|-----------|----------|--------|---------|
+| Production | `clercq-it-app` (www.clercq.it) | `clercqit_portfolio` | `clercq-it-blog-images` | `/clercq-it` |
+| Verify | `clercq-it-verify` (Scaleway domain, scales to zero) | `clercqit_verify` | `clercq-it-verify-images` | `/clercq-it/verify` |
+
+Both run the same image and share only the RDB instance `portfolio-db` and the container namespace. Every image runs in verify before it reaches production; see [DevOps: Verify stage](./devops.md#verify-stage). Verify is defined in `infra/terraform/verify.tf`.
+
 ### Production Container Architecture
 
 The production deployment uses a single Docker container with multiple services:

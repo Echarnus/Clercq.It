@@ -135,6 +135,13 @@ resource "scaleway_container" "portfolio_app" {
     "environment=portfolio",
     "namespace=Portfolio"
   ]
+
+  # deploy.yml owns the running image (verified digest, issue #243). Without
+  # this, every infra apply would reset it to var.container_image (":latest",
+  # which the build pushes before verification).
+  lifecycle {
+    ignore_changes = [registry_image]
+  }
 }
 
 

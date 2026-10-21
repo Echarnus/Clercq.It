@@ -14,6 +14,18 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 | `keycloak-web-client-secret` | `Keycloak__ClientSecret` on the web/API container | `TF_VAR_keycloak_web_client_secret`, else a placeholder |
 | `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on both containers | `TF_VAR_keycloak_admin_client_secret`, else a placeholder |
 
+### Verify environment (path `/clercq-it/verify`)
+
+The verify stage (see [DevOps](./devops.md#verify-stage)) has its own secrets, created by `infra/terraform/verify.tf`. It never reads a production secret.
+
+| Name (path `/clercq-it/verify`) | Used by | First value comes from |
+| --- | --- | --- |
+| `db-password` | `clercqit_verify_user` password, verify connection string, verify migrations in `deploy.yml` | generated |
+| `keycloak-web-client-secret` | `Keycloak__ClientSecret` on `clercq-it-verify` (client `clercqit-web-verify`) | placeholder, owner replaces it |
+| `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on `clercq-it-verify` (client `clercqit-admin-verify`) | placeholder, owner replaces it |
+
+The verify container also has its own object storage key (IAM application `clercq-it-verify-storage`) and Cockpit token (`verify-container-logs`).
+
 Other credentials Terraform manages itself, without a Secret Manager entry:
 
 - **Object storage key** for the container: IAM application `clercq-it-app-storage` with `ObjectStorageFullAccess` on this project, and an API key created by Terraform (`iam.tf`). This replaces the account-wide key that used to be passed in.
