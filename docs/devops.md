@@ -16,8 +16,20 @@ The project uses six main workflows:
 4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
 5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
 6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
+8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
+
+How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md).
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
+
+## Workflow and review pipelines
+
+### Docs check (`docs-check.yml`)
+Runs on every PR to `main` (skipped for Dependabot). If the PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, it must also change a file under `docs/`, `CLAUDE.md` or `README.md`. The `docs:not-needed` label overrides the check; the PR body must then say why.
+
+### Sync labels (`labels.yml`)
+Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates or updates each label listed there; labels not in the file are left alone.
 
 ## Test Pipeline (`test.yml`)
 

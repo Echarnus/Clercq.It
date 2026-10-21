@@ -1,0 +1,39 @@
+name: Bug
+description: Something is broken
+labels: ["type:bug", "status:ready"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What happens, what should happen, and how to reproduce it.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Suspected cause and the fix. Start with a failing test.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checkable outcomes, one per line as "- [ ] ...".
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Docs to update
+      description: Which pages under docs/ change, or "none, because ...".
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [web, api, auth, infra, ci]
+    validations:
+      required: true

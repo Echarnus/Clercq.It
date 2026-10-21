@@ -1,0 +1,32 @@
+---
+name: Sync labels
+
+"on":
+  push:
+    branches: [main]
+    paths:
+      - '.github/labels.yml'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  sync:
+    name: Sync labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create or update labels
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Labels not in labels.yml are left alone (Dependabot uses its own).
+          yq -o=json '.[]' .github/labels.yml | jq -c '.' | while read -r label; do
+            name=$(echo "$label" | jq -r '.name')
+            color=$(echo "$label" | jq -r '.color')
+            description=$(echo "$label" | jq -r '.description')
+            gh label create "$name" --color "$color" --description "$description" --force --repo "$GITHUB_REPOSITORY"
+          done
