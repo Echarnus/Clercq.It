@@ -1,6 +1,6 @@
-using Microsoft.EntityFrameworkCore.Storage;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Clercq.It.Infrastructure.Repositories;
 
@@ -48,5 +48,6 @@ public class UnitOfWork : IUnitOfWork
     {
         _transaction?.Dispose();
         _context.Dispose();
+        GC.SuppressFinalize(this);
     }
 }

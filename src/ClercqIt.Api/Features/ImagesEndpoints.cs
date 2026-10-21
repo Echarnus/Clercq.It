@@ -1,5 +1,5 @@
-using MediatR;
 using Clercq.It.Application.Common.Commands;
+using MediatR;
 
 namespace Clercq.It.Api.Features;
 
@@ -15,7 +15,7 @@ public static class ImagesEndpoints
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>
         {
             var form = await request.ReadFormAsync();
-            
+
             var imageFile = form.Files["image"];
             if (imageFile == null || imageFile.Length == 0)
             {

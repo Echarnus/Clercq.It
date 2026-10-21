@@ -1,0 +1,19 @@
+<Project>
+  <!-- Shared build policy for every project under src/ and tests/. See docs/development.md#code-style. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Needed for IDE0005 (unused usings) on build; we do not require XML docs. -->
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
+  </PropertyGroup>
+  <!-- The Aspire AppHost is local-only and never built in CI. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(MSBuildProjectName)' != 'Clercq.It.AppHost'">
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Vulnerable-package audit results stay warnings: a new advisory must not
+         break unrelated PRs. Dependabot and the .NET security scan act on them. -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
+  </PropertyGroup>
+</Project>

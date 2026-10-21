@@ -38,7 +38,7 @@ public class GetAllCertificationsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(3);
-        
+
         var resultList = result.ToList();
         resultList[0].Title.Should().Be("AWS Certified Solutions Architect");
         resultList[1].Title.Should().Be("Microsoft Azure Administrator");
@@ -73,7 +73,7 @@ public class GetAllCertificationsQueryHandlerTests
         // Arrange
         var issueDate = DateTime.UtcNow.AddYears(-1);
         var expiryDate = DateTime.UtcNow.AddYears(2);
-        
+
         var certification = new Certification
         {
             Id = Guid.NewGuid(),

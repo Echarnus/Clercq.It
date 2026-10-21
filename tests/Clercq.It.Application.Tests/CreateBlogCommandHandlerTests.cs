@@ -1,7 +1,6 @@
 using Clercq.It.Application.Features.Blogs.Commands;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
-using Clercq.It.Domain.ValueObjects;
 
 namespace Clercq.It.Application.Tests.Features.Blogs.Commands;
 
@@ -17,7 +16,7 @@ public class CreateBlogCommandHandlerTests
         _mockBlogRepository = new Mock<IBlogRepository>();
         _mockObjectStorageService = new Mock<IObjectStorageService>();
         _mockUnitOfWork = new Mock<IUnitOfWork>();
-        
+
         _handler = new CreateBlogCommandHandler(
             _mockBlogRepository.Object,
             _mockObjectStorageService.Object,
@@ -30,7 +29,7 @@ public class CreateBlogCommandHandlerTests
         // Arrange
         var imageUrl = "https://s3.fr-par.scw.cloud/test-bucket/blog-images/test-image.jpg";
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -68,7 +67,7 @@ public class CreateBlogCommandHandlerTests
             MoqIt.IsAny<CancellationToken>()), Times.Once);
 
         _mockBlogRepository.Verify(x => x.AddAsync(
-            MoqIt.Is<Blog>(b => 
+            MoqIt.Is<Blog>(b =>
                 b.ShortDescription == "Short description" &&
                 b.LongDescription == "# Long Description\n\nThis is markdown content." &&
                 b.Image == imageUrl),
@@ -84,7 +83,7 @@ public class CreateBlogCommandHandlerTests
         var beforeTest = DateTime.UtcNow.AddSeconds(-1);
         var imageUrl = "https://s3.fr-par.scw.cloud/test-bucket/blog-images/test-image.jpg";
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -120,7 +119,7 @@ public class CreateBlogCommandHandlerTests
         // Arrange
         var callSequence = new List<string>();
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -162,7 +161,7 @@ public class CreateBlogCommandHandlerTests
     {
         // Arrange
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -187,7 +186,7 @@ public class CreateBlogCommandHandlerTests
 
         // Assert
         result.Tags.Should().BeEquivalentTo(tags);
-        
+
         _mockBlogRepository.Verify(x => x.AddAsync(
             MoqIt.Is<Blog>(b => b.Tags.Values.SequenceEqual(tags)),
             MoqIt.IsAny<CancellationToken>()), Times.Once);

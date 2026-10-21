@@ -1,6 +1,6 @@
-using MediatR;
-using Clercq.It.Application.Features.Certifications.Queries;
 using Clercq.It.Application.Features.Certifications.Commands;
+using Clercq.It.Application.Features.Certifications.Queries;
+using MediatR;
 
 namespace Clercq.It.Api.Features;
 

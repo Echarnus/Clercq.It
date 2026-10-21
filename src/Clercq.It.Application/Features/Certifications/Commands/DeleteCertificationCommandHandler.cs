@@ -1,5 +1,5 @@
-using MediatR;
 using Clercq.It.Domain.Abstractions;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Certifications.Commands;
 

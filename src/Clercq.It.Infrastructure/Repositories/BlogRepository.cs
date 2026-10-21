@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
 using Clercq.It.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Repositories;
 
@@ -13,6 +13,6 @@ public class BlogRepository : Repository<Blog>, IBlogRepository
 
     public async Task<IEnumerable<Blog>> GetPublishedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.Where(b => b.PublishDate <= DateTime.UtcNow).ToListAsync(cancellationToken);
+        return await DbSet.Where(b => b.PublishDate <= DateTime.UtcNow).ToListAsync(cancellationToken);
     }
 }

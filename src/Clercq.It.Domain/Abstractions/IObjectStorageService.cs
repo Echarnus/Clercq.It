@@ -12,7 +12,7 @@ public interface IObjectStorageService
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Public URL of the uploaded file</returns>
     Task<string> UploadFileAsync(string fileName, Stream fileContent, string contentType, bool isInlineImage = false, CancellationToken cancellationToken = default);
-    
+
     /// <summary>
     /// Deletes a file from object storage
     /// </summary>

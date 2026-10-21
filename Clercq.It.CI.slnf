@@ -1,0 +1,18 @@
+{
+  "solution": {
+    "path": "Clercq.It.sln",
+    "projects": [
+      "src\\ClercqIt.Api\\ClercqIt.Api.csproj",
+      "src\\Clercq.It.Domain\\Clercq.It.Domain.csproj",
+      "src\\Clercq.It.Application\\Clercq.It.Application.csproj",
+      "src\\Clercq.It.Infrastructure\\Clercq.It.Infrastructure.csproj",
+      "src\\Clercq.It.ServiceDefaults\\Clercq.It.ServiceDefaults.csproj",
+      "src\\Clercq.It.Infrastructure.EF.Migrations\\Clercq.It.Infrastructure.EF.Migrations.csproj",
+      "src\\Clercq.It.ContentImport\\Clercq.It.ContentImport.csproj",
+      "tests\\ClercqIt.Api.Tests\\ClercqIt.Api.Tests.csproj",
+      "tests\\Clercq.It.Application.Tests\\Clercq.It.Application.Tests.csproj",
+      "tests\\Clercq.It.Domain.Tests\\Clercq.It.Domain.Tests.csproj",
+      "tests\\Clercq.It.ContentImport.Tests\\Clercq.It.ContentImport.Tests.csproj"
+    ]
+  }
+}

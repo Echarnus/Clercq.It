@@ -257,10 +257,10 @@ The architecture is designed to support:
 
 ```bash
 # Run all tests
-dotnet test
+dotnet test Clercq.It.CI.slnf
 
 # Run with coverage
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 ```
 
 ### Test Pyramid

@@ -1,5 +1,5 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Blogs.Commands;
 

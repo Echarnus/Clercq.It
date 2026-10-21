@@ -77,7 +77,7 @@ Comprehensive technical documentation is available in the [`/docs`](./docs) fold
 - **[Docs index](./docs/README.md)** - All documentation pages
 - **[Contributing](./docs/contributing.md)** - How work flows from issue to production via agents
 - **[Architecture](./docs/architecture.md)** - Architecture overview, design patterns, and layer structure
-- **[Development](./docs/development.md)** - Local development setup with Aspire orchestration
+- **[Development](./docs/development.md)** - Local development setup with Aspire orchestration, and the [code style and analyzer policy](./docs/development.md#code-style)
 - **[Versioning](./docs/versioning.md)** - GitVersion configuration and branching strategy
 - **[DevOps](./docs/devops.md)** - CI/CD pipelines, testing, and deployment workflows
 

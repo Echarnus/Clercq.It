@@ -107,8 +107,8 @@ public class UploadBlogImageCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ImageFileName" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ImageFileName" &&
             e.ErrorMessage.Contains("extension"));
     }
 

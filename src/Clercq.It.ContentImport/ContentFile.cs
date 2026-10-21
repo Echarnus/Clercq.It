@@ -18,7 +18,7 @@ public sealed record ContentFile(string Slug, string Path, IReadOnlyDictionary<s
         var slug = System.IO.Path.GetFileNameWithoutExtension(path);
         text = text.Replace("\r\n", "\n");
 
-        if (!text.StartsWith("---\n"))
+        if (!text.StartsWith("---\n", StringComparison.Ordinal))
         {
             throw new ContentException(path, "file must start with a '---' front matter block");
         }

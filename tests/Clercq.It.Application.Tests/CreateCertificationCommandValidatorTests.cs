@@ -84,8 +84,8 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Title" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Title" &&
             e.ErrorMessage.Contains("200"));
     }
 
@@ -137,8 +137,8 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "IssueDate" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "IssueDate" &&
             e.ErrorMessage.Contains("future"));
     }
 
@@ -166,8 +166,8 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ExpiryDate" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ExpiryDate" &&
             e.ErrorMessage.Contains("after"));
     }
 
@@ -243,8 +243,8 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Description" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Description" &&
             e.ErrorMessage.Contains("2000"));
     }
 
@@ -329,8 +329,8 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ImageFileName" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ImageFileName" &&
             e.ErrorMessage.Contains("extension"));
     }
 

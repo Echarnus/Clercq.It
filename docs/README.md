@@ -6,7 +6,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | --- | --- |
 | [Contributing](./contributing.md) | Issue → branch → PR → agent review → deploy loop, labels, docs rule, branch protection |
 | [Architecture](./architecture.md) | Layers, design patterns, project structure |
-| [Development](./development.md) | Local setup with Aspire, Keycloak test users, troubleshooting |
+| [Development](./development.md) | Local setup with Aspire, Keycloak test users, code style and analyzers, troubleshooting |
 | [DevOps](./devops.md) | GitHub Actions pipelines, deployment, required secrets |
 | [Secrets](./secrets.md) | Scaleway Secret Manager: which secrets exist, who can read them, rotation |
 | [Versioning](./versioning.md) | GitVersion and branching strategy |

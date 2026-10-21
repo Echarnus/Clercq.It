@@ -39,7 +39,7 @@ public class GetAllBlogsQueryHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Should().HaveCount(3);
-        
+
         var resultList = result.ToList();
         resultList[0].ShortDescription.Should().Contain("Blog 1");
         resultList[1].ShortDescription.Should().Contain("Blog 2");
@@ -75,7 +75,7 @@ public class GetAllBlogsQueryHandlerTests
         var createdDate = DateTime.UtcNow.AddDays(-30);
         var publishDate = DateTime.UtcNow.AddDays(-25);
         var tags = new Tags(new[] { "Development", "Testing", "C#" });
-        
+
         var blog = new Blog
         {
             Id = Guid.NewGuid(),
