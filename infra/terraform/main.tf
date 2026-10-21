@@ -49,6 +49,11 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   user_name      = "clercqit_admin"
   password       = local.secrets["db-app-password"]
   region         = var.scaleway_region
+
+  # Public endpoint the serverless containers connect to. Declared explicitly:
+  # without it the provider leaves load_balancer empty and every
+  # load_balancer.0 reference fails at plan time.
+  load_balancer {}
 }
 
 # Database for the application (managed by Terraform)

@@ -203,6 +203,7 @@ gh workflow run codeql.yml
 - Creates Terraform execution plan
 - Runs on pull requests
 - Uses `infrastructure-plan` environment
+- A failing `terraform plan` fails the job (`set -o pipefail`, since the output is piped through `tee`). Before this fix the check stayed green on a broken plan. The plan is still posted as a PR comment when it fails.
 
 #### terraform-apply
 - Applies Terraform changes to production
