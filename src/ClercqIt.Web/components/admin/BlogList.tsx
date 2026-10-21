@@ -215,7 +215,7 @@ export function BlogList() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-green-500/20 to-teal-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-green-500/20 to-teal-500/20">
                           <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}

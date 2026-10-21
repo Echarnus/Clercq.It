@@ -27,7 +27,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       <section className="container mx-auto px-4 py-16">
@@ -57,13 +57,13 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
           </div>
 
           {/* Project Content with Image */}
-          <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-sm dark:bg-slate-800/80">
+          <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
             <BlurImage
               src={project.image || "/placeholder.svg"}
               alt={project.title}
               width={250}
               height={250}
-              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md flex-shrink-0"
+              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
             />
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">

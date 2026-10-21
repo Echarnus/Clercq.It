@@ -3,7 +3,7 @@ import { Navigation } from "./navigation";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm dark:border-slate-800 dark:bg-slate-900/80">
+    <header className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-xs dark:border-slate-800 dark:bg-slate-900/80">
       <div className="container mx-auto flex items-center justify-between px-4 py-4">
         <div>
           <h1 className="text-4xl leading-tight tracking-[0.31rem] text-slate-900 dark:text-white">

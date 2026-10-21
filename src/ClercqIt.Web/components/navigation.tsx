@@ -64,7 +64,7 @@ export function Navigation() {
         <>
           {/* Mobile Sidebar Overlay */}
           <div
-            className={`fixed inset-0 z-[9998] bg-black/60 transition-opacity duration-300 md:hidden ${
+            className={`fixed inset-0 z-9998 bg-black/60 transition-opacity duration-300 md:hidden ${
               isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
             }`}
             onClick={() => setIsMobileMenuOpen(false)}
@@ -73,7 +73,7 @@ export function Navigation() {
 
           {/* Mobile Sidebar */}
           <div
-            className={`fixed bottom-0 right-0 top-0 z-[9999] w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
+            className={`fixed top-0 right-0 bottom-0 z-9999 w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
               isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
             }`}
             style={{
@@ -125,7 +125,7 @@ export function Navigation() {
 
       {/* Mobile Menu Button */}
       <button
-        className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white md:hidden"
+        className="p-2 text-slate-600 hover:text-slate-900 md:hidden dark:text-slate-400 dark:hover:text-white"
         onClick={() => setIsMobileMenuOpen(true)}
         aria-label="Open menu"
       >

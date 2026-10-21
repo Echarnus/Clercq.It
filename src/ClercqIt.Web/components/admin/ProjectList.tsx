@@ -224,7 +224,7 @@ export function ProjectList() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-blue-500/20 to-purple-500/20">
                           <FolderKanban className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}

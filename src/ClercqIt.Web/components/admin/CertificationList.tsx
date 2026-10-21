@@ -233,7 +233,7 @@ export function CertificationList() {
                       {cert.image ? (
                         <Image src={cert.image} alt={cert.title} fill className="object-contain" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-amber-500/20 to-orange-500/20">
                           <Award className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
