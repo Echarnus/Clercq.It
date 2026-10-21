@@ -40,16 +40,9 @@ runs:
         else
           # For feature/PR branches: use label with commit count
           if [ -z "$PRE_RELEASE_LABEL" ]; then
-            # If no label, determine from branch name
-            if [[ "$BRANCH_NAME" == copilot/* ]]; then
-              LABEL="copilot"
-            elif [[ "$BRANCH_NAME" == feature/* ]]; then
-              LABEL="feature"
-            elif [[ "$BRANCH_NAME" == pr/* ]] || [[ "$BRANCH_NAME" == pull/* ]]; then
-              LABEL="pr"
-            else
-              LABEL="dev"
-            fi
+            # No label from GitVersion: use the branch type prefix (feat, fix, chore, ...).
+            LABEL=$(echo "${BRANCH_NAME%%/*}" | tr -cs 'a-zA-Z0-9' '-' | sed 's/-*$//')
+            LABEL="${LABEL:-dev}"
           else
             LABEL="$PRE_RELEASE_LABEL"
           fi

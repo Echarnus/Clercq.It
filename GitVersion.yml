@@ -1,4 +1,7 @@
+# Trunk-based: main is the only long-lived branch and deploys to production.
+# See docs/versioning.md.
 mode: ContinuousDeployment
+tag-prefix: '[vV]?'
 branches:
   main:
     regex: ^master$|^main$
@@ -8,49 +11,19 @@ branches:
     prevent-increment:
       of-merged-branch: false
     track-merge-target: false
-  develop:
-    regex: ^dev(elop)?(ment)?$
-    mode: ContinuousDeployment
-    label: 'alpha'
-    increment: Minor
-    source-branches: ['main']
   feature:
-    regex: ^features?[/-]
+    # Short-lived work branches: <type>/<issue>-<slug>, plus bot branches.
+    regex: ^(feat|fix|chore|infra|content|docs|security|feature|copilot|claude|dependabot)[/-]
     mode: ContinuousDeployment
-    label: 'feature'
+    label: '{BranchName}'
     increment: Inherit
-    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
-  copilot:
-    regex: ^copilot[/-]
-    mode: ContinuousDeployment
-    label: 'copilot'
-    increment: Inherit
-    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
+    source-branches: ['main']
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
     mode: ContinuousDeployment
     label: 'pr'
     increment: Inherit
-    source-branches: ['develop', 'main', 'release', 'feature', 'support', 'hotfix']
-  hotfix:
-    regex: ^hotfix(es)?[/-]
-    mode: ContinuousDeployment
-    label: 'beta'
-    increment: Patch
-    source-branches: ['develop', 'main', 'support']
-  release:
-    regex: ^releases?[/-]
-    mode: ContinuousDeployment
-    label: 'beta'
-    increment: None
-    source-branches: ['develop']
-    is-release-branch: true
-  support:
-    regex: ^support[/-]
-    mode: ContinuousDeployment
-    label: ''
-    increment: Patch
-    source-branches: ['main']
+    source-branches: ['main', 'feature']
 ignore:
   sha: []
 merge-message-formats: {}

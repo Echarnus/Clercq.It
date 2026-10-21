@@ -10,8 +10,6 @@ name: build
         description: 'Branch to build from (if not main)'
         required: false
         default: ''
-  release:
-    types: [published]
 
 env:
   REGISTRY: docker.io
