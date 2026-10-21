@@ -495,4 +495,4 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 
 - [Local Development Guide](./development.md) - Setting up local environment with Aspire
 - [DevOps & CI/CD Pipeline](./devops.md) - Complete pipeline documentation
-- [Infrastructure Guide](./infrastructure.md) - Terraform and Scaleway setup
+- [DevOps Guide](./devops.md) - Terraform and Scaleway setup

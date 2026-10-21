@@ -409,7 +409,7 @@ This application implements comprehensive security controls suitable for banking
 
 **Security Level**: Bank-Grade / Financial Services Ready
 
-For questions or security concerns, see [SECURITY.md](./SECURITY.md).
+For questions or security concerns, see [SECURITY.md](../SECURITY.md).
 
 ---
 

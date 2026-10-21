@@ -4,7 +4,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 
 | Page | What it covers |
 | --- | --- |
-| [Contributing](./contributing.md) | Issue → branch → PR → agent review → deploy loop, labels, docs rule, branch protection |
+| [Contributing](./contributing.md) | Issue → branch → PR → agent review → deploy loop, labels, docs rule, enforced rules (rulesets, PR conventions, weekly audit) |
 | [Architecture](./architecture.md) | Layers, design patterns, project structure |
 | [Development](./development.md) | Local setup with Aspire, Keycloak test users, code style and analyzers, troubleshooting |
 | [DevOps](./devops.md) | GitHub Actions pipelines, deployment, required secrets |

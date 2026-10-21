@@ -1,0 +1,29 @@
+---
+name: Repository audit
+
+# Weekly check that GitHub still enforces the trunk-based rules (issue #245).
+# Opens a type:bug priority:p1 issue on drift.
+# See docs/contributing.md#enforced-rules.
+
+"on":
+  schedule:
+    - cron: '0 6 * * 1'  # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  audit:
+    name: Audit rules and branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Audit
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python3 .github/scripts/audit_repo.py

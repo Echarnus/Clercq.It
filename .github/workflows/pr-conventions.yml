@@ -1,0 +1,27 @@
+---
+name: PR conventions
+
+# Branch naming and issue link on every PR (issue #245).
+# See docs/contributing.md#enforced-rules.
+
+"on":
+  pull_request:
+    branches: [main]
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  conventions:
+    name: PR conventions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check branch name and issue link
+        env:
+          BRANCH: ${{ github.head_ref }}
+          BODY: ${{ github.event.pull_request.body }}
+        run: bash .github/scripts/check-pr-conventions.sh

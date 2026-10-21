@@ -167,5 +167,4 @@ The API needs `Keycloak:BaseUrl` (and optionally `Keycloak:Realm`, default `cler
 ## Related Documentation
 
 - [Local Development Guide](./development.md) - Local Keycloak setup with test users
-- [Admin Backoffice Documentation](./admin-backoffice.md) - Admin panel usage
 - [DevOps Guide](./devops.md) - Deployment and CI/CD configuration
