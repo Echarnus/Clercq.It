@@ -1,0 +1,4 @@
+# Trivy exceptions (issue #281). Trivy blocks on fixable HIGH and CRITICAL
+# findings (security-scan.yml). Add an entry only when no fix exists or the
+# code path is unreachable, with a comment saying why and when to revisit.
+# Keep docs/application-security.md#accepted-findings in sync.

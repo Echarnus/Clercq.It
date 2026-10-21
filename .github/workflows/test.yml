@@ -163,7 +163,7 @@ jobs:
         working-directory: ./src/ClercqIt.Web
         run: |
           echo "🔍 Running security audit on npm packages..."
-          pnpm audit --audit-level=high || echo "⚠️ Vulnerabilities found - review required"
+          pnpm audit --audit-level=high
           echo "## 🔒 Security Audit Completed" >> $GITHUB_STEP_SUMMARY
           echo "- Checked for known vulnerabilities in npm packages" >> $GITHUB_STEP_SUMMARY
 

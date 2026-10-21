@@ -209,6 +209,9 @@ With no human review, these checks are what stops insecure code reaching `main` 
 | **gitleaks** | `sast.yml` | Any secret | PR: the PR's commits. `main`: full history |
 | **CodeQL gate** | `codeql.yml` | An open `high` or `critical` CodeQL alert on the PR's merge ref | C# and JS/TS, `security-extended` + `security-and-quality` |
 | **Vulnerable NuGet packages** | `security-scan.yml` | High or Critical advisory | All projects in `Clercq.It.CI.slnf`, transitive included |
+| **pnpm audit** | `security-scan.yml`, `test.yml` | High or Critical advisory | `src/ClercqIt.Web`, transitive included |
+| **Trivy image** | `security-scan.yml` | Fixable High or Critical finding | The production Docker image (OS packages, Node, npm and .NET dependencies) |
+| **Trivy filesystem** | `security-scan.yml` | Fixable High or Critical finding | Lockfiles, Dockerfile and Terraform in the repository |
 
 Results from Semgrep, CodeQL and Trivy are also in the repository's **Security** tab.
 
@@ -246,6 +249,8 @@ Fix the code first. A suppression is only for a false positive or an accepted ri
   Whole paths go in `.semgrepignore`, each with a reason.
 - **gitleaks**: add the finding's fingerprint (printed by gitleaks) to `.gitleaksignore` under a comment with the reason.
 - **CodeQL**: dismiss the alert in the Security tab as "False positive" or "Won't fix", with a comment.
+- **pnpm audit**: add the GHSA id to `pnpm.auditConfig.ignoreGhsas` in `src/ClercqIt.Web/package.json` and a row to [Accepted findings](#accepted-findings) (JSON has no comments).
+- **Trivy**: add the CVE id to `.trivyignore` with a comment above it, and a row to [Accepted findings](#accepted-findings).
 
 Never weaken a rule or a severity threshold to get a PR green.
 
@@ -255,9 +260,19 @@ Never weaken a rule or a severity threshold to get a PR green.
 |-------|------|-----|
 | `.gitleaksignore` | 5 findings in old docs commits, 1 in the #237 probe commit | Placeholder `YOUR_JWT_TOKEN`, a truncated example JWT, and the random fake key that proved the gate fails |
 
+### Accepted findings
+
+Dependency advisories that block but have no fix, so they are ignored with a reason. Revisit each when a patched version appears (Dependabot proposes it).
+
+| Where | Advisory | Package and path | Why it is accepted |
+|-------|----------|------------------|--------------------|
+| `pnpm.auditConfig.ignoreGhsas` | GHSA-vfj7-8cjw-p6xm (high) | `braces` via `eslint-config-next > @next/eslint-plugin-next > fast-glob > micromatch` | No patched version yet. Dev-only: it runs in ESLint on the repository's own glob patterns, never on user input and never in the production image. |
+
+Moderate advisories are listed but do not block; `sprintf-js` (GHSA-hp3w-g68c-fv3c, via `gray-matter`, no fix yet) is one.
+
 ### What does not block yet
 
-- **npm audit** and **Trivy** (filesystem and image) still report only. The Next.js dependency tree has about 57 high/critical advisories whose fixes need the Next.js upgrade; making these blocking is #281.
+- **Moderate and low** dependency advisories (pnpm audit, Trivy) are reported, not blocking.
 - **IaC scanning**: Checkov and Trivy have no Scaleway checks, so `infra/terraform` is covered only by Semgrep's `p/terraform` and by review of the Terraform plan on the PR.
 
 ### Repository settings (owner)

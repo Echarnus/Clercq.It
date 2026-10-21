@@ -21,20 +21,16 @@ jobs:
     name: Trivy Container Scan
     runs-on: ubuntu-latest
     if: github.event_name != 'schedule' || github.ref == 'refs/heads/main'
-    continue-on-error: true  # Don't fail the entire workflow if container build fails
-    
+    # Blocking (issue #281): a failed image build or a fixable HIGH/CRITICAL
+    # finding fails the job. Reasoned exceptions live in .trivyignore.
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Build Docker image for scanning
-        id: docker-build
-        continue-on-error: true
-        run: |
-          docker build -t clercq-it:scan ./src || exit 1
+        run: docker build -t clercq-it:scan ./src
 
       - name: Run Trivy vulnerability scanner
-        if: steps.docker-build.outcome == 'success'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'clercq-it:scan'
@@ -45,21 +41,20 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy results to GitHub Security
-        if: steps.docker-build.outcome == 'success'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: 'trivy-results.sarif'
           category: 'trivy-container'
 
       - name: Run Trivy with table output
-        if: steps.docker-build.outcome == 'success'
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: 'clercq-it:scan'
           format: 'table'
           severity: 'CRITICAL,HIGH'
-          exit-code: '0'  # Changed from '1' to '0' to not fail the workflow
+          exit-code: '1'
           ignore-unfixed: true
+          trivyignores: '.trivyignore'
 
   trivy-filesystem-scan:
     name: Trivy Filesystem Scan
@@ -85,6 +80,19 @@ jobs:
         with:
           sarif_file: 'trivy-fs-results.sarif'
           category: 'trivy-filesystem'
+
+      # Blocking (issue #281): fixable HIGH/CRITICAL findings in lockfiles,
+      # Dockerfile and Terraform fail the job.
+      - name: Fail on HIGH or CRITICAL filesystem findings
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'CRITICAL,HIGH'
+          exit-code: '1'
+          ignore-unfixed: true
+          trivyignores: '.trivyignore'
 
   dotnet-security-scan:
     name: .NET Security Scan
@@ -151,11 +159,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run npm audit
-        # Report-only until the Next.js dependency upgrades land (see docs/application-security.md).
+        # Blocking on high and critical (issue #281). Reasoned exceptions are in
+        # pnpm.auditConfig.ignoreGhsas (package.json), explained in docs/application-security.md.
         working-directory: ./src/ClercqIt.Web
-        run: |
-          pnpm audit --audit-level=moderate || echo "Audit completed with findings"
-          
+        run: pnpm audit --audit-level=high
+
       - name: Generate audit report
         working-directory: ./src/ClercqIt.Web
         run: |
