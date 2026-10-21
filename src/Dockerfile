@@ -40,17 +40,13 @@ RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
 FROM node:23-slim AS node-base
-# Configure npm for restricted environments
-ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-RUN npm config set strict-ssl false || true
-RUN npm config set registry https://registry.npmjs.org/ || true
-RUN npm install -g pnpm@10.12.4 || echo "Warning: pnpm installation failed"
+RUN npm install -g pnpm@10.12.4
 
 # Install dependencies for Next.js
 FROM node-base AS node-deps
 WORKDIR /app
 COPY ClercqIt.Web/package.json ClercqIt.Web/pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile || npm install
+RUN pnpm install --frozen-lockfile
 
 # Build Next.js application
 FROM node-base AS node-builder
@@ -68,7 +64,7 @@ COPY ClercqIt.Web/ .
 # This ensures the file is included in the build output
 RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"${BUILD_DATE}\"}" > /app/public/version.json
 
-RUN pnpm run build || npm run build
+RUN pnpm run build
 
 # Final runtime stage starting from nginx
 FROM nginx:1.25-bookworm AS final

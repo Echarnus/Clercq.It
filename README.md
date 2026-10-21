@@ -13,17 +13,7 @@ A modern full-stack web application showcasing enterprise-grade development prac
 
 ## 📊 Pipeline Status
 
-All CI/CD pipelines have been fixed and are operational:
-
-- ✅ **Test Pipeline**: Runs unit tests for .NET and Next.js components with dependency security checks
-- ✅ **Build Pipeline**: Builds Docker images with Trivy vulnerability scanning (requires Docker Hub credentials for push)  
-- ✅ **Security Scanning**: Comprehensive security analysis with Trivy, CodeQL, and dependency audits
-- ✅ **CodeQL Analysis**: Advanced semantic code analysis for C# and JavaScript/TypeScript
-- ✅ **Infrastructure Pipeline**: Deploys to Scaleway using Terraform (requires Scaleway credentials)
-- ✅ **Deploy Pipeline**: Orchestrates application deployment to production
-- ✅ **Dependabot**: Automated dependency updates for all package ecosystems
-
-> **Note**: Some pipelines require repository secrets to be configured for full functionality. See the [DevOps guide](./docs/devops.md#required-secrets) for configuration details.
+The badges above show the live state of each pipeline. Pipelines, triggers and required secrets are described in the [DevOps guide](./docs/devops.md); how work flows from issue to production is in [Contributing](./docs/contributing.md).
 
 ## 🚀 Tech Stack
 
