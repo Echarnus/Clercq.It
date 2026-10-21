@@ -50,21 +50,22 @@ export function CertificationList() {
   const [certificationToDelete, setCertificationToDelete] = useState<Certification | null>(null);
   const { toast } = useToast();
 
-  const loadCertifications = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchAllCertifications();
-      setCertifications(data);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load certifications",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  // isLoading starts true; a reload after a change keeps the list on screen.
+  // State is only set in promise callbacks, never synchronously in the effect.
+  const loadCertifications = useCallback(
+    () =>
+      fetchAllCertifications()
+        .then(setCertifications)
+        .catch(() =>
+          toast({
+            title: "Error",
+            description: "Failed to load certifications",
+            variant: "destructive",
+          }),
+        )
+        .finally(() => setIsLoading(false)),
+    [toast],
+  );
 
   useEffect(() => {
     void loadCertifications();

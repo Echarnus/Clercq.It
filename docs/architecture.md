@@ -228,7 +228,7 @@ Config-driven flags hide unfinished work in production (issue #253). The API own
 - **xUnit** - Unit testing framework
 
 ### Frontend
-- **Next.js 15** - React framework with App Router
+- **Next.js 16** - React framework with App Router
 - **React 19** - Latest React with concurrent features
 - **TypeScript** - Type-safe JavaScript development
 - **Tailwind CSS 4** - Utility-first CSS framework, configured CSS-first in `app/globals.css`

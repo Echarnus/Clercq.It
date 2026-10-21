@@ -41,7 +41,7 @@ This application implements controls aligned with the **NIST Cybersecurity Frame
   - Infrastructure as Code (Terraform) documents all resources
 
 - ✅ **ID.AM-2**: Software platforms and applications are inventoried
-  - .NET 9.0, Next.js 15, PostgreSQL 16 documented
+  - .NET 9.0, Next.js 16, PostgreSQL 16 documented
   - All dependencies listed in package files
   - Automated dependency scanning
 

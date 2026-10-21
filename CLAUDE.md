@@ -1,6 +1,6 @@
 # Clercq.It agent guide
 
-Personal website www.clercq.it: .NET 9 API (Clean Architecture, EF Core, PostgreSQL) and Next.js 15 frontend, shipped as one Docker image to a Scaleway serverless container. Production auth is Cloud IAM (hosted Keycloak). Full docs: [docs/README.md](docs/README.md).
+Personal website www.clercq.it: .NET 9 API (Clean Architecture, EF Core, PostgreSQL) and Next.js 16 frontend, shipped as one Docker image to a Scaleway serverless container. Production auth is Cloud IAM (hosted Keycloak). Full docs: [docs/README.md](docs/README.md).
 
 ## How work flows
 

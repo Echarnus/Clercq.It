@@ -45,21 +45,22 @@ export function ProjectList() {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const { toast } = useToast();
 
-  const loadProjects = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchAllProjects();
-      setProjects(data);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load projects",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  // isLoading starts true; a reload after a change keeps the list on screen.
+  // State is only set in promise callbacks, never synchronously in the effect.
+  const loadProjects = useCallback(
+    () =>
+      fetchAllProjects()
+        .then(setProjects)
+        .catch(() =>
+          toast({
+            title: "Error",
+            description: "Failed to load projects",
+            variant: "destructive",
+          }),
+        )
+        .finally(() => setIsLoading(false)),
+    [toast],
+  );
 
   useEffect(() => {
     void loadProjects();
