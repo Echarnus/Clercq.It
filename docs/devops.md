@@ -4,7 +4,7 @@ This document describes the Continuous Integration and Continuous Deployment (CI
 
 ## Overview
 
-The CI/CD pipeline is built using **GitHub Actions** and follows **GitHub Flow** with **continuous deployment** enabled. The pipeline uses GitVersion for automatic semantic versioning.
+The CI/CD pipeline is built using **GitHub Actions** and follows **trunk-based development** with **continuous deployment to production** (see [Versioning](./versioning.md)). The pipeline uses GitVersion for automatic semantic versioning.
 
 ## Pipeline Workflows
 
@@ -34,8 +34,8 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 ## Test Pipeline (`test.yml`)
 
 ### Triggers
-- Push to `main`, `develop`, or `feature/*` branches
-- Pull requests to `main` or `develop`
+- Called by `build.yml` on push to `main`
+- Pull requests to `main`
 
 ### Jobs
 
@@ -107,8 +107,8 @@ gh workflow run build.yml
 ## Security Scanning Pipeline (`security-scan.yml`)
 
 ### Triggers
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+- Push to `main`
+- Pull requests to `main`
 - Daily schedule at 2:00 AM UTC
 - Manual workflow dispatch
 
@@ -164,8 +164,8 @@ gh workflow run security-scan.yml
 ## CodeQL Analysis Pipeline (`codeql.yml`)
 
 ### Triggers
-- Push to `main` or `develop` branches
-- Pull requests to `main` or `develop`
+- Push to `main`
+- Pull requests to `main`
 - Weekly schedule on Mondays at 8:00 AM UTC
 - Manual workflow dispatch
 
@@ -284,6 +284,11 @@ gh workflow run infra.yml
 - Performs health checks
 - Verifies deployed version matches expected version
 - Reports deployment status
+
+#### release
+- Runs only after an automatic deploy (not for manual deploys)
+- Creates tag `prod-<version>` on the deployed commit and a GitHub Release with generated notes
+- Uses the `prod-` prefix so GitVersion ignores the tag (see [Versioning](./versioning.md#production-releases))
 
 **Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
 
@@ -481,7 +486,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 ## Best Practices
 
 ### Development
-1. Always create feature branches from `main` or `develop`
+1. Always create short-lived work branches from `main` (`<type>/<issue>-<slug>`)
 2. Write tests for new functionality
 3. Keep commits focused and descriptive
 4. Use conventional commit messages for better versioning
@@ -489,8 +494,8 @@ Automated dependency updates (`.github/dependabot.yml`):
 ### Deployment
 1. Test locally before pushing
 2. Monitor deployment status and logs
-3. Use manual deployment for hotfixes
-4. Keep production deployments during low-traffic hours
+3. Fixes go through a normal `fix/...` branch and PR; use manual deployment only to roll back to an earlier version
+4. Every automatic deploy is tagged `prod-<version>` with a GitHub Release (see [Versioning](./versioning.md#production-releases))
 
 ### Security
 1. **Keep the Dependabot queue short**: merge green grouped PRs weekly; plan majors as issues
@@ -682,7 +687,7 @@ gh secret list
 - [OpenSSF Scorecard](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It) - Live security score
 
 ### Development & Deployment
-- [GitHub Flow Documentation](https://docs.github.com/en/get-started/quickstart/github-flow)
+- [Trunk-based development](https://trunkbaseddevelopment.com/)
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Scaleway Container Documentation](https://www.scaleway.com/en/docs/serverless/containers/)
