@@ -22,7 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import type { Blog } from "../lib/api";
+import type { Blog } from "./lib/api";
 
 interface BlogsContentProps {
   blogs: Blog[];
@@ -88,7 +88,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
 
   const handleTagToggle = (tag: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -101,7 +101,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+    <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
       {/* Main Content */}
       <div className="lg:col-span-3">
         <div className="grid gap-8">
@@ -112,7 +112,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
           ) : (
             paginatedBlogs.map((blog) => (
               <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
-                <Card className="group hover:shadow-xl transition-all duration-300 border-0 shadow-lg bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20 cursor-pointer md:flex md:flex-row">
+                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20 md:flex md:flex-row">
                   <BlurImage
                     src={blog.image || "/placeholder.svg"}
                     alt={blog.shortDescription}
@@ -121,12 +121,12 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                     containerClassName="w-full md:w-48 h-48 flex-shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                   />
 
-                  <CardContent className="p-6 md:flex-1 flex flex-col justify-center">
+                  <CardContent className="flex flex-col justify-center p-6 md:flex-1">
                     <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
                       {formatDate(blog.publishDate)}
                     </div>
 
-                    <CardDescription className="text-slate-600 mb-4 leading-relaxed dark:text-slate-400">
+                    <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
                       {blog.shortDescription}
                     </CardDescription>
 
@@ -153,9 +153,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                   <PaginationPrevious
                     onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                     className={
-                      currentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
+                      currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"
                     }
                   />
                 </PaginationItem>
@@ -191,10 +189,8 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
       {/* Sidebar Filters */}
       <div className="lg:col-span-1">
         <div className="sticky top-4 space-y-6">
-          <Card className="p-6 bg-white/80 backdrop-blur-sm dark:bg-slate-800/80">
-            <h3 className="text-lg font-semibold mb-4 text-slate-900 dark:text-white">
-              Filters
-            </h3>
+          <Card className="bg-white/80 p-6 backdrop-blur-sm dark:bg-slate-800/80">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filters</h3>
 
             {/* Title Filter */}
             <div className="mb-6">
@@ -213,10 +209,8 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
 
             {/* Date Filter */}
             <div className="mb-6">
-              <Label className="text-slate-700 dark:text-slate-300">
-                Filter by Month
-              </Label>
-              <div className="grid grid-cols-2 gap-2 mt-2">
+              <Label className="text-slate-700 dark:text-slate-300">Filter by Month</Label>
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <Select
                   value={dateFilter ? dateFilter.split("-")[0] : ""}
                   onValueChange={(year) => {
@@ -256,7 +250,20 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                     <SelectValue placeholder="Month" />
                   </SelectTrigger>
                   <SelectContent>
-                    {["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((month, i) => (
+                    {[
+                      "Jan",
+                      "Feb",
+                      "Mar",
+                      "Apr",
+                      "May",
+                      "Jun",
+                      "Jul",
+                      "Aug",
+                      "Sep",
+                      "Oct",
+                      "Nov",
+                      "Dec",
+                    ].map((month, i) => (
                       <SelectItem key={month} value={String(i + 1).padStart(2, "0")}>
                         {month}
                       </SelectItem>
@@ -267,7 +274,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               {dateFilter && (
                 <button
                   onClick={() => setDateFilter("")}
-                  className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-2 underline"
+                  className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   Clear date filter
                 </button>
@@ -276,7 +283,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
 
             {/* Tags Filter */}
             <div>
-              <Label className="text-slate-700 dark:text-slate-300 mb-2 block">
+              <Label className="mb-2 block text-slate-700 dark:text-slate-300">
                 Filter by Tags
               </Label>
               <div className="flex flex-wrap gap-2">
@@ -298,7 +305,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               {selectedTags.length > 0 && (
                 <button
                   onClick={() => setSelectedTags([])}
-                  className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mt-2 underline"
+                  className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   Clear tags
                 </button>

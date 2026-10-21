@@ -14,7 +14,7 @@ export function ConditionalLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <Header currentPage={"home"} />
+      <Header />
       {children}
       <Footer />
     </>

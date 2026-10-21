@@ -51,7 +51,7 @@ export function ImageUpload({
       <div className="flex flex-col gap-4">
         {displayImage ? (
           <div className="relative w-full max-w-sm">
-            <div className="relative aspect-video rounded-lg overflow-hidden border bg-muted">
+            <div className="relative aspect-video overflow-hidden rounded-lg border bg-muted">
               <Image
                 src={displayImage}
                 alt="Preview"
@@ -64,23 +64,22 @@ export function ImageUpload({
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute top-2 right-2"
+              className="absolute right-2 top-2"
               onClick={handleRemove}
             >
               <X className="h-4 w-4" />
             </Button>
           </div>
         ) : (
-          <div
-            className="flex flex-col items-center justify-center w-full max-w-sm aspect-video border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+          <button
+            type="button"
+            className="flex aspect-video w-full max-w-sm cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors hover:bg-muted/50"
             onClick={() => inputRef.current?.click()}
           >
-            <ImageIcon className="h-10 w-10 text-muted-foreground mb-2" />
+            <ImageIcon className="mb-2 h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">Click to upload image</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              JPG, PNG, GIF, or WebP
-            </p>
-          </div>
+            <p className="mt-1 text-xs text-muted-foreground">JPG, PNG, GIF, or WebP</p>
+          </button>
         )}
         <input
           ref={inputRef}
@@ -96,16 +95,12 @@ export function ImageUpload({
             onClick={() => inputRef.current?.click()}
             className="w-fit"
           >
-            <Upload className="h-4 w-4 mr-2" />
+            <Upload className="mr-2 h-4 w-4" />
             Choose File
           </Button>
         )}
       </div>
-      {value && (
-        <p className="text-xs text-muted-foreground">
-          Selected: {value.name}
-        </p>
-      )}
+      {value && <p className="text-xs text-muted-foreground">Selected: {value.name}</p>}
     </div>
   );
 }

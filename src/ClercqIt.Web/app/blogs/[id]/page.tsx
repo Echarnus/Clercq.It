@@ -32,7 +32,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       <section className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           <Button asChild variant="ghost" className="mb-8">
             <Link href="/blogs">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -42,7 +42,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
           {/* Blog Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4 dark:text-white">
+            <h1 className="mb-4 text-4xl font-bold text-slate-900 dark:text-white">
               {blog.shortDescription}
             </h1>
 
@@ -55,7 +55,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           </div>
 
           {/* Blog Content with Image */}
-          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 rounded-lg shadow-lg p-8">
+          <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-sm dark:bg-slate-800/80">
             <BlurImage
               src={blog.image || "/placeholder.svg"}
               alt={blog.shortDescription}
@@ -64,7 +64,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
               containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md flex-shrink-0"
             />
 
-            <div className="text-slate-600 dark:text-slate-400 leading-relaxed">
+            <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               <div className="prose dark:prose-invert max-w-none">
                 <p className="whitespace-pre-line">{blog.longDescription}</p>
               </div>

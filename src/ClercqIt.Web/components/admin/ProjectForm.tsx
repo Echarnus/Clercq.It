@@ -22,10 +22,7 @@ import { Loader2 } from "lucide-react";
 import type { Project } from "@/lib/api/baseApi";
 
 const projectFormSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Title is required")
-    .max(200, "Title must not exceed 200 characters"),
+  title: z.string().min(1, "Title is required").max(200, "Title must not exceed 200 characters"),
   shortDescription: z
     .string()
     .min(1, "Short description is required")
@@ -68,12 +65,8 @@ export function ProjectForm({
       shortDescription: project?.shortDescription || "",
       longDescription: project?.longDescription || "",
       image: null,
-      startDate: project?.startDate
-        ? new Date(project.startDate).toISOString().split("T")[0]
-        : "",
-      endDate: project?.endDate
-        ? new Date(project.endDate).toISOString().split("T")[0]
-        : "",
+      startDate: project?.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
+      endDate: project?.endDate ? new Date(project.endDate).toISOString().split("T")[0] : "",
       featured: project?.featured || false,
       skills: project?.skills || [],
     },
@@ -81,7 +74,7 @@ export function ProjectForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={(e) => void form.handleSubmit(onSubmit)(e)} className="space-y-6">
         <FormField
           control={form.control}
           name="title"
@@ -92,9 +85,7 @@ export function ProjectForm({
                 <Input placeholder="Project title..." {...field} />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/200 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/200 characters</p>
             </FormItem>
           )}
         />
@@ -114,9 +105,7 @@ export function ProjectForm({
                 />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/500 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/500 characters</p>
             </FormItem>
           )}
         />
@@ -156,9 +145,7 @@ export function ProjectForm({
                   label="Project Image (Optional)"
                 />
               </FormControl>
-              <FormDescription>
-                Leave empty to use a placeholder image.
-              </FormDescription>
+              <FormDescription>Leave empty to use a placeholder image.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -200,16 +187,11 @@ export function ProjectForm({
           render={({ field }) => (
             <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
               <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                />
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
               </FormControl>
               <div className="space-y-1 leading-none">
                 <FormLabel>Featured Project</FormLabel>
-                <FormDescription>
-                  This project will be highlighted on the homepage.
-                </FormDescription>
+                <FormDescription>This project will be highlighted on the homepage.</FormDescription>
               </div>
             </FormItem>
           )}

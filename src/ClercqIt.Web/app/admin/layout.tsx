@@ -7,10 +7,6 @@ export const metadata: Metadata = {
   description: "Admin panel for Clercq.It",
 };
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return children;
 }
