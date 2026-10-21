@@ -84,6 +84,8 @@ Built with Clean Architecture principles and Domain-Driven Design:
 
 Comprehensive technical documentation is available in the [`/docs`](./docs) folder:
 
+- **[Docs index](./docs/README.md)** - All documentation pages
+- **[Contributing](./docs/contributing.md)** - How work flows from issue to production via agents
 - **[Architecture](./docs/architecture.md)** - Architecture overview, design patterns, and layer structure
 - **[Development](./docs/development.md)** - Local development setup with Aspire orchestration
 - **[Versioning](./docs/versioning.md)** - GitVersion configuration and branching strategy

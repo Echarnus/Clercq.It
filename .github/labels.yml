@@ -1,0 +1,23 @@
+# Source of truth for repository labels, synced by .github/workflows/labels.yml.
+# See docs/contributing.md for what each group means.
+- { name: "type:feature",  color: "1d76db", description: "New user-facing behaviour" }
+- { name: "type:bug",      color: "d73a4a", description: "Something is broken" }
+- { name: "type:chore",    color: "c5def5", description: "Tooling, upkeep, refactoring" }
+- { name: "type:infra",    color: "5319e7", description: "Terraform, Scaleway, DNS" }
+- { name: "type:content",  color: "0e8a16", description: "Projects, blogs, certifications" }
+- { name: "type:docs",     color: "0075ca", description: "Documentation only" }
+- { name: "type:security", color: "b60205", description: "Security hardening or fix" }
+- { name: "area:web",      color: "bfdadc", description: "Next.js frontend" }
+- { name: "area:api",      color: "bfdadc", description: ".NET API and backend layers" }
+- { name: "area:auth",     color: "bfdadc", description: "Keycloak / Cloud IAM" }
+- { name: "area:infra",    color: "bfdadc", description: "Terraform and cloud resources" }
+- { name: "area:ci",       color: "bfdadc", description: "GitHub Actions and agent tooling" }
+- { name: "priority:p1",   color: "b60205", description: "Do next" }
+- { name: "priority:p2",   color: "fbca04", description: "Soon" }
+- { name: "priority:p3",   color: "c2e0c6", description: "Later" }
+- { name: "status:ready",        color: "0e8a16", description: "Can be picked up by an agent" }
+- { name: "status:in-progress",  color: "fbca04", description: "An agent is working on it" }
+- { name: "status:needs-review", color: "1d76db", description: "PR open, waiting for the reviewer agent" }
+- { name: "status:blocked",      color: "e4e669", description: "Waiting on another issue" }
+- { name: "status:needs-human",  color: "d93f0b", description: "Needs the owner: console, credentials or money" }
+- { name: "docs:not-needed", color: "ededed", description: "PR changes nothing that /docs describes (reason in PR body)" }

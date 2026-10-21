@@ -1,0 +1,39 @@
+name: Infra change
+description: Terraform, Scaleway, DNS or pipeline change
+labels: ["type:infra", "status:ready"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Why this is needed and what exists today.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Resources and workflows touched. Note anything the owner must do in a console (secrets, accounts, money).
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checkable outcomes, one per line as "- [ ] ...".
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Docs to update
+      description: Which pages under docs/ change, or "none, because ...".
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [web, api, auth, infra, ci]
+    validations:
+      required: true
