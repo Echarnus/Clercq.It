@@ -29,6 +29,7 @@ public class Certification : IAggregateRoot
         string credentialId, string credentialUrl, string description, string image) =>
         new(Guid.NewGuid(), title, issuer, issueDate, expiryDate, credentialId, credentialUrl, description, image);
 
+    /// <summary>Replaces the certification's details.</summary>
     /// <exception cref="ArgumentException">The title or issuer is blank, or it expires before it was issued.</exception>
     public void Update(string title, string issuer, DateTime issueDate, DateTime? expiryDate, string credentialId,
         string credentialUrl, string description)

@@ -30,6 +30,7 @@ public class Project : IAggregateRoot
         DateTime startDate, DateTime endDate, bool featured, Skills skills) =>
         new(Guid.NewGuid(), title, shortDescription, longDescription, image, startDate, endDate, featured, skills);
 
+    /// <summary>Replaces the project's details.</summary>
     /// <exception cref="ArgumentException">The title is blank or the project ends before it starts.</exception>
     public void Update(string title, string shortDescription, string longDescription, DateTime startDate,
         DateTime endDate, bool featured, Skills skills)
@@ -56,6 +57,7 @@ public class Project : IAggregateRoot
 
     public void Unfeature() => Featured = false;
 
+    /// <summary>Sets the project's image.</summary>
     /// <param name="image">The image URL, or empty for a project without an image.</param>
     public void ChangeImage(string image)
     {
