@@ -23,32 +23,27 @@ export function BlurImage({
   priority = false,
 }: BlurImageProps) {
   return (
-    <div
-      className={cn(
-        "relative overflow-hidden",
-        containerClassName
-      )}
-    >
+    <div className={cn("relative overflow-hidden", containerClassName)}>
       {/* Blurred background image */}
       <div className="absolute inset-0">
         <Image
           src={src}
           alt=""
           fill
-          className="object-cover scale-110 blur-xl opacity-60"
+          className="scale-110 object-cover opacity-60 blur-xl"
           sizes="(max-width: 768px) 100vw, 33vw"
           priority={priority}
         />
       </div>
 
       {/* Main image */}
-      <div className="relative h-full w-full flex items-center justify-center">
+      <div className="relative flex h-full w-full items-center justify-center">
         <Image
           src={src}
           alt={alt}
           width={width}
           height={height}
-          className={cn("object-contain max-h-[98%] max-w-[98%] relative z-10", className)}
+          className={cn("relative z-10 max-h-[98%] max-w-[98%] object-contain", className)}
           priority={priority}
         />
       </div>

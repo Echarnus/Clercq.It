@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -31,12 +31,7 @@ import {
 import { Pencil, Trash2, Plus, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { BlogForm } from "./BlogForm";
-import {
-  fetchAllBlogs,
-  createBlog,
-  updateBlog,
-  deleteBlog,
-} from "@/lib/api/adminApi";
+import { fetchAllBlogs, createBlog, updateBlog, deleteBlog } from "@/lib/api/adminApi";
 import type { Blog } from "@/lib/api/baseApi";
 import Image from "next/image";
 
@@ -50,7 +45,7 @@ export function BlogList() {
   const [blogToDelete, setBlogToDelete] = useState<Blog | null>(null);
   const { toast } = useToast();
 
-  const loadBlogs = async () => {
+  const loadBlogs = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await fetchAllBlogs();
@@ -64,11 +59,11 @@ export function BlogList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    loadBlogs();
-  }, []);
+    void loadBlogs();
+  }, [loadBlogs]);
 
   const handleCreate = () => {
     setSelectedBlog(null);
@@ -175,19 +170,19 @@ export function BlogList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">All Blogs ({blogs.length})</h3>
         <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Create Blog
         </Button>
       </div>
 
       {blogs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
-          <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No blogs yet</h3>
-          <p className="text-sm text-muted-foreground mb-6">
+        <div className="flex flex-col items-center justify-center rounded-lg border py-12 text-center">
+          <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-semibold">No blogs yet</h3>
+          <p className="mb-6 text-sm text-muted-foreground">
             Create your first blog post to get started
           </p>
           <Button onClick={handleCreate}>
@@ -196,7 +191,7 @@ export function BlogList() {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -211,7 +206,7 @@ export function BlogList() {
               {blogs.map((blog) => (
                 <TableRow key={blog.id}>
                   <TableCell>
-                    <div className="relative w-16 h-10 rounded overflow-hidden bg-muted">
+                    <div className="relative h-10 w-16 overflow-hidden rounded bg-muted">
                       {blog.image ? (
                         <Image
                           src={blog.image}
@@ -220,16 +215,14 @@ export function BlogList() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-green-500/20 to-teal-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-green-500/20 to-teal-500/20">
                           <FileText className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="line-clamp-2 text-sm">
-                      {blog.shortDescription}
-                    </p>
+                    <p className="line-clamp-2 text-sm">{blog.shortDescription}</p>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
@@ -250,18 +243,10 @@ export function BlogList() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(blog)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(blog)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClick(blog)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(blog)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -275,11 +260,9 @@ export function BlogList() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedBlog ? "Edit Blog" : "Create Blog"}
-            </DialogTitle>
+            <DialogTitle>{selectedBlog ? "Edit Blog" : "Create Blog"}</DialogTitle>
             <DialogDescription>
               {selectedBlog
                 ? "Update the blog post details below."
@@ -301,21 +284,16 @@ export function BlogList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the blog
-              post.
+              This action cannot be undone. This will permanently delete the blog post.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteConfirm}
+              onClick={() => void handleDeleteConfirm()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -262,7 +262,7 @@ dotnet build src/ClercqIt.Api/ClercqIt.Api.csproj
 dotnet test tests/ClercqIt.Api.Tests
 dotnet test tests/Clercq.It.Application.Tests
 dotnet test tests/Clercq.It.Domain.Tests
-cd src/ClercqIt.Web && pnpm lint && pnpm build
+cd src/ClercqIt.Web && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build
 cd infra/terraform && terraform fmt -check
 ```
 
@@ -368,6 +368,51 @@ Analyzer policy:
 The one-time formatting commit is listed in `.git-blame-ignore-revs`, so `git blame` skips it. GitHub does this automatically; locally, run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
 
 The Docker image builds from `src/` only, so these root files do not apply there. The `Test .NET API` check enforces them on every PR.
+
+### Frontend lint, format and types
+
+The Next.js app in `src/ClercqIt.Web` has three gates (issue #240). The `Test Next.js Frontend` check runs all three on every PR, and `pnpm build` fails on lint or type errors too: `next.config.mjs` no longer sets `ignoreDuringBuilds` or `ignoreBuildErrors`.
+
+| Command | Tool | Fix with |
+| --- | --- | --- |
+| `pnpm lint` | ESLint 9, `eslint.config.mjs`, zero warnings allowed | `pnpm lint:fix`, then fix the rest by hand |
+| `pnpm format:check` | Prettier, `.prettierrc.json` (2 spaces from `.editorconfig`, width 100, Tailwind class order) | `pnpm format` |
+| `pnpm typecheck` | `tsc --noEmit` | by hand |
+
+ESLint config (flat): `next/core-web-vitals`, `typescript-eslint` `recommendedTypeChecked` (type-aware), `jsx-a11y` recommended, `eslint-plugin-security` recommended, and `eslint-config-prettier` last so formatting is Prettier's job. The `e2e/` Playwright tests are linted with the app. `tests/ClercqIt.Web.Tests` is a separate package and is not linted yet.
+
+Policy:
+
+- No `any`. Type `fetch` JSON with an interface (`(await res.json()) as T`), or treat it as `unknown` and validate with zod.
+- An `eslint-disable` comment must say why after `--`, for example `// eslint-disable-next-line security/detect-object-injection -- index is a numeric slot position`.
+- Fix the code; do not loosen `eslint.config.mjs`, `.prettierrc.json` or `tsconfig.json` to get a check green.
+
+### Claude Code hooks
+
+Two hook scripts keep agents inside these gates while they edit:
+
+| Script | Event | What it does |
+| --- | --- | --- |
+| `.claude/hooks/frontend-format.sh` | `PostToolUse` on `Edit\|Write\|MultiEdit` | For a changed file in `src/ClercqIt.Web`: `prettier --write`, then `eslint --fix`, then `eslint`. Remaining ESLint errors go back to Claude (exit code 2). `.json`, `.css` and `.md` files only get Prettier. |
+| `.claude/hooks/frontend-stop-check.sh` | `Stop` | Runs Prettier and ESLint on the frontend files changed versus `main`, plus `tsc --noEmit`. Any failure blocks ending the turn, once per stop. |
+
+They are registered in `.claude/settings.json`. Agents cannot edit that file (it counts as self-modification), so the owner adds this once, next to the existing `SessionStart` entry:
+
+```json
+"PostToolUse": [
+  {
+    "matcher": "Edit|Write|MultiEdit",
+    "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-format.sh" }]
+  }
+],
+"Stop": [
+  {
+    "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-stop-check.sh" }]
+  }
+]
+```
+
+Conventions for agents are also in `.claude/rules/frontend.md`.
 
 ### Building and Running
 

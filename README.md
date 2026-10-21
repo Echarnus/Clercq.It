@@ -176,9 +176,9 @@ act -j test
 # .NET Code Analysis
 dotnet build --verbosity normal
 
-# Frontend Linting
+# Frontend lint, format and type checks
 cd src/ClercqIt.Web
-pnpm lint
+pnpm lint && pnpm format:check && pnpm typecheck
 ```
 
 ## 🏗️ Infrastructure

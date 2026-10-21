@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -31,12 +31,7 @@ import {
 import { Pencil, Trash2, Plus, FolderKanban, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProjectForm } from "./ProjectForm";
-import {
-  fetchAllProjects,
-  createProject,
-  updateProject,
-  deleteProject,
-} from "@/lib/api/adminApi";
+import { fetchAllProjects, createProject, updateProject, deleteProject } from "@/lib/api/adminApi";
 import type { Project } from "@/lib/api/baseApi";
 import Image from "next/image";
 
@@ -50,7 +45,7 @@ export function ProjectList() {
   const [projectToDelete, setProjectToDelete] = useState<Project | null>(null);
   const { toast } = useToast();
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await fetchAllProjects();
@@ -64,11 +59,11 @@ export function ProjectList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    loadProjects();
-  }, []);
+    void loadProjects();
+  }, [loadProjects]);
 
   const handleCreate = () => {
     setSelectedProject(null);
@@ -99,8 +94,7 @@ export function ProjectList() {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to delete project",
+        description: error instanceof Error ? error.message : "Failed to delete project",
         variant: "destructive",
       });
     } finally {
@@ -159,8 +153,7 @@ export function ProjectList() {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to save project",
+        description: error instanceof Error ? error.message : "Failed to save project",
         variant: "destructive",
       });
     } finally {
@@ -185,19 +178,19 @@ export function ProjectList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
+      <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">All Projects ({projects.length})</h3>
         <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Create Project
         </Button>
       </div>
 
       {projects.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
-          <FolderKanban className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No projects yet</h3>
-          <p className="text-sm text-muted-foreground mb-6">
+        <div className="flex flex-col items-center justify-center rounded-lg border py-12 text-center">
+          <FolderKanban className="mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-semibold">No projects yet</h3>
+          <p className="mb-6 text-sm text-muted-foreground">
             Add your first project to showcase your work
           </p>
           <Button onClick={handleCreate}>
@@ -206,7 +199,7 @@ export function ProjectList() {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -222,7 +215,7 @@ export function ProjectList() {
               {projects.map((project) => (
                 <TableRow key={project.id}>
                   <TableCell>
-                    <div className="relative w-16 h-10 rounded overflow-hidden bg-muted">
+                    <div className="relative h-10 w-16 overflow-hidden rounded bg-muted">
                       {project.image ? (
                         <Image
                           src={project.image}
@@ -231,7 +224,7 @@ export function ProjectList() {
                           className="object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-blue-500/20 to-purple-500/20">
                           <FolderKanban className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
@@ -240,7 +233,7 @@ export function ProjectList() {
                   <TableCell>
                     <div>
                       <p className="font-medium">{project.title}</p>
-                      <p className="text-sm text-muted-foreground line-clamp-1">
+                      <p className="line-clamp-1 text-sm text-muted-foreground">
                         {project.shortDescription}
                       </p>
                     </div>
@@ -248,11 +241,7 @@ export function ProjectList() {
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {project.skills.slice(0, 3).map((skill) => (
-                        <Badge
-                          key={skill}
-                          variant="secondary"
-                          className="text-xs"
-                        >
+                        <Badge key={skill} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
                       ))}
@@ -264,21 +253,16 @@ export function ProjectList() {
                     </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
-                    {formatDate(project.startDate)} -{" "}
-                    {formatDate(project.endDate)}
+                    {formatDate(project.startDate)} - {formatDate(project.endDate)}
                   </TableCell>
                   <TableCell>
                     {project.featured && (
-                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
                     )}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(project)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(project)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
@@ -299,11 +283,9 @@ export function ProjectList() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {selectedProject ? "Edit Project" : "Create Project"}
-            </DialogTitle>
+            <DialogTitle>{selectedProject ? "Edit Project" : "Create Project"}</DialogTitle>
             <DialogDescription>
               {selectedProject
                 ? "Update the project details below."
@@ -320,29 +302,22 @@ export function ProjectList() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              project &quot;{projectToDelete?.title}&quot;.
+              This action cannot be undone. This will permanently delete the project &quot;
+              {projectToDelete?.title}&quot;.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteConfirm}
+              onClick={() => void handleDeleteConfirm()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

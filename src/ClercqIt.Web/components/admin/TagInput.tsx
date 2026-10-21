@@ -25,11 +25,7 @@ export function TagInput({
 
   const addTag = () => {
     const trimmedValue = inputValue.trim();
-    if (
-      trimmedValue &&
-      !value.includes(trimmedValue) &&
-      value.length < maxTags
-    ) {
+    if (trimmedValue && !value.includes(trimmedValue) && value.length < maxTags) {
       onChange([...value, trimmedValue]);
       setInputValue("");
     }
@@ -51,28 +47,28 @@ export function TagInput({
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
-      <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[42px] bg-background">
+      <div className="flex min-h-[42px] flex-wrap gap-2 rounded-md border bg-background p-2">
         {value.map((tag) => (
           <Badge key={tag} variant="secondary" className="flex items-center gap-1">
             {tag}
             <button
               type="button"
               onClick={() => removeTag(tag)}
-              className="ml-1 rounded-full hover:bg-muted-foreground/20 p-0.5"
+              className="ml-1 rounded-full p-0.5 hover:bg-muted-foreground/20"
             >
               <X className="h-3 w-3" />
             </button>
           </Badge>
         ))}
         {value.length < maxTags && (
-          <div className="flex items-center gap-1 flex-1 min-w-[150px]">
+          <div className="flex min-w-[150px] flex-1 items-center gap-1">
             <Input
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder={placeholder}
-              className="border-0 shadow-none focus-visible:ring-0 p-0 h-auto"
+              className="h-auto border-0 p-0 shadow-none focus-visible:ring-0"
             />
             <Button
               type="button"
