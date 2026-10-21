@@ -1,5 +1,5 @@
-import { z } from 'zod';
-import { getApiUrl } from '@/lib/api/baseApi';
+import { z } from "zod";
+import { getApiUrl } from "@/lib/api/baseApi";
 
 // Certification schema
 export const CertificationSchema = z.object({
@@ -19,28 +19,28 @@ export type Certification = z.infer<typeof CertificationSchema>;
 export async function fetchAllCertifications(): Promise<Certification[]> {
   try {
     const response = await fetch(`${getApiUrl()}/api/certifications`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (!response.ok) {
-      console.error('Failed to fetch certifications:', response.statusText);
+      console.error("Failed to fetch certifications:", response.statusText);
       return [];
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     const validationResult = z.array(CertificationSchema).safeParse(data);
 
     if (!validationResult.success) {
-      console.error('Invalid certification data:', validationResult.error);
+      console.error("Invalid certification data:", validationResult.error);
       return [];
     }
 
     // Sort by issue date, newest first
-    return validationResult.data.sort((a, b) =>
-      new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime()
+    return validationResult.data.sort(
+      (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime(),
     );
   } catch (error) {
-    console.error('Error fetching certifications:', error);
+    console.error("Error fetching certifications:", error);
     return [];
   }
 }
@@ -48,24 +48,24 @@ export async function fetchAllCertifications(): Promise<Certification[]> {
 export async function fetchCertificationById(id: string): Promise<Certification | null> {
   try {
     const response = await fetch(`${getApiUrl()}/api/certifications/${id}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
 
     if (!response.ok) {
       return null;
     }
 
-    const data = await response.json();
+    const data: unknown = await response.json();
     const validationResult = CertificationSchema.safeParse(data);
 
     if (!validationResult.success) {
-      console.error('Invalid certification data:', validationResult.error);
+      console.error("Invalid certification data:", validationResult.error);
       return null;
     }
 
     return validationResult.data;
   } catch (error) {
-    console.error('Error fetching certification:', error);
+    console.error("Error fetching certification:", error);
     return null;
   }
 }

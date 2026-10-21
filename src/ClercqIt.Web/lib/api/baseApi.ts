@@ -1,15 +1,17 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 // Base API client configuration
 // In production, use relative URLs. In development, use the full API URL.
 // Default port 5000 matches the Aspire AppHost configuration
 const getBaseApiUrl = () => {
-  if (typeof window !== 'undefined') {
+  if (typeof window !== "undefined") {
     // Client-side: use relative URL in production
-    return process.env.NODE_ENV === 'production' ? '' : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001');
+    return process.env.NODE_ENV === "production"
+      ? ""
+      : process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   }
   // Server-side: always use full URL for SSR
-  return process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
 };
 
 export const getApiUrl = () => getBaseApiUrl();
@@ -50,27 +52,27 @@ export type Blog = z.infer<typeof BlogSchema>;
 export async function fetchProjects(endpoint: string): Promise<Project[]> {
   try {
     const response = await fetch(`${getProjectsBaseUrl()}${endpoint}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
-    
+
     if (!response.ok) {
-      console.error('Failed to fetch projects:', response.statusText);
+      console.error("Failed to fetch projects:", response.statusText);
       return [];
     }
-    
-    const data = await response.json();
-    
+
+    const data: unknown = await response.json();
+
     // Validate the response data
     const validationResult = z.array(ProjectSchema).safeParse(data);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid project data:', validationResult.error);
+      console.error("Invalid project data:", validationResult.error);
       return [];
     }
-    
+
     return validationResult.data;
   } catch (error) {
-    console.error('Error fetching projects:', error);
+    console.error("Error fetching projects:", error);
     return [];
   }
 }
@@ -79,27 +81,27 @@ export async function fetchProjects(endpoint: string): Promise<Project[]> {
 export async function fetchProject(endpoint: string): Promise<Project | null> {
   try {
     const response = await fetch(`${getProjectsBaseUrl()}${endpoint}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
-    
+
     if (!response.ok) {
-      console.error('Failed to fetch project:', response.statusText);
+      console.error("Failed to fetch project:", response.statusText);
       return null;
     }
-    
-    const data = await response.json();
-    
+
+    const data: unknown = await response.json();
+
     // Validate the response data
     const validationResult = ProjectSchema.safeParse(data);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid project data:', validationResult.error);
+      console.error("Invalid project data:", validationResult.error);
       return null;
     }
-    
+
     return validationResult.data;
   } catch (error) {
-    console.error('Error fetching project:', error);
+    console.error("Error fetching project:", error);
     return null;
   }
 }
@@ -108,27 +110,27 @@ export async function fetchProject(endpoint: string): Promise<Project | null> {
 export async function fetchBlogs(endpoint: string): Promise<Blog[]> {
   try {
     const response = await fetch(`${getBlogsBaseUrl()}${endpoint}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
-    
+
     if (!response.ok) {
-      console.error('Failed to fetch blogs:', response.statusText);
+      console.error("Failed to fetch blogs:", response.statusText);
       return [];
     }
-    
-    const data = await response.json();
-    
+
+    const data: unknown = await response.json();
+
     // Validate the response data
     const validationResult = z.array(BlogSchema).safeParse(data);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid blog data:', validationResult.error);
+      console.error("Invalid blog data:", validationResult.error);
       return [];
     }
-    
+
     return validationResult.data;
   } catch (error) {
-    console.error('Error fetching blogs:', error);
+    console.error("Error fetching blogs:", error);
     return [];
   }
 }
@@ -137,27 +139,27 @@ export async function fetchBlogs(endpoint: string): Promise<Blog[]> {
 export async function fetchBlog(endpoint: string): Promise<Blog | null> {
   try {
     const response = await fetch(`${getBlogsBaseUrl()}${endpoint}`, {
-      cache: 'no-store',
+      cache: "no-store",
     });
-    
+
     if (!response.ok) {
-      console.error('Failed to fetch blog:', response.statusText);
+      console.error("Failed to fetch blog:", response.statusText);
       return null;
     }
-    
-    const data = await response.json();
-    
+
+    const data: unknown = await response.json();
+
     // Validate the response data
     const validationResult = BlogSchema.safeParse(data);
-    
+
     if (!validationResult.success) {
-      console.error('Invalid blog data:', validationResult.error);
+      console.error("Invalid blog data:", validationResult.error);
       return null;
     }
-    
+
     return validationResult.data;
   } catch (error) {
-    console.error('Error fetching blog:', error);
+    console.error("Error fetching blog:", error);
     return null;
   }
 }

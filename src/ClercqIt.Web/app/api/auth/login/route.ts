@@ -1,23 +1,34 @@
 import { NextRequest, NextResponse } from "next/server";
 
+interface LoginRequest {
+  username?: string;
+  password?: string;
+  totpCode?: string;
+}
+
+interface BackendLoginResponse {
+  requiresMfa?: boolean;
+  message?: string;
+  token?: string;
+  user?: unknown;
+  expiresAt?: string;
+}
+
 // Cloud IAM authentication endpoint
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (await request.json()) as LoginRequest;
     const { username, password, totpCode } = body;
 
     // Validate input
     if (!username || !password) {
-      return NextResponse.json(
-        { message: "Username and password are required" },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Username and password are required" }, { status: 400 });
     }
 
     // Call the backend authentication endpoint
     // Default port 5000 matches the Aspire AppHost configuration
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    
+
     const response = await fetch(`${apiUrl}/api/auth/login`, {
       method: "POST",
       headers: {
@@ -30,28 +41,28 @@ export async function POST(request: NextRequest) {
       }),
     });
 
-    const data = await response.json().catch(() => ({
+    const data = (await response.json().catch(() => ({
       message: "Invalid response from server",
-    }));
+    }))) as BackendLoginResponse;
 
     // Check if MFA is required (status 428)
     if (response.status === 428) {
       return NextResponse.json(
-        { 
-          requiresMfa: data.requiresMfa || true, 
-          message: data.message || "MFA required" 
+        {
+          requiresMfa: data.requiresMfa || true,
+          message: data.message || "MFA required",
         },
-        { status: 428 }
+        { status: 428 },
       );
     }
 
     if (!response.ok) {
       return NextResponse.json(
         { message: data.message || "Authentication failed" },
-        { status: response.status }
+        { status: response.status },
       );
     }
-    
+
     return NextResponse.json({
       token: data.token,
       user: data.user,
@@ -61,7 +72,7 @@ export async function POST(request: NextRequest) {
     console.error("Login error:", error);
     return NextResponse.json(
       { message: "An error occurred during authentication" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

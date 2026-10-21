@@ -59,63 +59,63 @@ export function Navigation() {
       : "text-slate-600 hover:text-slate-900 transition-colors hover:border-b-2 hover:border-slate-600 dark:text-slate-400 dark:hover:text-white dark:hover:border-slate-400";
   };
 
-  const mobileMenu = isHydrated ? createPortal(
-    <>
-      {/* Mobile Sidebar Overlay */}
-      <div
-        className={`fixed inset-0 bg-black/60 z-[9998] md:hidden transition-opacity duration-300 ${
-          isMobileMenuOpen ? "opacity-100" : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsMobileMenuOpen(false)}
-      />
-
-      {/* Mobile Sidebar */}
-      <div
-        className={`fixed top-0 right-0 bottom-0 w-72 z-[9999] transform transition-transform duration-300 ease-in-out md:hidden ${
-          isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-        style={{
-          backgroundColor: "#0f172a",
-          boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.5)"
-        }}
-      >
-        <div
-          className="flex justify-between items-center p-4 border-b border-slate-700"
-          style={{ backgroundColor: "#1e293b" }}
-        >
-          <span className="text-white font-semibold">Menu</span>
-          <button
+  const mobileMenu = isHydrated
+    ? createPortal(
+        <>
+          {/* Mobile Sidebar Overlay */}
+          <div
+            className={`fixed inset-0 z-[9998] bg-black/60 transition-opacity duration-300 md:hidden ${
+              isMobileMenuOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
             onClick={() => setIsMobileMenuOpen(false)}
-            className="p-2 text-slate-400 hover:text-white"
-            aria-label="Close menu"
+            aria-hidden="true"
+          />
+
+          {/* Mobile Sidebar */}
+          <div
+            className={`fixed bottom-0 right-0 top-0 z-[9999] w-72 transform transition-transform duration-300 ease-in-out md:hidden ${
+              isMobileMenuOpen ? "translate-x-0" : "translate-x-full"
+            }`}
+            style={{
+              backgroundColor: "#0f172a",
+              boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.5)",
+            }}
           >
-            <X className="w-6 h-6" />
-          </button>
-        </div>
-        <nav
-          className="p-4 space-y-2 h-full"
-          style={{ backgroundColor: "#0f172a" }}
-        >
-          {navItems.map((item) => (
-            <Link
-              key={item.key}
-              href={item.href}
-              className={getLinkClasses(item.key, true)}
-              onClick={() => setIsMobileMenuOpen(false)}
+            <div
+              className="flex items-center justify-between border-b border-slate-700 p-4"
+              style={{ backgroundColor: "#1e293b" }}
             >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </div>
-    </>,
-    document.body
-  ) : null;
+              <span className="font-semibold text-white">Menu</span>
+              <button
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="p-2 text-slate-400 hover:text-white"
+                aria-label="Close menu"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <nav className="h-full space-y-2 p-4" style={{ backgroundColor: "#0f172a" }}>
+              {navItems.map((item) => (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className={getLinkClasses(item.key, true)}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </>,
+        document.body,
+      )
+    : null;
 
   return (
     <>
       {/* Desktop Navigation */}
-      <nav className="hidden md:flex gap-6">
+      <nav className="hidden gap-6 md:flex">
         {navItems.map((item) => (
           <Link key={item.key} href={item.href} className={getLinkClasses(item.key)}>
             {item.label}
@@ -125,11 +125,11 @@ export function Navigation() {
 
       {/* Mobile Menu Button */}
       <button
-        className="md:hidden p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+        className="p-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white md:hidden"
         onClick={() => setIsMobileMenuOpen(true)}
         aria-label="Open menu"
       >
-        <Menu className="w-6 h-6" />
+        <Menu className="h-6 w-6" />
       </button>
 
       {mobileMenu}

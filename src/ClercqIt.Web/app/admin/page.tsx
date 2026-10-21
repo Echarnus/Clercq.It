@@ -15,11 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, LogIn, Shield } from "lucide-react";
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from "@/components/ui/input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 
 function AdminLoginForm() {
   const [username, setUsername] = useState("");
@@ -53,7 +49,7 @@ function AdminLoginForm() {
         }),
       });
 
-      const data = await response.json();
+      const data = (await response.json()) as LoginResponse;
 
       // Check if MFA is required
       if (response.status === 428 && data.requiresMfa) {
@@ -66,13 +62,13 @@ function AdminLoginForm() {
       if (!response.ok) {
         throw new Error(data.message || "Authentication failed");
       }
-      
+
       // Store the JWT token and user data
       localStorage.setItem("admin_token", data.token);
       if (data.user) {
         localStorage.setItem("admin_user", JSON.stringify(data.user));
       }
-      
+
       // Redirect to dashboard
       router.push("/admin/dashboard");
     } catch (err) {
@@ -83,20 +79,20 @@ function AdminLoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-800">
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="space-y-1">
-          <div className="flex items-center justify-center mb-4">
+          <div className="mb-4 flex items-center justify-center">
             <div className="rounded-full bg-primary/10 p-3">
               <Lock className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-center text-2xl">Admin Login</CardTitle>
           <CardDescription className="text-center">
             Sign in to access the admin dashboard
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleLogin}>
+        <form onSubmit={(e) => void handleLogin(e)}>
           <CardContent className="space-y-4">
             {(error || oauthError) && (
               <Alert variant="destructive">
@@ -155,11 +151,7 @@ function AdminLoginForm() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-            >
+            <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? (
                 "Signing in..."
               ) : (
@@ -176,17 +168,26 @@ function AdminLoginForm() {
   );
 }
 
+interface LoginResponse {
+  requiresMfa?: boolean;
+  message?: string;
+  token: string;
+  user?: unknown;
+}
+
 export default function AdminLoginPage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-        <Card className="w-full max-w-md shadow-xl">
-          <CardContent className="flex justify-center py-8">
-            <div className="text-center">Loading...</div>
-          </CardContent>
-        </Card>
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-800">
+          <Card className="w-full max-w-md shadow-xl">
+            <CardContent className="flex justify-center py-8">
+              <div className="text-center">Loading...</div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
       <AdminLoginForm />
     </Suspense>
   );

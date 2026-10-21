@@ -20,14 +20,8 @@ import { Loader2 } from "lucide-react";
 import type { Certification } from "@/lib/api/adminApi";
 
 const certificationFormSchema = z.object({
-  title: z
-    .string()
-    .min(1, "Title is required")
-    .max(200, "Title must not exceed 200 characters"),
-  issuer: z
-    .string()
-    .min(1, "Issuer is required")
-    .max(200, "Issuer must not exceed 200 characters"),
+  title: z.string().min(1, "Title is required").max(200, "Title must not exceed 200 characters"),
+  issuer: z.string().min(1, "Issuer is required").max(200, "Issuer must not exceed 200 characters"),
   issueDate: z.string().min(1, "Issue date is required"),
   expiryDate: z.string().optional(),
   credentialId: z.string().max(200, "Credential ID must not exceed 200 characters").optional(),
@@ -84,7 +78,7 @@ export function CertificationForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)} className="space-y-6">
         <FormField
           control={form.control}
           name="title"
@@ -95,9 +89,7 @@ export function CertificationForm({
                 <Input placeholder="Certification title..." {...field} />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/200 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/200 characters</p>
             </FormItem>
           )}
         />
@@ -112,9 +104,7 @@ export function CertificationForm({
                 <Input placeholder="Issuing organization..." {...field} />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/200 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/200 characters</p>
             </FormItem>
           )}
         />
@@ -196,9 +186,7 @@ export function CertificationForm({
                 />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/2,000 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/2,000 characters</p>
             </FormItem>
           )}
         />

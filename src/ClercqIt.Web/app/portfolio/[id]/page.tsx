@@ -19,9 +19,9 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'long',
-      year: 'numeric',
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
     });
   };
 
@@ -31,7 +31,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       <section className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           <Button asChild variant="ghost" className="mb-8">
             <Link href="/portfolio">
               <ArrowLeft className="mr-2 h-4 w-4" />
@@ -41,25 +41,23 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
           {/* Project Header */}
           <div className="mb-8">
-            <h1 className="text-4xl font-bold text-slate-900 mb-4 dark:text-white">
+            <h1 className="mb-4 text-4xl font-bold text-slate-900 dark:text-white">
               {project.title}
             </h1>
 
-            <div className="flex items-center gap-4 text-slate-600 dark:text-slate-400 mb-6">
+            <div className="mb-6 flex items-center gap-4 text-slate-600 dark:text-slate-400">
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
                 <span>
                   {formatDate(project.startDate)} - {formatDate(project.endDate)}
                 </span>
               </div>
-              {project.featured && (
-                <Badge variant="default">Featured</Badge>
-              )}
+              {project.featured && <Badge variant="default">Featured</Badge>}
             </div>
           </div>
 
           {/* Project Content with Image */}
-          <div className="bg-white/80 backdrop-blur-sm dark:bg-slate-800/80 rounded-lg shadow-lg p-8">
+          <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-sm dark:bg-slate-800/80">
             <BlurImage
               src={project.image || "/placeholder.svg"}
               alt={project.title}
@@ -68,7 +66,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
               containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md flex-shrink-0"
             />
 
-            <div className="text-slate-600 dark:text-slate-400 leading-relaxed">
+            <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               <p className="mb-4 text-lg">{project.shortDescription}</p>
               <div className="prose dark:prose-invert max-w-none">
                 <p className="whitespace-pre-line">{project.longDescription}</p>
