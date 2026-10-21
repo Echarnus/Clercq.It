@@ -78,4 +78,56 @@ public class TagsTests
         // Assert
         tags.Values.Should().BeEquivalentTo(tagValues);
     }
+
+    [Fact]
+    public void ImplicitConversion_FromStringArray_ShouldWrapValues()
+    {
+        // Arrange
+        string[] values = ["Development", "Testing"];
+
+        // Act
+        Tags tags = values;
+
+        // Assert
+        tags.Values.Should().Equal("Development", "Testing");
+    }
+
+    [Fact]
+    public void ImplicitConversion_ToStringArray_ShouldReturnValues()
+    {
+        // Arrange
+        var tags = new Tags(["Development", "Testing"]);
+
+        // Act
+        string[] values = tags;
+
+        // Assert
+        values.Should().Equal("Development", "Testing");
+    }
+
+    [Fact]
+    public void ToString_WithValues_ShouldJoinWithComma()
+    {
+        // Arrange
+        var tags = new Tags(["Development", "Testing"]);
+
+        // Act
+        var text = tags.ToString();
+
+        // Assert
+        text.Should().Be("Development, Testing");
+    }
+
+    [Fact]
+    public void ToString_WithNoValues_ShouldBeEmpty()
+    {
+        // Arrange
+        var tags = new Tags([]);
+
+        // Act
+        var text = tags.ToString();
+
+        // Assert
+        text.Should().BeEmpty();
+    }
 }

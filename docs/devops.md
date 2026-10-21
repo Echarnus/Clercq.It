@@ -552,6 +552,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
 - **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
 - **Security updates**: grouping applies to version updates only; Dependabot security updates still arrive as one PR per dependency.
+- **Ignored versions**: `FluentAssertions` `>= 8` is ignored for NuGet, because version 8 has a commercial licence and the tests stay on 7.x (#290). Patch and minor 7.x updates still arrive in the grouped PR. To add or drop an ignore rule, edit the `ignore` list of that ecosystem in `.github/dependabot.yml` and this line together.
 
 ## Best Practices
 

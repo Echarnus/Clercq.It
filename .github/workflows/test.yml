@@ -60,6 +60,24 @@ jobs:
           echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
           echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY
 
+      # Fails below tests/coverage-thresholds.json (issue #242, docs/testing.md#coverage)
+      - name: Coverage gate
+        run: |
+          dotnet tool restore
+          dotnet tool run reportgenerator \
+            -reports:"./coverage/**/coverage.cobertura.xml" \
+            -targetdir:./coverage/report \
+            -reporttypes:"JsonSummary;Html"
+          python3 .github/scripts/check_coverage.py ./coverage/report/Summary.json tests/coverage-thresholds.json
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: ./coverage/report
+          if-no-files-found: ignore
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
@@ -185,5 +203,5 @@ jobs:
       - name: PR conventions check
         run: bash .github/scripts/tests/check-pr-conventions.test.sh
 
-      - name: Repository audit
+      - name: Repository audit and coverage gate scripts
         run: python3 -m unittest discover -s .github/scripts/tests -v
