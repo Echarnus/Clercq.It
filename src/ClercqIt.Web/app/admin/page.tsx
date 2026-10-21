@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Card,
   CardContent,
@@ -14,66 +12,24 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Lock, LogIn, Shield } from "lucide-react";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Lock, LogIn } from "lucide-react";
+import { signIn } from "@/lib/auth";
 
+// Admin sign-in (issue #257): Keycloak (Cloud IAM in production) shows the login
+// page, including MFA. This page never sees a password.
 function AdminLoginForm() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [totpCode, setTotpCode] = useState("");
-  const [showMfa, setShowMfa] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const redirectError = searchParams.get("error");
 
-  // Check for error from OAuth redirect
-  const oauthError = searchParams.get("error");
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSignIn = async () => {
     setError("");
     setIsLoading(true);
-
     try {
-      // Call authentication endpoint
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          username,
-          password,
-          totpCode: showMfa ? totpCode : undefined,
-        }),
-      });
-
-      const data = (await response.json()) as LoginResponse;
-
-      // Check if MFA is required
-      if (response.status === 428 && data.requiresMfa) {
-        setShowMfa(true);
-        setError(data.message || "Please enter your MFA code");
-        setIsLoading(false);
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error(data.message || "Authentication failed");
-      }
-
-      // Store the JWT token and user data
-      localStorage.setItem("admin_token", data.token);
-      if (data.user) {
-        localStorage.setItem("admin_user", JSON.stringify(data.user));
-      }
-
-      // Redirect to dashboard
-      router.push("/admin/dashboard");
+      await signIn("/admin/dashboard");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred");
-    } finally {
+      setError(err instanceof Error ? err.message : "Sign-in is not available right now");
       setIsLoading(false);
     }
   };
@@ -92,87 +48,36 @@ function AdminLoginForm() {
             Sign in to access the admin dashboard
           </CardDescription>
         </CardHeader>
-        <form onSubmit={(e) => void handleLogin(e)}>
-          <CardContent className="space-y-4">
-            {(error || oauthError) && (
-              <Alert variant="destructive">
-                <AlertDescription>{error || oauthError}</AlertDescription>
-              </Alert>
+        <CardContent className="space-y-4">
+          {(error || redirectError) && (
+            <Alert variant="destructive">
+              <AlertDescription>{error || redirectError}</AlertDescription>
+            </Alert>
+          )}
+          <p className="text-center text-sm text-muted-foreground">
+            You will be sent to the Clercq.It sign-in page and brought back here.
+          </p>
+        </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <Button
+            type="button"
+            className="w-full"
+            disabled={isLoading}
+            onClick={() => void handleSignIn()}
+          >
+            {isLoading ? (
+              "Redirecting..."
+            ) : (
+              <>
+                <LogIn className="mr-2 h-4 w-4" />
+                Sign In
+              </>
             )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                disabled={isLoading}
-              />
-            </div>
-            {showMfa && (
-              <div className="space-y-2">
-                <Label htmlFor="totpCode" className="flex items-center gap-2">
-                  <Shield className="h-4 w-4" />
-                  MFA Code (TOTP)
-                </Label>
-                <InputOTP
-                  maxLength={6}
-                  value={totpCode}
-                  onChange={(value) => setTotpCode(value)}
-                  disabled={isLoading}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-                <p className="text-xs text-muted-foreground">
-                  Enter the 6-digit code from your authenticator app
-                </p>
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isLoading}>
-              {isLoading ? (
-                "Signing in..."
-              ) : (
-                <>
-                  <LogIn className="mr-2 h-4 w-4" />
-                  Sign In
-                </>
-              )}
-            </Button>
-          </CardFooter>
-        </form>
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
-}
-
-interface LoginResponse {
-  requiresMfa?: boolean;
-  message?: string;
-  token: string;
-  user?: unknown;
 }
 
 export default function AdminLoginPage() {

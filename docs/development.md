@@ -114,19 +114,14 @@ The realm includes the following test users for local development:
 
 #### Testing Authentication
 
-Log in via the API:
+Open http://localhost:3000/admin and choose **Sign In**. The app sends you to the local Keycloak login page (authorization code flow with PKCE, issue #257); sign in as one of the users above and Keycloak sends you back to the dashboard. The `test` user signs in but has no roles, useful for testing "no access" scenarios.
+
+No endpoint accepts a password. To get a token for API calls by hand, use the local-only `clercqit-tests` client, which still allows the password grant:
 
 ```bash
-POST http://localhost:5001/api/auth/login
-Content-Type: application/json
-
-{
-  "username": "admin",
-  "password": "admin"
-}
+curl -s -d grant_type=password -d client_id=clercqit-tests -d username=admin -d password=admin \
+  http://localhost:8080/realms/clercqit/protocol/openid-connect/token
 ```
-
-The response contains a JWT with the user's roles. The `test` user authenticates successfully but has no roles, useful for testing "no access" scenarios.
 
 For production authentication configuration, see the [Cloud IAM documentation](./ciam.md).
 

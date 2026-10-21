@@ -56,15 +56,14 @@
     {
       "clientId": "clercqit-web",
       "name": "Clercq.It Web Frontend",
-      "description": "Next.js frontend for Clercq.It",
+      "description": "Next.js frontend for Clercq.It: admin sign-in with the authorization code flow and PKCE (issue #257)",
       "enabled": true,
       "clientAuthenticatorType": "client-secret",
-      "secret": "clercqit-web-secret-local",
       "publicClient": true,
       "bearerOnly": false,
       "standardFlowEnabled": true,
       "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
+      "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
       "authorizationServicesEnabled": false,
       "protocol": "openid-connect",
@@ -77,6 +76,41 @@
         "http://localhost:3000",
         "http://localhost:5000"
       ],
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "roles",
+        "profile",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:5000/*"
+      }
+    },
+    {
+      "clientId": "clercqit-tests",
+      "name": "Clercq.It API tests",
+      "description": "Local only: lets the API integration tests get tokens with the password grant. Never create this client in Cloud IAM.",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "publicClient": true,
+      "bearerOnly": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": true,
+      "serviceAccountsEnabled": false,
+      "authorizationServicesEnabled": false,
+      "protocol": "openid-connect",
+      "fullScopeAllowed": true,
+      "redirectUris": [],
+      "webOrigins": [],
       "defaultClientScopes": [
         "web-origins",
         "acr",

@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { getAccessToken } from "../auth";
 import { getApiUrl, BlogSchema, ProjectSchema, type Blog, type Project } from "./baseApi";
 
 // Certification schema
@@ -16,15 +17,10 @@ export const CertificationSchema = z.object({
 
 export type Certification = z.infer<typeof CertificationSchema>;
 
-// Get authentication token from localStorage
-function getAuthToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("admin_token");
-}
-
-// Authenticated fetch wrapper
+// Authenticated fetch wrapper: the access token comes from the in-memory
+// sign-in session (lib/auth.ts), never from localStorage.
 async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
-  const token = getAuthToken();
+  const token = await getAccessToken();
   if (!token) {
     throw new Error("Not authenticated");
   }

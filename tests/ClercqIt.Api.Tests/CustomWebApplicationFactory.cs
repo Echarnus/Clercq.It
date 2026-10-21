@@ -31,6 +31,8 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
 {
     public const string Realm = "clercqit";
     public const string WebClientId = "clercqit-web";
+    // Local-only client with the password grant, so tests can sign in without a browser (#257).
+    public const string TestClientId = "clercqit-tests";
     public const string FakeImageUrl = "https://test-storage.example.com/test-image.png";
 
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
@@ -109,7 +111,7 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
             new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["grant_type"] = "password",
-                ["client_id"] = WebClientId,
+                ["client_id"] = TestClientId,
                 ["username"] = username,
                 ["password"] = username,
             }));

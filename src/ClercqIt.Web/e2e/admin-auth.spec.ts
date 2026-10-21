@@ -1,99 +1,50 @@
 import { test, expect } from "@playwright/test";
+import { signIn, signInAsAdmin } from "./auth";
 
 test.describe("Admin Authentication", () => {
-  test.beforeEach(async ({ page }) => {
-    // Clear localStorage before each test
+  test("should display the sign-in page without a password field", async ({ page }) => {
     await page.goto("/admin");
-    await page.evaluate(() => {
-      localStorage.removeItem("admin_token");
-      localStorage.removeItem("admin_user");
+
+    await expect(page.getByText("Admin Login")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign In" })).toBeVisible();
+    await expect(page.locator("input[type=password]")).toHaveCount(0);
+  });
+
+  test("should show the Keycloak error with invalid credentials", async ({ page }) => {
+    await signIn(page, "wronguser", "wrongpassword");
+
+    await expect(page.locator("#input-error, .kc-feedback-text, [id*=error]").first()).toBeVisible({
+      timeout: 10000,
     });
   });
 
-  test("should display login page", async ({ page }) => {
-    await page.goto("/admin");
-
-    // Check that login form is displayed - use text content matching
-    await expect(page.getByText("Admin Login")).toBeVisible();
-    await expect(page.locator("input#username")).toBeVisible();
-    await expect(page.locator("input#password")).toBeVisible();
-    await expect(page.locator('button[type="submit"]')).toBeVisible();
+  test("should sign in through Keycloak", async ({ page }) => {
+    await signInAsAdmin(page);
   });
 
-  test("should show error with invalid credentials", async ({ page }) => {
-    await page.goto("/admin");
+  test("should keep the session after a reload", async ({ page }) => {
+    await signInAsAdmin(page);
 
-    // Fill in invalid credentials
-    await page.fill("input#username", "wronguser");
-    await page.fill("input#password", "wrongpassword");
-
-    // Click sign in
-    await page.click('button[type="submit"]');
-
-    // Wait for error message
-    await expect(
-      page.locator('[role="alert"], .text-destructive, [class*="AlertDescription"]'),
-    ).toBeVisible({ timeout: 10000 });
-  });
-
-  test("should login with valid credentials", async ({ page }) => {
-    await page.goto("/admin");
-
-    // Fill in valid credentials
-    await page.fill("input#username", "admin");
-    await page.fill("input#password", "admin123");
-
-    // Click sign in
-    await page.click('button[type="submit"]');
-
-    // Wait for redirect to dashboard
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-
-    // Verify dashboard is displayed
-    await expect(page.locator("text=Clercq.It Admin")).toBeVisible();
-  });
-
-  test("should persist session after login", async ({ page }) => {
-    // First login
-    await page.goto("/admin");
-    await page.fill("input#username", "admin");
-    await page.fill("input#password", "admin123");
-    await page.click('button[type="submit"]');
-
-    // Wait for dashboard
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-
-    // Reload page
     await page.reload();
 
-    // Should still be on dashboard
+    // Tokens are in memory only; the Keycloak session signs in again without a prompt.
+    await page.waitForURL("**/admin/dashboard", { timeout: 20000 });
     await expect(page.locator("text=Clercq.It Admin")).toBeVisible();
   });
 
   test("should logout successfully", async ({ page }) => {
-    // Login first
-    await page.goto("/admin");
-    await page.fill("input#username", "admin");
-    await page.fill("input#password", "admin123");
-    await page.click('button[type="submit"]');
+    await signInAsAdmin(page);
 
-    // Wait for dashboard
-    await page.waitForURL("**/admin/dashboard", { timeout: 15000 });
-
-    // Click logout button
     await page.click('button:has-text("Logout")');
 
-    // Should redirect to login page
     await page.waitForURL("**/admin", { timeout: 10000 });
     await expect(page.getByText("Admin Login")).toBeVisible();
   });
 
-  test("should redirect unauthenticated users to login", async ({ page }) => {
-    // Try to access dashboard directly
+  test("should send unauthenticated users to the Keycloak login", async ({ page }) => {
     await page.goto("/admin/dashboard");
 
-    // Should redirect to login
-    await page.waitForURL("**/admin", { timeout: 10000 });
+    await page.waitForURL(/\/realms\/clercqit\/protocol\/openid-connect\/auth/, { timeout: 10000 });
     await expect(page.locator("input#username")).toBeVisible();
   });
 });

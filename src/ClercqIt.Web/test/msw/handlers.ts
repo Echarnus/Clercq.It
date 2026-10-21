@@ -19,4 +19,10 @@ export const handlers = [
       ? HttpResponse.json(certification)
       : new HttpResponse(null, { status: 404 }),
   ),
+  http.get(`${API}/api/auth/config`, () =>
+    HttpResponse.json({
+      authority: "http://localhost:8080/realms/clercqit",
+      clientId: "clercqit-web",
+    }),
+  ),
 ];

@@ -10,6 +10,7 @@ import { BlogList } from "@/components/admin/BlogList";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { CertificationList } from "@/components/admin/CertificationList";
 import { fetchAllBlogs, fetchAllProjects, fetchAllCertifications } from "@/lib/api/adminApi";
+import { claimsOf, getUser, signIn, signOut } from "@/lib/auth";
 
 interface UserRoles {
   hasAdminView: boolean;
@@ -52,39 +53,37 @@ export default function AdminDashboard() {
   }, []);
 
   useEffect(() => {
-    // Check if user is authenticated
-    const token = localStorage.getItem("admin_token");
-    const userDataStr = localStorage.getItem("admin_user");
-
-    if (!token) {
-      router.push("/admin");
-    } else {
-      setIsAuthenticated(true);
-
-      // Parse user roles from stored user data
-      if (userDataStr) {
-        try {
-          const userData = JSON.parse(userDataStr) as { username?: string; roles?: string[] };
-          setUsername(userData.username || "");
-
-          const roles = userData.roles || [];
-          setUserRoles({
-            hasAdminView: roles.includes("Admin.View"),
-            hasBlogsContributor: roles.includes("Blogs.Contributor"),
-            hasProjectsContributor: roles.includes("Projects.Contributor"),
-            hasCertificationsContributor: roles.includes("Certifications.Contributor"),
-          });
-        } catch (e) {
-          console.error("Failed to parse user data:", e);
-        }
+    // Tokens live in memory (lib/auth.ts). Without a session, go through the
+    // Keycloak login; while the Keycloak session lasts that is a quick redirect.
+    let cancelled = false;
+    const load = async () => {
+      const user = await getUser();
+      if (cancelled) return;
+      if (!user) {
+        await signIn("/admin/dashboard");
+        return;
       }
-    }
+      const { username, roles } = claimsOf(user);
+      setUsername(username);
+      setUserRoles({
+        hasAdminView: roles.includes("Admin.View"),
+        hasBlogsContributor: roles.includes("Blogs.Contributor"),
+        hasProjectsContributor: roles.includes("Projects.Contributor"),
+        hasCertificationsContributor: roles.includes("Certifications.Contributor"),
+      });
+      setIsAuthenticated(true);
+    };
+    load().catch((error: unknown) => {
+      console.error("Sign-in failed:", error);
+      router.push(`/admin?error=${encodeURIComponent("Sign-in is not available right now")}`);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [router]);
 
   const handleLogout = () => {
-    localStorage.removeItem("admin_token");
-    localStorage.removeItem("admin_user");
-    router.push("/admin");
+    void signOut();
   };
 
   if (!isAuthenticated) {

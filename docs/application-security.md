@@ -58,10 +58,11 @@ Implements multi-tier rate limiting to prevent DDoS attacks:
 - **30 requests per minute** - Standard API calls
 - Applied to: Images, Projects, Blogs, Certifications endpoints
 
-#### Authentication Endpoints Rate Limit
-- **10 requests per minute** - Stricter limit for sensitive operations
-- Applied to: `POST /api/auth/login`, the only authentication endpoint
-- Prevents brute force attacks
+#### Admin sign-in (authorization code + PKCE)
+- The admin UI signs in with the OAuth 2.1 authorization code flow and PKCE (S256) against Keycloak, using `oidc-client-ts` (`src/ClercqIt.Web/lib/auth.ts`, issue #257). Keycloak's own login page handles passwords, MFA, brute-force protection and required actions.
+- No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id.
+- Tokens stay in memory (never `localStorage`); only the PKCE verifier and state sit in `sessionStorage` during the redirect. The return address after sign-in must be an `/admin` path.
+- The CSP `connect-src` allows `https://*.cloud-iam.com`, so the browser can call Keycloak's token endpoint.
 
 #### Closed Registration
 - There is no self-registration. The API has no register or social-login endpoints, the Next.js app has no `/admin/register` page, and the `clercqit` realm has `registrationAllowed: false`.
@@ -371,9 +372,6 @@ Monitor these metrics:
 ```bash
 # Test API rate limit (should get 429 after 30 requests)
 for i in {1..35}; do curl -w "\n%{http_code}\n" http://localhost/api/projects; done
-
-# Test auth rate limit (should get 429 after 10 requests)
-for i in {1..15}; do curl -X POST -w "\n%{http_code}\n" http://localhost/api/auth/login; done
 ```
 
 ### Test Security Headers

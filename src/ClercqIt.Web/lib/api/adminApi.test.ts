@@ -2,6 +2,7 @@ import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API, blog, certification, project } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
+import { getAccessToken } from "../auth";
 import {
   createBlog,
   createCertification,
@@ -19,6 +20,9 @@ import {
   updateCertification,
   updateProject,
 } from "./adminApi";
+
+// The token comes from the in-memory sign-in session; lib/auth.test.ts covers that module.
+vi.mock("../auth", () => ({ getAccessToken: vi.fn(() => Promise.resolve(null)) }));
 
 const image = new File(["png"], "header.png", { type: "image/png" });
 
@@ -79,6 +83,10 @@ describe("public reads", () => {
 });
 
 describe("writes without a token", () => {
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockResolvedValue(null);
+  });
+
   it("throw before calling the API", async () => {
     await expect(deleteBlog(blog.id)).rejects.toThrow("Not authenticated");
     await expect(deleteProject(project.id)).rejects.toThrow("Not authenticated");
@@ -87,7 +95,9 @@ describe("writes without a token", () => {
 });
 
 describe("writes with a token", () => {
-  beforeEach(() => localStorage.setItem("admin_token", "token-123"));
+  beforeEach(() => {
+    vi.mocked(getAccessToken).mockResolvedValue("token-123");
+  });
 
   it("create, update and delete blogs as multipart with a bearer token", async () => {
     const calls = captureWrites("/api/blogs", blog);
