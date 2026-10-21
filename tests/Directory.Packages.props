@@ -1,0 +1,4 @@
+<Project>
+  <!-- Test projects use the same central package versions as src/ (issue #288). -->
+  <Import Project="$(MSBuildThisFileDirectory)..\src\Directory.Packages.props" />
+</Project>

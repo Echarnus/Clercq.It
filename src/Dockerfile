@@ -16,6 +16,7 @@ ENV DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
 # Copy nuget config first
 COPY nuget.config .
+COPY Directory.Packages.props .
 
 # Copy project files and restore dependencies
 COPY Clercq.It.Domain/Clercq.It.Domain.csproj Clercq.It.Domain/
