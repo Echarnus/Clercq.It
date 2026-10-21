@@ -78,4 +78,56 @@ public class SkillsTests
         // Assert
         skills.Values.Should().BeEquivalentTo(skillValues);
     }
+
+    [Fact]
+    public void ImplicitConversion_FromStringArray_ShouldWrapValues()
+    {
+        // Arrange
+        string[] values = ["C#", "Azure"];
+
+        // Act
+        Skills skills = values;
+
+        // Assert
+        skills.Values.Should().Equal("C#", "Azure");
+    }
+
+    [Fact]
+    public void ImplicitConversion_ToStringArray_ShouldReturnValues()
+    {
+        // Arrange
+        var skills = new Skills(["C#", "Azure"]);
+
+        // Act
+        string[] values = skills;
+
+        // Assert
+        values.Should().Equal("C#", "Azure");
+    }
+
+    [Fact]
+    public void ToString_WithValues_ShouldJoinWithComma()
+    {
+        // Arrange
+        var skills = new Skills(["C#", "Azure"]);
+
+        // Act
+        var text = skills.ToString();
+
+        // Assert
+        text.Should().Be("C#, Azure");
+    }
+
+    [Fact]
+    public void ToString_WithNoValues_ShouldBeEmpty()
+    {
+        // Arrange
+        var skills = new Skills([]);
+
+        // Act
+        var text = skills.ToString();
+
+        // Assert
+        text.Should().BeEmpty();
+    }
 }

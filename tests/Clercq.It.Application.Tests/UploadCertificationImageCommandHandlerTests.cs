@@ -199,4 +199,26 @@ public class UploadCertificationImageCommandHandlerTests
         // Assert
         result.Should().BeEmpty();
     }
+
+    [Fact]
+    public async Task Handle_WhenStorageFails_ShouldPropagateException()
+    {
+        // Arrange
+        _mockObjectStorageService
+            .Setup(x => x.UploadFileAsync(
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<Stream>(),
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
+                MoqIt.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Object storage unavailable"));
+
+        var command = new UploadCertificationImageCommand(new MemoryStream(), "test-cert.jpg", "image/jpeg");
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Object storage unavailable");
+    }
 }

@@ -209,4 +209,65 @@ public class CreateProjectCommandHandlerTests
             MoqIt.Is<Project>(p => p.Featured == true),
             MoqIt.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenImageUploadFails_ShouldNotSaveProject()
+    {
+        // Arrange
+        _mockObjectStorageService
+            .Setup(x => x.UploadFileAsync(
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<Stream>(),
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
+                MoqIt.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Object storage unavailable"));
+
+        var command = new CreateProjectCommand(
+            "Title",
+            "Short description",
+            "Long description",
+            new MemoryStream(new byte[] { 1 }),
+            "test-image.jpg",
+            "image/jpeg",
+            new DateTime(2024, 1, 1),
+            new DateTime(2024, 6, 1),
+            false,
+            new[] { "C#" });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _mockProjectRepository.Verify(x => x.AddAsync(MoqIt.IsAny<Project>(), MoqIt.IsAny<CancellationToken>()), Times.Never);
+        _mockUnitOfWork.Verify(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Handle_WhenSaveFails_ShouldPropagateException()
+    {
+        // Arrange
+        _mockUnitOfWork
+            .Setup(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Database unavailable"));
+
+        var command = new CreateProjectCommand(
+            "Title",
+            "Short description",
+            "Long description",
+            null,
+            null,
+            null,
+            new DateTime(2024, 1, 1),
+            new DateTime(2024, 6, 1),
+            false,
+            new[] { "C#" });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("Database unavailable");
+    }
 }

@@ -191,4 +191,34 @@ public class CreateBlogCommandHandlerTests
             MoqIt.Is<Blog>(b => b.Tags.Values.SequenceEqual(tags)),
             MoqIt.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WhenImageUploadFails_ShouldNotSaveBlog()
+    {
+        // Arrange
+        _mockObjectStorageService
+            .Setup(x => x.UploadFileAsync(
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<Stream>(),
+                MoqIt.IsAny<string>(),
+                MoqIt.IsAny<bool>(),
+                MoqIt.IsAny<CancellationToken>()))
+            .ThrowsAsync(new InvalidOperationException("Object storage unavailable"));
+
+        var command = new CreateBlogCommand(
+            "Short description",
+            "Long description",
+            new MemoryStream(),
+            "test-image.jpg",
+            "image/jpeg",
+            new[] { "Development" });
+
+        // Act
+        var act = () => _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<InvalidOperationException>();
+        _mockBlogRepository.Verify(x => x.AddAsync(MoqIt.IsAny<Blog>(), MoqIt.IsAny<CancellationToken>()), Times.Never);
+        _mockUnitOfWork.Verify(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()), Times.Never);
+    }
 }

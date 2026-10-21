@@ -327,11 +327,13 @@ Follow Clean Architecture patterns:
 
 ### Running Tests
 
+Conventions, the coverage gate and its thresholds are in [Testing](./testing.md).
+
 ```bash
 # Run all tests
 dotnet test Clercq.It.CI.slnf
 
-# Run with coverage
+# Run with coverage (see testing.md for the coverage gate)
 dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 
 # Run specific test project
