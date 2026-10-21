@@ -105,7 +105,8 @@ resource "scaleway_container" "portfolio_app" {
   # Request limits for efficient scaling
   timeout = 30
 
-  environment_variables = {
+  # Feature flags (var.feature_flags) become FeatureFlags__<Name> variables; see docs/versioning.md#feature-flags.
+  environment_variables = merge({
     "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
     "ObjectStorage__BucketName"   = scaleway_object_bucket.blog_images.name
     "ObjectStorage__Region"       = var.scaleway_region
@@ -117,7 +118,7 @@ resource "scaleway_container" "portfolio_app" {
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web"
     "Keycloak__AdminClientId"     = "clercqit-admin"
-  }
+  }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
 
   # Secret values come from Scaleway Secret Manager (secrets.tf) and the
   # Terraform-managed storage key (iam.tf); they are not shown in the console.

@@ -176,7 +176,8 @@ resource "scaleway_container" "verify_app" {
   cpu_limit    = 500
   timeout      = 30
 
-  environment_variables = {
+  # Same feature flags as production, so verify tests what will ship.
+  environment_variables = merge({
     "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
     "ObjectStorage__BucketName"   = scaleway_object_bucket.verify_images.name
     "ObjectStorage__Region"       = var.scaleway_region
@@ -189,7 +190,7 @@ resource "scaleway_container" "verify_app" {
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web-verify"
     "Keycloak__AdminClientId"     = "clercqit-admin-verify"
-  }
+  }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
 
   secret_environment_variables = {
     "ObjectStorage__AccessKey"             = scaleway_iam_api_key.verify_storage.access_key

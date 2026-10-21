@@ -212,6 +212,10 @@ Project and blog images are stored in Scaleway Object Storage (S3-compatible).
 - `ObjectStorage:AccessKey` - S3 access key
 - `ObjectStorage:SecretKey` - S3 secret key
 
+## Feature flags
+
+Config-driven flags hide unfinished work in production (issue #253). The API owns them: `IFeatureFlags` (`src/ClercqIt.Api/FeatureFlags/`) reads the `FeatureFlags` configuration section, `RequireFeature("Name")` turns an endpoint or group into a 404 while its flag is off, and the anonymous `GET /api/features` returns all configured flags. The Next.js app reads that endpoint through `isEnabled()` in `lib/featureFlags.ts` and fails closed. How to add, use and remove a flag: [versioning.md](./versioning.md#feature-flags).
+
 ## Technology Stack
 
 ### Backend

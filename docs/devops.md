@@ -233,6 +233,7 @@ gh workflow run codeql.yml
 - **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
+- **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
 - **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
 
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
