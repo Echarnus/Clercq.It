@@ -34,35 +34,28 @@ jobs:
         uses: gittools/actions/gitversion/execute@v1
         id: gitversion
 
+      # Clercq.It.CI.slnf is the solution without the Aspire AppHost
       - name: Restore dependencies (excluding Aspire projects)
-        run: |
-          echo "📦 Restoring dependencies for production and test projects..."
-          cd src
-          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
-          cd ../tests
-          dotnet restore ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj
-          dotnet restore Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj
-          dotnet restore Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj
-          dotnet restore Clercq.It.ContentImport.Tests/Clercq.It.ContentImport.Tests.csproj
-          echo "✅ Dependencies restored successfully"
+        run: dotnet restore Clercq.It.CI.slnf
 
+      - name: Check formatting and code style
+        run: |
+          if ! dotnet format Clercq.It.CI.slnf --verify-no-changes --no-restore; then
+            echo "::error::Code is not formatted. Run 'dotnet format Clercq.It.CI.slnf' and commit the result."
+            exit 1
+          fi
+
+      # Release builds treat warnings (analyzers, code style, nullable) as errors; see Directory.Build.props
       - name: Build
         run: |
-          echo "🏗️ Building .NET projects (excluding Aspire AppHost)..."
-          cd src
-          dotnet build ClercqIt.Api/ClercqIt.Api.csproj --no-restore --configuration Release
-          cd ../tests
-          dotnet build ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj --no-restore --configuration Release
-          dotnet build Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj --no-restore --configuration Release
-          dotnet build Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj --no-restore --configuration Release
-          dotnet build Clercq.It.ContentImport.Tests/Clercq.It.ContentImport.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.CI.slnf --no-restore --configuration Release
           echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
-          echo "- Built production and test projects in Release configuration" >> $GITHUB_STEP_SUMMARY
+          echo "- Built production and test projects in Release configuration, warnings as errors" >> $GITHUB_STEP_SUMMARY
 
       - name: Test .NET projects from /tests/
         run: |
           echo "🧪 Running .NET tests..."
-          dotnet test --no-build --configuration Release --verbosity normal \
+          dotnet test Clercq.It.CI.slnf --no-build --configuration Release --verbosity normal \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
           echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
           echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY

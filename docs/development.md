@@ -188,8 +188,8 @@ GRANT ALL PRIVILEGES ON DATABASE "ClercqItDb" TO clercq_user;
 # Navigate to solution root
 cd Clercq.It
 
-# Restore NuGet packages
-dotnet restore
+# Restore NuGet packages (the CI solution filter leaves out the Aspire AppHost)
+dotnet restore Clercq.It.CI.slnf
 
 # Install EF Core tools (if not already installed)
 dotnet tool install --global dotnet-ef
@@ -200,10 +200,10 @@ dotnet ef database update --startup-project ../ClercqIt.Api
 
 # Build the solution
 cd ../..
-dotnet build
+dotnet build Clercq.It.CI.slnf
 
 # Run tests to verify setup
-dotnet test
+dotnet test Clercq.It.CI.slnf
 ```
 
 ### Run the API
@@ -329,23 +329,47 @@ Follow Clean Architecture patterns:
 
 ```bash
 # Run all tests
-dotnet test
+dotnet test Clercq.It.CI.slnf
 
 # Run with coverage
-dotnet test --collect:"XPlat Code Coverage"
+dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 
 # Run specific test project
 dotnet test tests/ClercqIt.Api.Tests/
 
 # Run tests with detailed output
-dotnet test --verbosity normal
+dotnet test Clercq.It.CI.slnf --verbosity normal
 ```
+
+### Code style
+
+One standard for every editor and for CI, defined in two files at the repo root:
+
+- **`.editorconfig`**: indentation, line endings and charset for every file type, and the C# style rules: file-scoped namespaces, `using` outside the namespace, `var` when the type is obvious, PascalCase types and members, `I` prefix on interfaces, `_camelCase` private fields. It also tunes analyzer severities.
+- **`Directory.Build.props`**: applies to every project under `src/` and `tests/`. It sets `Nullable` and `ImplicitUsings`, the .NET analyzers at `AnalysisLevel=latest-recommended`, and `EnforceCodeStyleInBuild`. Release builds treat every warning as an error. The exceptions are NuGet vulnerability warnings (NU1901 to NU1904), which Dependabot and the security scan handle, and the local-only Aspire AppHost.
+
+`Clercq.It.CI.slnf` is the solution without the AppHost. Use it for restore, build, test and format, as CI does.
+
+```bash
+dotnet format Clercq.It.CI.slnf                        # fix formatting, style and fixable analyzer findings
+dotnet format Clercq.It.CI.slnf --verify-no-changes    # what CI runs; fails on any difference
+dotnet build Clercq.It.CI.slnf -c Release              # fails on any warning
+```
+
+Analyzer policy:
+
+- Fix the code rather than suppressing the rule.
+- If a rule does not fit, change its severity in `.editorconfig` with a comment saying why. Do not use `#pragma`.
+- Test projects relax a few naming and culture rules (`CA1707`, `CA1861`, `CA1304`, `CA1310`, `CA1311`). Logging-performance rules (`CA1848`, `CA1873`) are off.
+- EF Core migrations are treated as generated code.
+
+The Docker image builds from `src/` only, so these root files do not apply there. The `Test .NET API` check enforces them on every PR.
 
 ### Building and Running
 
 ```bash
-# Build entire solution
-dotnet build
+# Build everything except the Aspire AppHost
+dotnet build Clercq.It.CI.slnf
 
 # Build specific project
 dotnet build src/ClercqIt.Api/

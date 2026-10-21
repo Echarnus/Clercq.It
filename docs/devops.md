@@ -578,7 +578,7 @@ trufflehog filesystem . --only-verified
 
 **Issue**: Tests fail during build
 - **Cause**: Code compilation or test errors
-- **Solution**: Run tests locally first with `dotnet test` and `pnpm test`
+- **Solution**: Run tests locally first with `dotnet test Clercq.It.CI.slnf` and `pnpm test`
 
 **Issue**: Next.js build fails with "useSearchParams() should be wrapped in a suspense boundary"
 - **Cause**: Next.js 15 requires components using `useSearchParams()` to be wrapped in a Suspense boundary for static page generation

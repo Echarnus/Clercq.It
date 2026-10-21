@@ -27,8 +27,9 @@ Run before opening a PR (from the repo root):
 
 ```bash
 # Backend (never build the Aspire AppHost in CI or Docker)
-dotnet build src/ClercqIt.Api/ClercqIt.Api.csproj
-dotnet test tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests tests/Clercq.It.ContentImport.Tests
+dotnet format Clercq.It.CI.slnf --verify-no-changes   # fix with: dotnet format Clercq.It.CI.slnf
+dotnet build Clercq.It.CI.slnf -c Release              # warnings are errors
+dotnet test Clercq.It.CI.slnf -c Release --no-build
 
 # Frontend
 cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm build
@@ -45,4 +46,4 @@ Local full stack: `dotnet run --project src/Clercq.It.AppHost` (needs Docker and
 - Pipelines and deployment: [docs/devops.md](docs/devops.md)
 - Versioning: [docs/versioning.md](docs/versioning.md)
 - Production auth (Cloud IAM): [docs/ciam.md](docs/ciam.md)
-- Coding conventions: `.github/instructions/*.instructions.md`
+- Coding conventions: `.github/instructions/*.instructions.md`; code style and analyzer policy: [docs/development.md#code-style](docs/development.md#code-style)
