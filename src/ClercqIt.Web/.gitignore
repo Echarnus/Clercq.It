@@ -28,3 +28,7 @@ next-env.d.ts
 
 # version file (generated during Docker build)
 /public/version.json
+
+# Playwright
+/test-results/
+/playwright-report/
