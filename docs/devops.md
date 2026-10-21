@@ -50,6 +50,11 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - Runs Jest tests and ESLint
 - Builds Next.js application to verify compilation
 
+
+#### docker-build
+- Pull requests only
+- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`
+
 ### Example
 
 ```bash
@@ -78,6 +83,10 @@ gh workflow run test.yml
   - Short SHA (e.g., `abc1234`)
   - `latest` (for main branch)
 - Generates build attestation for security
+
+### Third-party actions
+
+`aquasecurity/trivy-action` is pinned to a commit SHA (v0.36.0). Its old unprefixed tags such as `0.28.0` no longer exist upstream, which is what broke every build on `main` from 10 March 2026. Prefer SHA pins for third-party actions.
 
 ### Docker Image Tags
 
