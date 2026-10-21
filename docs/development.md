@@ -379,7 +379,7 @@ The Next.js app in `src/ClercqIt.Web` has three gates (issue #240). The `Test Ne
 | `pnpm format:check` | Prettier, `.prettierrc.json` (2 spaces from `.editorconfig`, width 100, Tailwind class order) | `pnpm format` |
 | `pnpm typecheck` | `tsc --noEmit` | by hand |
 
-ESLint config (flat): `next/core-web-vitals`, `typescript-eslint` `recommendedTypeChecked` (type-aware), `jsx-a11y` recommended, `eslint-plugin-security` recommended, and `eslint-config-prettier` last so formatting is Prettier's job. The `e2e/` Playwright tests are linted with the app. `tests/ClercqIt.Web.Tests` is a separate package and is not linted yet.
+ESLint config (flat): `next/core-web-vitals`, `typescript-eslint` `recommendedTypeChecked` (type-aware), `jsx-a11y` recommended, `eslint-plugin-security` recommended, and `eslint-config-prettier` last so formatting is Prettier's job. The `e2e/` Playwright tests and the Vitest unit tests are linted with the app.
 
 Policy:
 

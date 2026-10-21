@@ -66,6 +66,7 @@ export function ImageUpload({
               size="sm"
               className="absolute right-2 top-2"
               onClick={handleRemove}
+              aria-label="Remove image"
             >
               <X className="h-4 w-4" />
             </Button>
@@ -87,6 +88,7 @@ export function ImageUpload({
           accept={accept}
           onChange={handleFileChange}
           className="hidden"
+          aria-label={label}
         />
         {!displayImage && (
           <Button

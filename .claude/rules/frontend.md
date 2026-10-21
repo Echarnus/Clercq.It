@@ -1,7 +1,6 @@
 ---
 paths:
   - "src/ClercqIt.Web/**"
-  - "tests/ClercqIt.Web.Tests/**"
 ---
 
 # Frontend rules
