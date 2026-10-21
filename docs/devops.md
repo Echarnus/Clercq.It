@@ -283,6 +283,7 @@ gh workflow run infra.yml
 
 #### deploy
 - Validates Docker image exists
+- Runs database migrations, then imports `content/` into the database (see [Content](./content.md#how-the-import-runs))
 - Records the image the container runs now (`PREVIOUS_IMAGE`)
 - Sets the new image and forces container recreation to bypass the image cache (scales min_scale: 0→1→0), with `.github/scripts/set-container-image.sh`
 - Runs the smoke test (see [Smoke test and rollback](#smoke-test-and-rollback))

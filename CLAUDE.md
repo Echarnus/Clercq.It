@@ -28,7 +28,7 @@ Run before opening a PR (from the repo root):
 ```bash
 # Backend (never build the Aspire AppHost in CI or Docker)
 dotnet build src/ClercqIt.Api/ClercqIt.Api.csproj
-dotnet test tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests
+dotnet test tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests tests/Clercq.It.ContentImport.Tests
 
 # Frontend
 cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm build

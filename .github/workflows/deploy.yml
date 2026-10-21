@@ -177,6 +177,39 @@ jobs:
             exit 1
           fi
 
+      - name: Setup .NET for content import
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.name == 'build'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Import content
+        # Upserts content/**/*.md into the database and uploads their images
+        # (src/Clercq.It.ContentImport, docs/content.md). Idempotent.
+        if: >-
+          github.event_name == 'workflow_run' &&
+          github.event.workflow_run.name == 'build'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
+          DB_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+          ObjectStorage__Endpoint: https://s3.fr-par.scw.cloud
+          ObjectStorage__Region: fr-par
+          ObjectStorage__AccessKey: ${{ secrets.SCALEWAY_ACCESS_KEY }}
+          ObjectStorage__SecretKey: ${{ secrets.SCALEWAY_SECRET_KEY }}
+        run: |
+          cd infra/terraform
+          terraform init -input=false > /dev/null
+          DB_HOST=$(terraform output -raw database_endpoint)
+          DB_PORT=$(terraform output -raw database_port)
+          DB_NAME=$(terraform output -raw database_name)
+          export ObjectStorage__BucketName=$(terraform output -raw object_storage_bucket_name)
+          cd ../..
+          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;Database=$DB_NAME;Username=clercqit_user;Password=$DB_PASSWORD"
+          dotnet run --project src/Clercq.It.ContentImport --configuration Release -- content
+
       - name: Setup Terraform for deployment
         uses: hashicorp/setup-terraform@v3
         with:

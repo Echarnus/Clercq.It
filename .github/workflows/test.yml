@@ -43,6 +43,7 @@ jobs:
           dotnet restore ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj
           dotnet restore Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj
           dotnet restore Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj
+          dotnet restore Clercq.It.ContentImport.Tests/Clercq.It.ContentImport.Tests.csproj
           echo "✅ Dependencies restored successfully"
 
       - name: Build
@@ -54,6 +55,7 @@ jobs:
           dotnet build ClercqIt.Api.Tests/ClercqIt.Api.Tests.csproj --no-restore --configuration Release
           dotnet build Clercq.It.Domain.Tests/Clercq.It.Domain.Tests.csproj --no-restore --configuration Release
           dotnet build Clercq.It.Application.Tests/Clercq.It.Application.Tests.csproj --no-restore --configuration Release
+          dotnet build Clercq.It.ContentImport.Tests/Clercq.It.ContentImport.Tests.csproj --no-restore --configuration Release
           echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "- Built production and test projects in Release configuration" >> $GITHUB_STEP_SUMMARY
 
