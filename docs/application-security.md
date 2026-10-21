@@ -219,6 +219,8 @@ Results from Semgrep, CodeQL and Trivy are also in the repository's **Security**
 | `efcore-raw-sql-interpolation` | `FromSqlRaw`/`ExecuteSqlRaw`/`SqlQueryRaw` with an interpolated, concatenated or `string.Format` string (use `FromSql`/`ExecuteSql`, which parameterise) |
 | `no-dangerously-set-inner-html-without-sanitising` | `dangerouslySetInnerHTML` with anything but a literal or `DOMPurify.sanitize(...)` |
 
+**Workflows**: Semgrep also checks `.github/` for shell injection. Never put `${{ github.* }}` or `${{ inputs.* }}` straight into a `run:` script; pass it through `env:` and quote the variable (`"$BRANCH"`).
+
 ### Run locally
 
 ```bash

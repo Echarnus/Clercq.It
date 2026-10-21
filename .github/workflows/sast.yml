@@ -71,9 +71,12 @@ jobs:
       - name: Scan for secrets
         # PRs: only the PR's own commits. main and manual runs: full history.
         # Known false positives are listed in .gitleaksignore with a reason.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            gitleaks git . --no-banner --redact --log-opts="origin/${{ github.base_ref }}..HEAD"
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            gitleaks git . --no-banner --redact --log-opts="origin/$BASE_REF..HEAD"
           else
             gitleaks git . --no-banner --redact
           fi

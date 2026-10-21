@@ -8,6 +8,9 @@ rules:
       NODE_TLS_REJECT_UNAUTHORIZED=0 turns off TLS certificate checks for every
       request the process makes. Fix the certificate or trust the CA instead.
     pattern-regex: NODE_TLS_REJECT_UNAUTHORIZED["']?\s*[=:]\s*["']?0
+    paths:
+      # Docs describe the rule; they do not run.
+      exclude: ["*.md"]
     metadata:
       cwe: "CWE-295: Improper Certificate Validation"
 
