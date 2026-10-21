@@ -622,6 +622,7 @@ trufflehog filesystem . --only-verified
   2. Verify Terraform state is accessible (check AWS credentials for S3 backend)
   3. The container is managed by Terraform (`clercq-it-app`) and deployment uses the container ID from Terraform outputs for reliable updates
 - **Note**: This has been fixed to use container ID instead of name-based lookups for more reliable container discovery
+- **Note**: Terraform outputs the regional ID (`fr-par/<uuid>`). The scw CLI only accepts the bare uuid, so deploy.yml strips the region prefix. The step prints the scw error when the lookup fails.
 
 **Issue**: Deploy workflow not triggering
 - **Cause**: Workflow name mismatch in trigger configuration

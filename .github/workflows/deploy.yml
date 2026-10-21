@@ -252,6 +252,8 @@ jobs:
           # Get container ID from Terraform outputs (dynamically assigned by Scaleway)
           echo "🔍 Getting container ID from infrastructure state..."
           CONTAINER_ID=$(terraform output -raw container_id 2>/dev/null || echo "")
+          # Terraform returns "fr-par/<uuid>"; the scw CLI wants the bare uuid
+          CONTAINER_ID="${CONTAINER_ID##*/}"
           
           if [[ -z "$CONTAINER_ID" ]]; then
             echo "❌ Failed to retrieve container ID from Terraform state"
@@ -287,7 +289,7 @@ jobs:
           echo "🔍 Verifying container exists..."
           
           # Verify container exists by getting its details
-          if scw container container get "$CONTAINER_ID" --output json > /dev/null 2>&1; then
+          if SCW_ERROR=$(scw container container get "$CONTAINER_ID" --output json 2>&1 >/dev/null); then
             echo "✅ Container found: $CONTAINER_NAME (ID: $CONTAINER_ID)"
             
             # Get the image digest from Docker Hub to verify later
@@ -306,6 +308,7 @@ jobs:
           else
             echo "❌ Container not found in Scaleway"
             echo "Container ID: $CONTAINER_ID"
+            echo "scw: $SCW_ERROR"
             echo "This indicates infrastructure state is out of sync with Scaleway resources"
             echo ""
             echo "Possible causes:"
