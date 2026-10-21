@@ -251,20 +251,22 @@ The production deployment uses a single Docker container with multiple services:
 2. **Next.js Frontend** (port 3000) - Server-side rendered React application
 3. **nginx** (port 80) - Reverse proxy routing requests to backend services
 
-**Startup Sequence:**
+**Startup Sequence** (`src/start.sh`, PID 1 in the container):
 1. .NET API starts in background and writes logs to `/var/log/api.log`
 2. Next.js frontend starts in background and writes logs to `/var/log/frontend.log`
 3. Health check waits for API `/health` endpoint (up to 60 seconds)
 4. Health check waits for Next.js on port 3000 (up to 60 seconds)
-5. nginx starts in foreground after all services are healthy
+5. nginx starts after all services are healthy
+6. The script then supervises all three and exits with code 1 as soon as one stops, printing the last 50 lines of that service's log, so Scaleway restarts the container (#222)
 
 **Non-root (#280):** the image ends with `USER clercqit` (uid 10001), so nginx, the API and Next.js all run unprivileged and no process has uid 0. nginx still listens on port 80, which Terraform sets as the container port, because its binary carries the `cap_net_bind_service` file capability. Its pid file is `/tmp/nginx.pid`, and `/var/cache/nginx`, `/var/log/api.log` and `/var/log/frontend.log` belong to `clercqit`. If a runtime ever ignores file capabilities, nginx fails to bind port 80 and the verify stage stops the deploy; the fix then is to listen on 8080 and change `port` on both containers in Terraform.
 
 **Key Features:**
 - **No Bad Gateway errors**: nginx only starts after backend services are ready
-- **Process monitoring**: Startup script detects if services crash during initialization
+- **Process monitoring**: the script detects a crash during startup and afterwards, and exits instead of serving 502s
 - **Detailed logging**: Service logs captured for debugging failed startups
-- **Clean shutdown**: Signal handling ensures graceful termination of all services
+- **Clean shutdown**: on SIGTERM (the image's `STOPSIGNAL`, and what Scaleway sends) the script stops all three services and exits 0
+- **Health check**: the image's `HEALTHCHECK` checks the API `/health` and the site through nginx, for `docker run` and local tooling; Scaleway probes the port itself
 - **Resource limits**: 512MB RAM, 500m CPU (optimized for Scaleway serverless containers)
 
 ## Design Patterns

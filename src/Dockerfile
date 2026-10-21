@@ -114,80 +114,17 @@ COPY --from=node-builder --chown=10001:10001 /app/public /app/frontend/public
 COPY --from=node-builder --chown=10001:10001 /app/.next/standalone /app/frontend/
 COPY --from=node-builder --chown=10001:10001 /app/.next/static /app/frontend/.next/static
 
-# Create startup script that starts all services
-RUN echo '#!/bin/sh' > /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo 'set -e' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start .NET API in background' >> /app/start.sh && \
-    echo 'echo "Starting .NET API..."' >> /app/start.sh && \
-    echo 'cd /app/api' >> /app/start.sh && \
-    echo '/usr/share/dotnet/dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000 > /var/log/api.log 2>&1 &' >> /app/start.sh && \
-    echo 'API_PID=$!' >> /app/start.sh && \
-    echo 'echo "Started .NET API with PID $API_PID"' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start Next.js frontend in background' >> /app/start.sh && \
-    echo 'echo "Starting Next.js frontend..."' >> /app/start.sh && \
-    echo 'cd /app/frontend' >> /app/start.sh && \
-    echo 'PORT=3000 HOSTNAME=0.0.0.0 node server.js > /var/log/frontend.log 2>&1 &' >> /app/start.sh && \
-    echo 'FRONTEND_PID=$!' >> /app/start.sh && \
-    echo 'echo "Started Next.js frontend with PID $FRONTEND_PID"' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Wait for .NET API to be ready' >> /app/start.sh && \
-    echo 'echo "Waiting for .NET API to be ready..."' >> /app/start.sh && \
-    echo 'for i in $(seq 1 60); do' >> /app/start.sh && \
-    echo '  # Check if API process is still running' >> /app/start.sh && \
-    echo '  if ! kill -0 $API_PID 2>/dev/null; then' >> /app/start.sh && \
-    echo '    echo "ERROR: .NET API process died. Last 50 lines of log:"' >> /app/start.sh && \
-    echo '    tail -n 50 /var/log/api.log' >> /app/start.sh && \
-    echo '    exit 1' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  if curl -sf http://localhost:5000/health > /dev/null 2>&1; then' >> /app/start.sh && \
-    echo '    echo ".NET API is ready!"' >> /app/start.sh && \
-    echo '    break' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  if [ $i -eq 60 ]; then' >> /app/start.sh && \
-    echo '    echo "ERROR: .NET API failed to start within 60 seconds. Last 50 lines of log:"' >> /app/start.sh && \
-    echo '    tail -n 50 /var/log/api.log' >> /app/start.sh && \
-    echo '    exit 1' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  echo "Waiting for .NET API... ($i/60)"' >> /app/start.sh && \
-    echo '  sleep 1' >> /app/start.sh && \
-    echo 'done' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Wait for Next.js frontend to be ready' >> /app/start.sh && \
-    echo 'echo "Waiting for Next.js frontend to be ready..."' >> /app/start.sh && \
-    echo 'for i in $(seq 1 60); do' >> /app/start.sh && \
-    echo '  # Check if frontend process is still running' >> /app/start.sh && \
-    echo '  if ! kill -0 $FRONTEND_PID 2>/dev/null; then' >> /app/start.sh && \
-    echo '    echo "ERROR: Next.js frontend process died. Last 50 lines of log:"' >> /app/start.sh && \
-    echo '    tail -n 50 /var/log/frontend.log' >> /app/start.sh && \
-    echo '    exit 1' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  if curl -sf http://localhost:3000 > /dev/null 2>&1; then' >> /app/start.sh && \
-    echo '    echo "Next.js frontend is ready!"' >> /app/start.sh && \
-    echo '    break' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  if [ $i -eq 60 ]; then' >> /app/start.sh && \
-    echo '    echo "ERROR: Next.js frontend failed to start within 60 seconds. Last 50 lines of log:"' >> /app/start.sh && \
-    echo '    tail -n 50 /var/log/frontend.log' >> /app/start.sh && \
-    echo '    exit 1' >> /app/start.sh && \
-    echo '  fi' >> /app/start.sh && \
-    echo '  echo "Waiting for Next.js frontend... ($i/60)"' >> /app/start.sh && \
-    echo '  sleep 1' >> /app/start.sh && \
-    echo 'done' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo 'echo "All services are ready! Starting nginx..."' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Trap signals to ensure clean shutdown of all services' >> /app/start.sh && \
-    echo 'trap "echo \"Shutting down...\"; kill $API_PID $FRONTEND_PID 2>/dev/null; nginx -s quit; exit" TERM INT' >> /app/start.sh && \
-    echo '' >> /app/start.sh && \
-    echo '# Start nginx in foreground' >> /app/start.sh && \
-    echo 'exec nginx -g "daemon off;"' >> /app/start.sh
+# Startup script: starts the API and Next.js, then nginx, and exits when any of
+# them stops so the container is restarted (src/start.sh, issue #222).
+COPY --chmod=755 start.sh /app/start.sh
 
-RUN chmod +x /app/start.sh
+# For docker run and local orchestration; Scaleway uses its own probe on the port.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+    CMD curl -fsS http://localhost:5000/health > /dev/null && curl -fsS -o /dev/null http://localhost/ || exit 1
 
 EXPOSE 80
+# The nginx base image stops with SIGQUIT; start.sh is PID 1 and handles TERM.
+STOPSIGNAL SIGTERM
 
 ENV NODE_ENV=production
 ENV ASPNETCORE_ENVIRONMENT=Production
