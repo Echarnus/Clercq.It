@@ -124,13 +124,14 @@ gh workflow run build.yml
 - Runs Trivy vulnerability scanner
 - Uploads results to GitHub Security tab
 - Scans for CRITICAL, HIGH, and MEDIUM severity vulnerabilities
-- Fails on CRITICAL and HIGH vulnerabilities
+- **Fails** when the image does not build, or on a fixable CRITICAL or HIGH finding not listed in `.trivyignore`
 
 #### trivy-filesystem-scan
 - Scans entire repository filesystem
 - Detects IaC misconfigurations
 - Identifies dependency vulnerabilities
 - Uploads SARIF results to GitHub Security
+- **Fails** on a fixable CRITICAL or HIGH finding not listed in `.trivyignore`
 
 #### dotnet-security-scan
 - Lists vulnerable NuGet packages (direct and transitive) for `Clercq.It.CI.slnf`
@@ -142,7 +143,7 @@ gh workflow run build.yml
 - Checks for known vulnerabilities
 - Generates JSON audit reports
 - Uploads reports as artifacts
-- Report-only for now; see [Application security](./application-security.md#what-does-not-block-yet)
+- **Fails on High or Critical** (`pnpm audit --audit-level=high`, also in `test.yml`); accepted exceptions are in [Application security](./application-security.md#accepted-findings)
 
 Secret scanning moved to gitleaks in `sast.yml` (see [Application security](./application-security.md#static-analysis-sast)).
 
