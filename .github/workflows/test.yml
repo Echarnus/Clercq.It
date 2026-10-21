@@ -161,3 +161,18 @@ jobs:
             VERSION=0.0.0-pr
             GIT_SHA=${{ github.sha }}
           cache-from: type=gha
+
+  deploy-scripts:
+    name: Test deploy scripts
+    runs-on: ubuntu-latest
+    # Smoke test and rollback scripts used by deploy.yml (issue #232)
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Smoke test script
+        run: bash .github/scripts/tests/smoke-test.test.sh
+
+      - name: Rollback on failed smoke test
+        run: bash .github/scripts/tests/rollback.test.sh
