@@ -1,6 +1,6 @@
 # Testing
 
-How the backend and the frontend are tested, and the coverage gates CI enforces (issues #242 and #246). Backend integration tests against real infrastructure come with #244 (Testcontainers); Playwright e2e in CI comes with #246.
+How the backend and the frontend are tested, including API integration tests against real Postgres and Keycloak, and the coverage gates CI enforces (issues #242, #244 and #246). Browser end-to-end tests in CI come with #314 (Playwright).
 
 ## Stack
 
@@ -9,6 +9,7 @@ How the backend and the frontend are tested, and the coverage gates CI enforces 
 | Test framework | xUnit 2 |
 | Assertions | FluentAssertions **7** (stay on 7: version 8 moved to a commercial licence) |
 | Test doubles | Moq (aliased as `MoqIt` for `It`, to avoid the clash with xUnit) |
+| API integration | Testcontainers (PostgreSQL 17, Keycloak 26.4), Respawn, `WebApplicationFactory<Program>` |
 | Coverage | `coverlet.collector`, reports with ReportGenerator (local tool in `.config/dotnet-tools.json`) |
 | Architecture rules | NetArchTest, in `tests/Clercq.It.Architecture.Tests` ([rules](./architecture.md#architecture-rules)) |
 
@@ -20,7 +21,7 @@ One test project per production project:
 | --- | --- |
 | `Clercq.It.Domain` | `tests/Clercq.It.Domain.Tests`: every entity invariant and value object |
 | `Clercq.It.Application` | `tests/Clercq.It.Application.Tests`: every command/query handler and validator, with repositories and storage mocked |
-| `ClercqIt.Api` | `tests/ClercqIt.Api.Tests`: endpoints and auth, through `WebApplicationFactory` |
+| `ClercqIt.Api` (and Infrastructure) | `tests/ClercqIt.Api.Tests`: every endpoint against real PostgreSQL and Keycloak containers ([below](#api-integration-tests)) |
 | `Clercq.It.ContentImport` | `tests/Clercq.It.ContentImport.Tests` |
 | All layers | `tests/Clercq.It.Architecture.Tests` |
 
@@ -32,6 +33,7 @@ A test class is named after the class it tests plus `Tests`, and its namespace m
 - Arrange / Act / Assert, each marked with a comment.
 - Every behaviour change ships with tests. A bug fix starts with a test that fails without the fix.
 - Every Application handler has at least one happy-path test and one failure test (a dependency that throws, a missing entity, or an empty result for queries).
+- Every new or changed endpoint gets integration tests for its happy path, validation (400), not found (404) where it applies, and auth: anonymous (401), no role and wrong role (403). Protected endpoints are listed in `EndpointAuthorizationTests`.
 - Assert on behaviour (returned DTO, calls made or not made), not on implementation details.
 
 ## Running
@@ -49,21 +51,46 @@ python3 .github/scripts/check_coverage.py ./coverage/report/Summary.json tests/c
 
 Open `coverage/report/index.html` for line-by-line coverage. In a Claude Code cloud session, set `DOTNET_ROLL_FORWARD=Major` first (the session-start hook does this).
 
+## API integration tests
+
+`tests/ClercqIt.Api.Tests` boots the real API (`WebApplicationFactory<Program>`, environment `Production`) against containers that Testcontainers starts once for the whole test run (`CustomWebApplicationFactory`, shared by the `Api` xUnit collection):
+
+- **PostgreSQL** `postgres:17-alpine`. The fixture applies the real EF migrations. Test classes that write data call `ResetDatabaseAsync()` in `InitializeAsync`, which empties every table except `__EFMigrationsHistory` with Respawn.
+- **Keycloak** `keycloak/keycloak:26.4`, importing the local realm `src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`. Tests sign in as real realm users with the password grant on `clercqit-web` and send the real access token, so signature, issuer, lifetime and role checks all run. `CreateClientForUserAsync("blogger")` returns an authenticated client.
+
+| User | Roles | Use it for |
+| --- | --- | --- |
+| `admin` | all | |
+| `blogger` | `Admin.View`, `Blogs.Contributor` | blogs and images |
+| `projects` | `Admin.View`, `Projects.Contributor` | projects |
+| `certs` | `Admin.View`, `Certifications.Contributor` | certifications |
+| `test` | none | 403 tests |
+
+Only object storage is faked (a Moq `IObjectStorageService` that returns `CustomWebApplicationFactory.FakeImageUrl`). Each request gets its own client IP, so the per-IP rate limits don't trip in a run; rate limiting itself is not tested here.
+
+Running them needs Docker:
+
+```bash
+dotnet test tests/ClercqIt.Api.Tests
+```
+
+In CI they are a separate step, `API integration tests`, after `Unit tests` in the `Test .NET API` job (Docker is built into `ubuntu-latest`). In a Claude Code cloud session the Docker daemon is installed but not running: start it with `dockerd > /tmp/dockerd.log 2>&1 &`. If Docker Hub answers `429 Too Many Requests`, pull through Google's mirror and retag, for example `docker pull mirror.gcr.io/keycloak/keycloak:26.4 && docker tag mirror.gcr.io/keycloak/keycloak:26.4 keycloak/keycloak:26.4`. `quay.io` is not reachable from the cloud session.
+
 ## Coverage
 
 The `Test .NET API` job fails when line coverage is below `tests/coverage-thresholds.json`, per assembly and in total. It prints a table in the job summary and uploads the HTML report as the `coverage-report` artifact. Coverage also still goes to Codecov.
 
-Starting thresholds (21 October 2026, the measured coverage rounded down):
+Thresholds (21 October 2026, the measured coverage rounded down; raised when the integration tests in #244 started covering Infrastructure):
 
 | Assembly | Minimum line coverage |
 | --- | ---: |
-| Total | 73% |
+| Total | 92% |
 | `Clercq.It.Domain` | 100% |
 | `Clercq.It.Application` | 98% |
-| `ClercqIt.Api` | 89% |
+| `ClercqIt.Api` | 92% |
 | `Clercq.It.ContentImport` | 73% |
 | `Clercq.It.ServiceDefaults` | 97% |
-| `Clercq.It.Infrastructure` | 19% (repositories and storage get integration tests in #244) |
+| `Clercq.It.Infrastructure` | 89% |
 
 Domain and Application together are above the 80% target.
 

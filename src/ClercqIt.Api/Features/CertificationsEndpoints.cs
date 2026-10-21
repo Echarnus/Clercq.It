@@ -88,10 +88,10 @@ public static class CertificationsEndpoints
             var result = await mediator.Send(command);
             return Results.Created($"/api/certifications/{result.Id}", result);
         })
-        .RequireAuthorization()
+        .RequireAuthorization("CertificationsContributor")
         .WithName("CreateCertification")
         .WithSummary("Create a new certification")
-        .WithDescription("Creates a new certification with an image. Requires authentication.")
+        .WithDescription("Creates a new certification with an image. Requires the Certifications.Contributor role.")
         .DisableAntiforgery();
 
         group.MapPut("/{id:guid}", async (Guid id, HttpRequest request, IMediator mediator) =>
@@ -160,10 +160,10 @@ public static class CertificationsEndpoints
 
             return result != null ? Results.Ok(result) : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("CertificationsContributor")
         .WithName("UpdateCertification")
         .WithSummary("Update a certification")
-        .WithDescription("Updates an existing certification. Image is optional - if not provided, the existing image is retained. Requires authentication.")
+        .WithDescription("Updates an existing certification. Image is optional - if not provided, the existing image is retained. Requires the Certifications.Contributor role.")
         .DisableAntiforgery();
 
         group.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
@@ -172,10 +172,10 @@ public static class CertificationsEndpoints
             var result = await mediator.Send(command);
             return result ? Results.NoContent() : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("CertificationsContributor")
         .WithName("DeleteCertification")
         .WithSummary("Delete a certification")
-        .WithDescription("Deletes a certification. Requires authentication.");
+        .WithDescription("Deletes a certification. Requires the Certifications.Contributor role.");
 
         return endpoints;
     }

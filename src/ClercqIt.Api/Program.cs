@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using Clercq.It.Api;
 using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
 using Clercq.It.Application;
@@ -76,30 +77,7 @@ var keycloakBaseUrl = builder.Configuration["Keycloak:BaseUrl"];             // 
 var effectiveKeycloakUrl = keycloakServiceUrl ?? keycloakBaseUrl;
 bool useKeycloak = !string.IsNullOrEmpty(effectiveKeycloakUrl);
 
-// Check if running in test environment (WebApplicationFactory sets this)
-bool isTestEnvironment = builder.Environment.EnvironmentName == "Test" ||
-    builder.Configuration["ASPNETCORE_TEST_CONTENTROOT_CLERCQIT_API"] != null;
-
-if (isTestEnvironment)
-{
-    // Test environment: Use minimal auth that doesn't require external services
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.RequireHttpsMetadata = false;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = false,
-                ValidateIssuerSigningKey = false
-            };
-        });
-
-    // Register a mock auth service for tests
-    builder.Services.AddSingleton<ICloudIAMAuthService, LocalKeycloakAuthService>();
-}
-else if (useKeycloak)
+if (useKeycloak)
 {
     // Keycloak authentication (local Aspire or external)
     var keycloakRealm = builder.Configuration["Keycloak:Realm"] ?? "clercqit";
@@ -110,6 +88,9 @@ else if (useKeycloak)
         .AddJwtBearer(options =>
         {
             options.Authority = keycloakAuthority;
+            // Keep claim names as Keycloak sends them, so RoleClaimType "roles" matches
+            // (the default inbound map renames "roles" and every role policy would fail).
+            options.MapInboundClaims = false;
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -149,6 +130,10 @@ builder.Services.AddAuthorization(options =>
 // Add Clean Architecture layers
 builder.Services.AddApplication();
 
+// Validation failures from the MediatR pipeline become 400 responses
+builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddProblemDetails();
+
 // Check if we're running under Aspire (connection string is set by Aspire orchestration)
 var aspireConnectionString = builder.Configuration.GetConnectionString("ClercqItDb");
 bool useAspire = !string.IsNullOrEmpty(aspireConnectionString);
@@ -172,6 +157,7 @@ var app = builder.Build();
 // DO NOT add app.Services.GetRequiredService<DbContext>().Database.Migrate() or similar code here.
 
 // Configure the HTTP request pipeline
+app.UseExceptionHandler();
 app.MapDefaultEndpoints(); // Aspire health checks and telemetry
 
 if (app.Environment.IsDevelopment())

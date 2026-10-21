@@ -32,10 +32,10 @@ public static class ImagesEndpoints
             var result = await mediator.Send(command);
             return Results.Ok(result);
         })
-        .RequireAuthorization()
+        .RequireAuthorization("BlogsContributor")
         .WithName("UploadImage")
         .WithSummary("Upload an image")
-        .WithDescription("Uploads an image to object storage. Returns the image URL. Requires authentication.")
+        .WithDescription("Uploads an image to object storage. Returns the image URL. Requires the Blogs.Contributor role.")
         .DisableAntiforgery();
 
         return endpoints;
