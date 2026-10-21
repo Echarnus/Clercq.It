@@ -13,7 +13,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 
 ### Frontend versions
 
-The frontend runs Next.js 15.5, React 19 and Tailwind CSS 3.4 (`tailwind.config.ts`). The major upgrades (Next.js 16, Tailwind 4, zod 4) are tracked in #248. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
+The frontend runs Next.js 15.5, React 19, Tailwind CSS 3.4 (`tailwind.config.ts`) and zod 4 with `@hookform/resolvers` 5. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. The remaining major upgrades (Next.js 16, Tailwind 4) are tracked in #248. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
 
 `package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
 

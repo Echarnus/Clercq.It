@@ -4,7 +4,7 @@ import { getApiUrl, BlogSchema, ProjectSchema, type Blog, type Project } from ".
 
 // Certification schema
 export const CertificationSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   title: z.string(),
   issuer: z.string(),
   issueDate: z.string(),

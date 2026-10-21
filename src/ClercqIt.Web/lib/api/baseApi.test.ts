@@ -10,6 +10,8 @@ import {
   getApiUrl,
   getBlogsBaseUrl,
   getProjectsBaseUrl,
+  BlogSchema,
+  ProjectSchema,
 } from "./baseApi";
 
 describe("API URLs", () => {
@@ -98,5 +100,14 @@ describe("fetchBlogs / fetchBlog", () => {
     server.use(http.get(`${API}/api/blogs*`, () => HttpResponse.error()));
     expect(await fetchBlogs("")).toEqual([]);
     expect(await fetchBlog(`/${blog.id}`)).toBeNull();
+  });
+});
+
+describe("schemas", () => {
+  it("accept any .NET Guid, not only RFC 9562 UUIDs (zod 4's uuid() is stricter)", () => {
+    const seededId = "00000000-0000-0000-0000-000000000001";
+
+    expect(ProjectSchema.safeParse({ ...project, id: seededId }).success).toBe(true);
+    expect(BlogSchema.safeParse({ ...blog, id: seededId }).success).toBe(true);
   });
 });

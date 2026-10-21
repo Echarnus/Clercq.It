@@ -20,9 +20,9 @@ export const getBlogsBaseUrl = () => `${getBaseApiUrl()}/api/blogs`;
 
 // Zod schema for Project validation
 export const ProjectSchema = z.object({
-  id: z.string().uuid(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+  id: z.guid(),
+  startDate: z.iso.datetime(),
+  endDate: z.iso.datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
   image: z.string(), // Can be empty string or URL
@@ -36,9 +36,9 @@ export type Project = z.infer<typeof ProjectSchema>;
 
 // Zod schema for Blog validation
 export const BlogSchema = z.object({
-  id: z.string().uuid(),
-  createdDate: z.string().datetime(),
-  publishDate: z.string().datetime(),
+  id: z.guid(),
+  createdDate: z.iso.datetime(),
+  publishDate: z.iso.datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
   image: z.string(), // Can be empty string or URL

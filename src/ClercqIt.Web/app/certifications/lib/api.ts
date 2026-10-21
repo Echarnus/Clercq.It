@@ -3,7 +3,7 @@ import { getApiUrl } from "@/lib/api/baseApi";
 
 // Certification schema
 export const CertificationSchema = z.object({
-  id: z.string().uuid(),
+  id: z.guid(),
   title: z.string(),
   issuer: z.string(),
   issueDate: z.string(),
