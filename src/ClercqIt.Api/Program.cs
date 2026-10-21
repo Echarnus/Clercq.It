@@ -1,12 +1,9 @@
-using System.Text;
 using System.Threading.RateLimiting;
 using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 

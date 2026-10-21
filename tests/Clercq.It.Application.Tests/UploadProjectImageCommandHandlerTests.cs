@@ -20,7 +20,7 @@ public class UploadProjectImageCommandHandlerTests
         // Arrange
         var expectedUrl = "https://s3.fr-par.scw.cloud/test-bucket/project-images/test-image.jpg";
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 "test-image.jpg",
@@ -42,7 +42,7 @@ public class UploadProjectImageCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Url.Should().Be(expectedUrl);
-        
+
         _mockObjectStorageService.Verify(x => x.UploadFileAsync(
             "test-image.jpg",
             imageStream,
@@ -56,7 +56,7 @@ public class UploadProjectImageCommandHandlerTests
     {
         // Arrange
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),

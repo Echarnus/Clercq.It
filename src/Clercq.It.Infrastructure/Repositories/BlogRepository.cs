@@ -1,7 +1,7 @@
-using Microsoft.EntityFrameworkCore;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
 using Clercq.It.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Repositories;
 

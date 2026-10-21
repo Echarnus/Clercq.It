@@ -1,7 +1,7 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Certifications.Commands;
 
@@ -47,7 +47,7 @@ public class CreateCertificationCommandHandler : IRequestHandler<CreateCertifica
 
         // Add to repository
         await _certificationRepository.AddAsync(certification, cancellationToken);
-        
+
         // Save changes
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

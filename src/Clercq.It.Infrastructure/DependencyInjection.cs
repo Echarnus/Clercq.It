@@ -1,14 +1,13 @@
+using Amazon.Runtime;
+using Amazon.S3;
+using Clercq.It.Domain.Abstractions;
+using Clercq.It.Infrastructure.Configuration;
+using Clercq.It.Infrastructure.Data;
+using Clercq.It.Infrastructure.Repositories;
+using Clercq.It.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Clercq.It.Domain.Abstractions;
-using Clercq.It.Infrastructure.Data;
-using Clercq.It.Infrastructure.Repositories;
-using Clercq.It.Infrastructure.Configuration;
-using Clercq.It.Infrastructure.Services;
-using Amazon.S3;
-using Amazon.Runtime;
-using Microsoft.Extensions.Options;
 
 namespace Clercq.It.Infrastructure;
 

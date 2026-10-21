@@ -72,8 +72,8 @@ public class CreateBlogCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ShortDescription" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ShortDescription" &&
             e.ErrorMessage.Contains("500"));
     }
 
@@ -190,8 +190,8 @@ public class CreateBlogCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "ImageFileName" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "ImageFileName" &&
             e.ErrorMessage.Contains("extension"));
     }
 
@@ -283,8 +283,8 @@ public class CreateBlogCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Tags" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Tags" &&
             e.ErrorMessage.Contains("At least one"));
     }
 
@@ -307,8 +307,8 @@ public class CreateBlogCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => 
-            e.PropertyName == "Tags" && 
+        result.Errors.Should().Contain(e =>
+            e.PropertyName == "Tags" &&
             e.ErrorMessage.Contains("Maximum 10"));
     }
 

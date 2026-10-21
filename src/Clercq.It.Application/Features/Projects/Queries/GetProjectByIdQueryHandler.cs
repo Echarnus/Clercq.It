@@ -1,6 +1,6 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Projects.Queries;
 
@@ -16,12 +16,12 @@ public class GetProjectByIdQueryHandler : IRequestHandler<GetProjectByIdQuery, P
     public async Task<ProjectDto?> Handle(GetProjectByIdQuery request, CancellationToken cancellationToken)
     {
         var project = await _projectRepository.GetByIdAsync(request.Id, cancellationToken);
-        
+
         if (project == null)
         {
             return null;
         }
-        
+
         return new ProjectDto(
             project.Id,
             project.StartDate,

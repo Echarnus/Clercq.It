@@ -1,7 +1,7 @@
 using System.Linq.Expressions;
-using Microsoft.EntityFrameworkCore;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Repositories;
 

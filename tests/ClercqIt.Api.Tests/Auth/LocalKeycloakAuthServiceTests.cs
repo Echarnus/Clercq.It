@@ -4,13 +4,12 @@ using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using Clercq.It.Api.Features.Auth;
+using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Moq;
 using Moq.Protected;
-using Xunit;
-using FluentAssertions;
 
 namespace ClercqIt.Api.Tests.Auth;
 

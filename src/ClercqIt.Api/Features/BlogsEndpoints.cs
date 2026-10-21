@@ -1,7 +1,6 @@
-using MediatR;
-using Clercq.It.Application.Features.Blogs.Queries;
 using Clercq.It.Application.Features.Blogs.Commands;
-using Microsoft.AspNetCore.Authorization;
+using Clercq.It.Application.Features.Blogs.Queries;
+using MediatR;
 
 namespace Clercq.It.Api.Features;
 

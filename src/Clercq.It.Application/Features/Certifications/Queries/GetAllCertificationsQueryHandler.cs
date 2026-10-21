@@ -1,6 +1,6 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Certifications.Queries;
 
@@ -16,7 +16,7 @@ public class GetAllCertificationsQueryHandler : IRequestHandler<GetAllCertificat
     public async Task<IEnumerable<CertificationDto>> Handle(GetAllCertificationsQuery request, CancellationToken cancellationToken)
     {
         var certifications = await _certificationRepository.GetAllAsync(cancellationToken);
-        
+
         return certifications.Select(c => new CertificationDto(
             c.Id,
             c.Title,

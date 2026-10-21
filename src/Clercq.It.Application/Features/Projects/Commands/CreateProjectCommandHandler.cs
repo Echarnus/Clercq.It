@@ -1,8 +1,8 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
 using Clercq.It.Domain.ValueObjects;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Projects.Commands;
 

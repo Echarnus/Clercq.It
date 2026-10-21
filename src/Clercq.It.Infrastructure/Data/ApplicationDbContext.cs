@@ -1,5 +1,5 @@
-using Microsoft.EntityFrameworkCore;
 using Clercq.It.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Data;
 

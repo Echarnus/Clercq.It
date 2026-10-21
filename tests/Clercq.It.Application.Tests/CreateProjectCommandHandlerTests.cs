@@ -1,7 +1,6 @@
 using Clercq.It.Application.Features.Projects.Commands;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
-using Clercq.It.Domain.ValueObjects;
 
 namespace Clercq.It.Application.Tests.Features.Projects.Commands;
 

@@ -20,7 +20,7 @@ public class UploadBlogImageCommandHandlerTests
         // Arrange
         var imageUrl = "https://s3.fr-par.scw.cloud/test-bucket/blog-images/inline/test-image.jpg";
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -56,7 +56,7 @@ public class UploadBlogImageCommandHandlerTests
     {
         // Arrange
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),
@@ -89,7 +89,7 @@ public class UploadBlogImageCommandHandlerTests
     {
         // Arrange
         var imageStream = new MemoryStream();
-        
+
         _mockObjectStorageService
             .Setup(x => x.UploadFileAsync(
                 MoqIt.IsAny<string>(),

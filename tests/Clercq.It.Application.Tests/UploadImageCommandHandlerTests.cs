@@ -41,7 +41,7 @@ public class UploadImageCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Url.Should().Be(expectedUrl);
-        
+
         _mockObjectStorageService.Verify(x => x.UploadFileAsync(
             "test.jpg",
             imageStream,

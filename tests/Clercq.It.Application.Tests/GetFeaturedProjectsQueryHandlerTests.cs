@@ -74,7 +74,7 @@ public class GetFeaturedProjectsQueryHandlerTests
         var startDate = DateTime.UtcNow.AddMonths(-4);
         var endDate = DateTime.UtcNow.AddMonths(-1);
         var skills = new Skills(new[] { "TypeScript", "Next.js", "PostgreSQL" });
-        
+
         var featuredProject = new Project
         {
             Id = Guid.NewGuid(),

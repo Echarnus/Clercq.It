@@ -1,6 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Clercq.It.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 var configuration = new ConfigurationBuilder()
     .SetBasePath(Directory.GetCurrentDirectory())
@@ -26,10 +26,10 @@ optionsBuilder.UseNpgsql(connectionString);
 try
 {
     using var context = new ApplicationDbContext(optionsBuilder.Options);
-    
+
     Console.WriteLine("Applying database migrations...");
     await context.Database.MigrateAsync();
-    
+
     Console.WriteLine("✅ Database migrations applied successfully.");
     return 0;
 }

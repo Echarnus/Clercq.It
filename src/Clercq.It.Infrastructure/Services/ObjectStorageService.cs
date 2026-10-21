@@ -23,11 +23,11 @@ public class ObjectStorageService : IObjectStorageService
         {
             throw new InvalidOperationException("Object storage is not configured. Please configure ObjectStorage settings in appsettings.json");
         }
-        
+
         // Use different path prefix for inline images vs header images
         var pathPrefix = isInlineImage ? "blog-images/inline" : "blog-images";
         var key = $"{pathPrefix}/{Guid.NewGuid()}/{fileName}";
-        
+
         var request = new PutObjectRequest
         {
             BucketName = _settings.BucketName,
@@ -38,7 +38,7 @@ public class ObjectStorageService : IObjectStorageService
         };
 
         await _s3Client.PutObjectAsync(request, cancellationToken);
-        
+
         // Return the public URL
         return $"{_settings.Endpoint}/{_settings.BucketName}/{key}";
     }
@@ -49,11 +49,11 @@ public class ObjectStorageService : IObjectStorageService
         {
             throw new InvalidOperationException("Object storage is not configured. Please configure ObjectStorage settings in appsettings.json");
         }
-        
+
         // Extract key from URL
         var uri = new Uri(fileUrl);
         var key = uri.AbsolutePath.TrimStart('/');
-        
+
         // Remove bucket name from the beginning if present
         if (key.StartsWith(_settings.BucketName + "/"))
         {

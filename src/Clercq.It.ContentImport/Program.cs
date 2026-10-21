@@ -33,7 +33,7 @@ catch (ContentException ex)
 }
 
 // Lets content without local images import when ObjectStorage is not configured.
-sealed class UnconfiguredImageStore : IContentImageStore
+internal sealed class UnconfiguredImageStore : IContentImageStore
 {
     public Task<string> UploadAsync(string localPath, CancellationToken cancellationToken) =>
         throw new InvalidOperationException($"ObjectStorage is not configured; it is needed to upload {localPath}.");

@@ -1,8 +1,8 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Domain.Entities;
 using Clercq.It.Domain.ValueObjects;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Blogs.Commands;
 
@@ -46,7 +46,7 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, BlogD
 
         // Add to repository
         await _blogRepository.AddAsync(blog, cancellationToken);
-        
+
         // Save changes
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

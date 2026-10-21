@@ -1,6 +1,6 @@
-using MediatR;
 using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Domain.Abstractions;
+using MediatR;
 
 namespace Clercq.It.Application.Features.Blogs.Queries;
 
@@ -16,7 +16,7 @@ public class GetAllBlogsQueryHandler : IRequestHandler<GetAllBlogsQuery, IEnumer
     public async Task<IEnumerable<BlogDto>> Handle(GetAllBlogsQuery request, CancellationToken cancellationToken)
     {
         var blogs = await _blogRepository.GetAllAsync(cancellationToken);
-        
+
         return blogs.Select(b => new BlogDto(
             b.Id,
             b.CreatedDate,
