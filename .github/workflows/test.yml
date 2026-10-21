@@ -52,13 +52,19 @@ jobs:
           echo "## ✅ .NET Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "- Built production and test projects in Release configuration, warnings as errors" >> $GITHUB_STEP_SUMMARY
 
-      - name: Test .NET projects from /tests/
+      - name: Unit tests
         run: |
-          echo "🧪 Running .NET tests..."
-          dotnet test Clercq.It.CI.slnf --no-build --configuration Release --verbosity normal \
+          dotnet test Clercq.It.CI.slnf --no-build --configuration Release \
+            --filter "FullyQualifiedName!~ClercqIt.Api.Tests" \
+            --collect:"XPlat Code Coverage" --results-directory ./coverage
+
+      # Real PostgreSQL and Keycloak in containers via Testcontainers (issue #244, docs/testing.md#api-integration-tests)
+      - name: API integration tests
+        run: |
+          dotnet test tests/ClercqIt.Api.Tests --no-build --configuration Release \
             --collect:"XPlat Code Coverage" --results-directory ./coverage
           echo "## ✅ .NET Tests Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- All .NET unit and integration tests executed" >> $GITHUB_STEP_SUMMARY
+          echo "- Unit tests and API integration tests (Postgres + Keycloak containers) passed" >> $GITHUB_STEP_SUMMARY
 
       # Fails below tests/coverage-thresholds.json (issue #242, docs/testing.md#coverage)
       - name: Coverage gate

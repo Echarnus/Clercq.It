@@ -2,7 +2,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class SecurityHeaderTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class SecurityHeaderTests : IAsyncLifetime
 {
     private readonly HttpClient _client;
 
@@ -10,6 +11,10 @@ public class SecurityHeaderTests : IClassFixture<CustomWebApplicationFactory>
     {
         _client = factory.CreateClient();
     }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "Response contains X-Content-Type-Options security header")]
     public async Task Response_AnyEndpoint_ContainsXContentTypeOptions()

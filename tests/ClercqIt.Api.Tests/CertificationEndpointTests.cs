@@ -5,7 +5,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class CertificationEndpointTests : IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -16,6 +17,10 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
         _factory = factory;
         _client = _factory.CreateClient();
     }
+
+    public Task InitializeAsync() => _factory.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "GET /api/certifications returns OK")]
     public async Task GetAllCertifications_EndpointCalled_ReturnsOk()
@@ -28,7 +33,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact(DisplayName = "POST /api/certifications returns Created with valid data")]
     public async Task CreateCertification_ValidData_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateCertificationFormContent(
             "Azure Solutions Architect",
             "Microsoft",
@@ -45,13 +50,13 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
         var certification = JsonSerializer.Deserialize<JsonElement>(content, JsonOptions);
         certification.GetProperty("title").GetString().Should().Be("Azure Solutions Architect");
         certification.GetProperty("issuer").GetString().Should().Be("Microsoft");
-        certification.GetProperty("image").GetString().Should().Be("https://test-storage.example.com/test-image.png");
+        certification.GetProperty("image").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
     }
 
     [Fact(DisplayName = "POST /api/certifications returns Created without expiry date")]
     public async Task CreateCertification_WithoutExpiryDate_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateCertificationFormContent(
             "AWS Cloud Practitioner",
             "Amazon Web Services",
@@ -73,7 +78,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact(DisplayName = "POST /api/certifications returns BadRequest without image")]
     public async Task CreateCertification_NoImage_ReturnsBadRequest()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = new MultipartFormDataContent();
         formContent.Add(new StringContent("No Image Cert"), "title");
         formContent.Add(new StringContent("Issuer"), "issuer");
@@ -101,7 +106,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact(DisplayName = "GET /api/certifications/{id} returns OK for existing certification")]
     public async Task GetCertificationById_CertificationExists_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateCertificationFormContent(
             "Get By Id Cert", "Issuer", "2024-06-01", "2026-06-01",
             "CRED-GET", "https://example.com/get", "Get by id description");
@@ -131,7 +136,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact(DisplayName = "PUT /api/certifications/{id} returns OK with updated data")]
     public async Task UpdateCertification_ValidData_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create first
         using var createContent = CreateCertificationFormContent(
@@ -165,7 +170,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
     [Fact(DisplayName = "DELETE /api/certifications/{id} returns NoContent after successful deletion")]
     public async Task DeleteCertification_CertificationExists_ReturnsNoContent()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         using var createContent = CreateCertificationFormContent(
             "Delete Cert", "Issuer", "2024-01-01", null,
@@ -189,13 +194,7 @@ public class CertificationEndpointTests : IClassFixture<CustomWebApplicationFact
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private HttpClient CreateAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        var token = TestJwtTokenHelper.GenerateToken("Admin.View", "Certifications.Contributor");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
+    private Task<HttpClient> CreateAuthenticatedClientAsync() => _factory.CreateClientForUserAsync("certs");
 
     private static MultipartFormDataContent CreateCertificationFormContent(
         string title, string issuer, string issueDate, string? expiryDate,

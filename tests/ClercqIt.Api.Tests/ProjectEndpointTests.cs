@@ -5,7 +5,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class ProjectEndpointTests : IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -16,6 +17,10 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
         _factory = factory;
         _client = _factory.CreateClient();
     }
+
+    public Task InitializeAsync() => _factory.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "GET /api/projects returns OK")]
     public async Task GetAllProjects_EndpointCalled_ReturnsOk()
@@ -28,7 +33,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "POST /api/projects returns Created with valid data and image")]
     public async Task CreateProject_WithImage_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateProjectFormContent(
             "Test Project", "Short desc", "Long description",
             "2024-01-01", "2024-12-31", "false", "csharp,dotnet");
@@ -45,7 +50,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "POST /api/projects returns Created without image")]
     public async Task CreateProject_WithoutImage_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = new MultipartFormDataContent();
         formContent.Add(new StringContent("No Image Project"), "title");
         formContent.Add(new StringContent("Short"), "shortDescription");
@@ -66,7 +71,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "POST /api/projects returns Created with featured flag set to true")]
     public async Task CreateProject_AsFeatured_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateProjectFormContent(
             "Featured Project", "Featured short", "Featured long description",
             "2024-01-01", "2024-06-30", "true", "react,typescript");
@@ -94,7 +99,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "GET /api/projects/featured returns only featured projects")]
     public async Task GetFeaturedProjects_MixedProjects_ReturnsOnlyFeatured()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create a featured project
         using var featuredContent = CreateProjectFormContent(
@@ -123,7 +128,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "GET /api/projects/{id} returns OK for existing project")]
     public async Task GetProjectById_ProjectExists_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateProjectFormContent(
             "Get By Id Project", "Short", "Long",
             "2024-01-01", "2024-12-31", "false", "go");
@@ -153,7 +158,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "PUT /api/projects/{id} returns OK when toggling featured flag")]
     public async Task UpdateProject_TogglingFeatured_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create a non-featured project
         using var createContent = CreateProjectFormContent(
@@ -186,7 +191,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "DELETE /api/projects/{id} returns NoContent after successful deletion")]
     public async Task DeleteProject_ProjectExists_ReturnsNoContent()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         using var createContent = CreateProjectFormContent(
             "Delete Me", "Short", "Long",
@@ -210,13 +215,7 @@ public class ProjectEndpointTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private HttpClient CreateAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        var token = TestJwtTokenHelper.GenerateToken("Admin.View", "Projects.Contributor");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
+    private Task<HttpClient> CreateAuthenticatedClientAsync() => _factory.CreateClientForUserAsync("projects");
 
     private static MultipartFormDataContent CreateProjectFormContent(
         string title, string shortDescription, string longDescription,

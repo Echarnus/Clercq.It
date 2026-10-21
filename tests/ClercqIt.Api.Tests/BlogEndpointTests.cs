@@ -5,7 +5,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class BlogEndpointTests : IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -16,6 +17,10 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
         _factory = factory;
         _client = _factory.CreateClient();
     }
+
+    public Task InitializeAsync() => _factory.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "GET /api/blogs returns OK with empty list when no blogs exist")]
     public async Task GetAllBlogs_NoBlogsExist_ReturnsOkWithEmptyList()
@@ -31,7 +36,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "POST /api/blogs returns Created with valid multipart data")]
     public async Task CreateBlog_ValidMultipartData_ReturnsCreated()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateBlogFormContent("Test Blog Short", "Test Blog Long Description", "tag1,tag2");
 
         var response = await client.PostAsync("/api/blogs", formContent);
@@ -41,7 +46,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
         var blog = JsonSerializer.Deserialize<JsonElement>(content, JsonOptions);
         blog.GetProperty("shortDescription").GetString().Should().Be("Test Blog Short");
         blog.GetProperty("longDescription").GetString().Should().Be("Test Blog Long Description");
-        blog.GetProperty("image").GetString().Should().Be("https://test-storage.example.com/test-image.png");
+        blog.GetProperty("image").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
     }
 
     [Fact(DisplayName = "POST /api/blogs returns Unauthorized without authentication token")]
@@ -57,7 +62,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "GET /api/blogs/{id} returns OK after blog creation")]
     public async Task GetBlogById_BlogExists_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
         using var formContent = CreateBlogFormContent("Get By Id Blog", "Long description for get by id", "dotnet");
 
         var createResponse = await client.PostAsync("/api/blogs", formContent);
@@ -87,7 +92,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "PUT /api/blogs/{id} returns OK with new image")]
     public async Task UpdateBlog_WithNewImage_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create a blog first
         using var createContent = CreateBlogFormContent("Original Blog", "Original Long", "original");
@@ -110,7 +115,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "PUT /api/blogs/{id} returns OK without image (keeps existing)")]
     public async Task UpdateBlog_WithoutImage_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create a blog first
         using var createContent = CreateBlogFormContent("Blog To Update", "Long content here", "tech");
@@ -150,7 +155,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "DELETE /api/blogs/{id} returns NoContent after successful deletion")]
     public async Task DeleteBlog_BlogExists_ReturnsNoContent()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         // Create a blog first
         using var createContent = CreateBlogFormContent("Blog To Delete", "Will be deleted", "temp");
@@ -168,7 +173,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
     [Fact(DisplayName = "DELETE /api/blogs/{id} returns NotFound for non-existent blog")]
     public async Task DeleteBlog_BlogDoesNotExist_ReturnsNotFound()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         var response = await client.DeleteAsync($"/api/blogs/{Guid.NewGuid()}");
 
@@ -183,13 +188,7 @@ public class BlogEndpointTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private HttpClient CreateAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        var token = TestJwtTokenHelper.GenerateToken("Admin.View", "Blogs.Contributor");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
+    private Task<HttpClient> CreateAuthenticatedClientAsync() => _factory.CreateClientForUserAsync("blogger");
 
     private static MultipartFormDataContent CreateBlogFormContent(
         string shortDescription, string longDescription, string tags)
