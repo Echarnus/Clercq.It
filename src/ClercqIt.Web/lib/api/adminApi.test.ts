@@ -1,3 +1,5 @@
+// jsdom's File and FormData do not serialize through Node 24's fetch (content-length mismatch); the API client needs no DOM.
+// @vitest-environment node
 import { http, HttpResponse } from "msw";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { API, blog, certification, project } from "@/test/msw/fixtures";

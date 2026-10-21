@@ -8,6 +8,6 @@ beforeAll(() => server.listen({ onUnhandledFrame: "error" }));
 afterEach(() => {
   server.resetHandlers();
   cleanup();
-  localStorage.clear();
+  if (typeof window !== "undefined") window.localStorage.clear();
 });
 afterAll(() => server.close());
