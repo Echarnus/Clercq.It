@@ -7,11 +7,32 @@ Clercq.It uses **trunk-based development with continuous deployment to productio
 - **`main`** is the trunk. It is always deployable and is the only long-lived branch.
 - **Work branches** are short-lived (hours to days) and created from `main` per issue: `<type>/<issue>-<slug>`, where type is `feat`, `fix`, `chore`, `infra`, `content`, `docs` or `security`. Example: `fix/231-admin-login`.
 - Work branches merge back through a pull request once the required checks pass (squash merge). See [Contributing](./contributing.md) for the full issue → PR → production loop.
-- Unfinished work that must merge early is hidden behind a feature flag instead of living on a long branch.
+- Unfinished work that must merge early is hidden behind a [feature flag](#feature-flags) instead of living on a long branch.
 - A fix for production is a normal work branch (`fix/...`) merged to `main`; there is no separate hotfix flow.
 - Rollback = redeploy the image of an earlier release (`Deploy to Scaleway` → Run workflow → version). A failed post-deploy smoke test rolls back automatically ([devops.md](./devops.md#smoke-test-and-rollback)).
 
 Not used, on purpose: `develop`, `release/*`, `hotfix/*`, `support/*`. If one appears, it is a mistake.
+
+## Feature flags
+
+A feature flag lets unfinished work merge to `main` and ship to production switched off (issue #253). Flags are plain configuration: the `FeatureFlags` section of the API configuration, one boolean per flag. Every flag is off unless it is set to `true`.
+
+| Where | How a flag is turned on |
+| --- | --- |
+| Production | the `feature_flags` default in `infra/terraform/feature_flags.tf`, e.g. `{ NewBlogEditor = true }`. Terraform sets the container env var `FeatureFlags__NewBlogEditor=true`; `Deploy Infra` applies it on merge. |
+| Local (Aspire or `dotnet run`) | `src/ClercqIt.Api/appsettings.Development.json` (`"FeatureFlags": { "NewBlogEditor": true }`) or the env var `FeatureFlags__NewBlogEditor=true` |
+| API integration tests | `factory.WithWebHostBuilder(b => b.UseSetting("FeatureFlags:NewBlogEditor", "true"))` |
+| Frontend unit tests | override the MSW handler for `/api/features` with `server.use(...)` to return `{ NewBlogEditor: true }` (the default handler returns no flags) |
+
+**Add and use a flag**
+
+- API endpoint or group: `.RequireFeature("NewBlogEditor")`. While the flag is off it answers 404, as if the endpoint did not exist. In a handler or service, inject `IFeatureFlags` and call `IsEnabled("NewBlogEditor")`.
+- Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` (cached for a minute; off when the API is unreachable). Hide a page in a server component with `if (!(await isEnabled("NewBlogEditor"))) notFound();`, and hide links to it the same way.
+- Name flags in PascalCase after the feature, not after a ticket. Names are case-insensitive.
+
+Flags are public (`GET /api/features` is anonymous) and are not access control: admin features still need their authorization policy.
+
+**Remove a flag** once the feature is live: delete the `RequireFeature` and `isEnabled` calls, the entry in `infra/terraform/feature_flags.tf` and any local settings, in one PR. A flag that stays on for more than a few weeks is dead code.
 
 ## Versions
 
