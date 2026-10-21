@@ -351,6 +351,8 @@ One standard for every editor and for CI, defined in two files at the repo root:
 - **`.editorconfig`**: indentation, line endings and charset for every file type, and the C# style rules: file-scoped namespaces, `using` outside the namespace, `var` when the type is obvious, PascalCase types and members, `I` prefix on interfaces, `_camelCase` private fields. It also tunes analyzer severities.
 - **`Directory.Build.props`**: applies to every project under `src/` and `tests/`. It sets `Nullable` and `ImplicitUsings`, the .NET analyzers at `AnalysisLevel=latest-recommended`, and `EnforceCodeStyleInBuild`. Release builds treat every warning as an error. The exceptions are NuGet vulnerability warnings (NU1901 to NU1904), which Dependabot and the security scan handle, and the local-only Aspire AppHost.
 
+- **`src/Directory.Packages.props`**: central package management (`ManagePackageVersionsCentrally`). Every NuGet version lives here; `PackageReference` items in the csproj files have no `Version`. To add a package, add a `PackageVersion` line here and a version-less `PackageReference` in the project. It sits in `src/` because the Docker build context is `src/` (the Dockerfile copies it before `dotnet restore`); `tests/Directory.Packages.props` imports it. Dependabot updates it.
+
 `Clercq.It.CI.slnf` is the solution without the AppHost. Use it for restore, build, test and format, as CI does.
 
 ```bash
@@ -409,6 +411,7 @@ With no human review, agents are the only thing between a change and production,
 | --- | --- |
 | `quality-check` | Runs every PR gate as CI does and prints a pass/fail table: docs check, pipeline script tests, `dotnet format`, Release build, unit and architecture tests, API integration tests and the coverage gate (when Docker runs), ESLint, Prettier, `tsc`, Vitest with coverage, `next build`, `terraform fmt` and `validate`. `--fast` skips the integration tests, coverage gate and `next build`. This is the definition-of-done command: a PR is opened only after a full run passes. |
 | `fix-quality` | Runs the auto-fixers (`dotnet format`, `eslint --fix`, Prettier, `terraform fmt`), then `quality-check` again. |
+| `write-tests` | Writes tests for a class, endpoint, component or diff in the house style ([testing](./testing.md#claude-code-skills)), runs them and reports what is covered. |
 
 You can run the check yourself too: `.claude/skills/quality-check/quality-check.sh`.
 

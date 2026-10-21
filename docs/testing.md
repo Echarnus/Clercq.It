@@ -8,7 +8,7 @@ How the backend and the frontend are tested, including API integration tests aga
 | --- | --- |
 | Test framework | xUnit 2 |
 | Assertions | FluentAssertions **7** (stay on 7: version 8 moved to a commercial licence) |
-| Test doubles | Moq (aliased as `MoqIt` for `It`, to avoid the clash with xUnit) |
+| Test doubles | Moq, the only mocking library for new tests (aliased as `MoqIt` for `It`, to avoid the clash with xUnit) |
 | API integration | Testcontainers (PostgreSQL 17, Keycloak 26.4), Respawn, `WebApplicationFactory<Program>` |
 | Coverage | `coverlet.collector`, reports with ReportGenerator (local tool in `.config/dotnet-tools.json`) |
 | Architecture rules | NetArchTest, in `tests/Clercq.It.Architecture.Tests` ([rules](./architecture.md#architecture-rules)) |
@@ -35,6 +35,15 @@ A test class is named after the class it tests plus `Tests`, and its namespace m
 - Every Application handler has at least one happy-path test and one failure test (a dependency that throws, a missing entity, or an empty result for queries).
 - Every new or changed endpoint gets integration tests for its happy path, validation (400), not found (404) where it applies, and auth: anonymous (401), no role and wrong role (403). Protected endpoints are listed in `EndpointAuthorizationTests`.
 - Assert on behaviour (returned DTO, calls made or not made), not on implementation details.
+
+Package versions for test projects come from `src/Directory.Packages.props` like the rest (see [development](./development.md#code-style)).
+
+## Claude Code skills
+
+| Skill | What it does |
+| --- | --- |
+| `write-tests` (`.claude/skills/write-tests/SKILL.md`) | Given a class, endpoint, component or diff, lists the behaviours to cover, writes tests in this page's style in the right project, runs them and reports what is covered. First used on `ValidationExceptionHandler` (`tests/ClercqIt.Api.Tests/ValidationExceptionHandlerTests.cs`). |
+| `quality-check` (`.claude/skills/quality-check/SKILL.md`) | Runs every gate a PR needs, including `dotnet test` with coverage and the thresholds in `tests/coverage-thresholds.json`, and prints a pass/fail table. |
 
 ## Running
 
