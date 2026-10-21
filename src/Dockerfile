@@ -39,7 +39,7 @@ RUN dotnet build ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/build
 RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
-FROM node:23-slim AS node-base
+FROM node:24-slim AS node-base
 RUN npm install -g pnpm@10.12.4
 
 # Install dependencies for Next.js
@@ -83,8 +83,8 @@ COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/share/dotnet /usr/share/dot
 COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/bin/dotnet /usr/bin/dotnet
 
 # Copy Node.js from Node.js image  
-COPY --from=node:23-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:23-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node:24-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:24-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 # Create symlinks for npm and npx
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \

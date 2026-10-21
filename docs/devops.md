@@ -47,7 +47,7 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - Tests located in `/tests/` directory
 
 #### test-frontend
-- Uses Node.js 23 and pnpm
+- Uses Node.js 24 (LTS) and pnpm, the same Node major as the Docker image (`node:24-slim`)
 - Runs Jest tests and ESLint
 - Builds Next.js application to verify compilation
 

@@ -6,10 +6,14 @@ This guide covers local development setup and workflows for the Clercq.It projec
 
 ### Required Software
 - **.NET 9.0 SDK** - [Download](https://dotnet.microsoft.com/download/dotnet/9.0)
-- **Node.js 23+** - [Download](https://nodejs.org/)
+- **Node.js 24 LTS** - [Download](https://nodejs.org/). CI (`test.yml`, `security-scan.yml`) and the Docker image (`node:24-slim`) use the same major.
 - **pnpm 10.12.4+** - Install with `npm install -g pnpm`
 - **Docker** - [Download](https://www.docker.com/products/docker-desktop)
 - **Git** - [Download](https://git-scm.com/)
+
+### Frontend versions
+
+The frontend runs Next.js 15.5, React 19 and Tailwind CSS 3.4 (`tailwind.config.ts`). The major upgrades (Next.js 16, Tailwind 4, zod 4) are tracked in #248. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
 
 ### Optional Tools
 - **Visual Studio 2022** or **VS Code** with C# extension
