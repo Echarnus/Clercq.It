@@ -28,18 +28,16 @@ public class UpdateCertificationCommandHandlerTests
     {
         // Arrange
         var certId = Guid.NewGuid();
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = DateTime.UtcNow.AddYears(2),
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = "https://example.com/cert.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: DateTime.UtcNow.AddYears(2),
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
@@ -113,18 +111,16 @@ public class UpdateCertificationCommandHandlerTests
     {
         // Arrange
         var certId = Guid.NewGuid();
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = DateTime.UtcNow.AddYears(2),
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = "https://example.com/old-image.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: DateTime.UtcNow.AddYears(2),
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/old-image.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
@@ -177,18 +173,16 @@ public class UpdateCertificationCommandHandlerTests
         // Arrange
         var certId = Guid.NewGuid();
         var existingImageUrl = "https://example.com/existing-image.jpg";
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = DateTime.UtcNow.AddYears(2),
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = existingImageUrl
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: DateTime.UtcNow.AddYears(2),
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: existingImageUrl);
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
@@ -228,18 +222,16 @@ public class UpdateCertificationCommandHandlerTests
     {
         // Arrange
         var certId = Guid.NewGuid();
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = DateTime.UtcNow.AddYears(2),
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = "https://example.com/cert.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: DateTime.UtcNow.AddYears(2),
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
@@ -274,18 +266,16 @@ public class UpdateCertificationCommandHandlerTests
     {
         // Arrange
         var certId = Guid.NewGuid();
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = DateTime.UtcNow.AddYears(2),
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = "https://example.com/cert.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: DateTime.UtcNow.AddYears(2),
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))

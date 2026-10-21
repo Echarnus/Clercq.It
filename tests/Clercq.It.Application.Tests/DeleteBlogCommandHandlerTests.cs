@@ -26,14 +26,12 @@ public class DeleteBlogCommandHandlerTests
     {
         // Arrange
         var blogId = Guid.NewGuid();
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Blog to delete",
-            LongDescription = "Long description",
-            Image = "https://example.com/image.jpg",
-            Tags = new Tags(new[] { "Tag1" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Blog to delete",
+            longDescription: "Long description",
+            image: "https://example.com/image.jpg",
+            tags: new Tags(new[] { "Tag1" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))
@@ -84,14 +82,12 @@ public class DeleteBlogCommandHandlerTests
     {
         // Arrange
         var blogId = Guid.NewGuid();
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Blog to delete",
-            LongDescription = "Long description",
-            Image = "https://example.com/image.jpg",
-            Tags = new Tags(new[] { "Tag1" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Blog to delete",
+            longDescription: "Long description",
+            image: "https://example.com/image.jpg",
+            tags: new Tags(new[] { "Tag1" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))

@@ -23,18 +23,16 @@ public class GetCertificationByIdQueryHandlerTests
         var issueDate = DateTime.UtcNow.AddYears(-1);
         var expiryDate = DateTime.UtcNow.AddYears(2);
 
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Azure Expert",
-            Issuer = "Microsoft",
-            IssueDate = issueDate,
-            ExpiryDate = expiryDate,
-            CredentialId = "CERT-123",
-            CredentialUrl = "https://example.com/cert",
-            Description = "Test cert",
-            Image = "https://example.com/cert.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: issueDate,
+            expiryDate: expiryDate,
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
@@ -82,18 +80,16 @@ public class GetCertificationByIdQueryHandlerTests
     {
         // Arrange
         var certId = Guid.NewGuid();
-        var existingCert = new Certification
-        {
-            Id = certId,
-            Title = "Lifetime Certification",
-            Issuer = "Microsoft",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = null,
-            CredentialId = "LIFETIME-001",
-            CredentialUrl = "https://example.com/cert",
-            Description = "This certification never expires",
-            Image = "https://example.com/cert.jpg"
-        };
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Lifetime Certification",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: null,
+            credentialId: "LIFETIME-001",
+            credentialUrl: "https://example.com/cert",
+            description: "This certification never expires",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))

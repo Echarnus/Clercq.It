@@ -45,10 +45,15 @@ of the suite in CI, so a violation fails the PR.
 | Repository contracts are interfaces in Domain, implemented in Infrastructure | `DomainModelTests` |
 | MediatR requests end in `Command` or `Query`, handlers in `Handler`, validators in `Validator`, all in Application | `DomainModelTests` |
 
-Known exception: `Blog`, `Certification` and `Project` still have public
-setters. They are on an allow-list in `DomainModelTests` until #277 moves them
-to constructors and behaviour methods. Do not add new aggregates to that list;
-a test fails if the list names an aggregate that no longer exists.
+Aggregates change state only through their constructor, a `Create` factory and
+behaviour methods (`Update`, `ChangeImage`, `Reschedule` on `Blog`, `Feature` and
+`Unfeature` on `Project`), which enforce the invariants: a blog needs a short
+description, a project a title and an end date on or after its start, and a
+certification a title, an issuer and an expiry date on or after its issue date.
+A violation throws `ArgumentException`; the Application validators reject the
+same input earlier with a 400. EF Core loads rows through a private parameterless
+constructor and private setters (#277). Tests build aggregates with the
+`Aggregates` helper in `tests/Clercq.It.Application.Tests/Aggregates.cs`.
 
 Run only these tests:
 

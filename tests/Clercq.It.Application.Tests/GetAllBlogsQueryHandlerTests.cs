@@ -76,16 +76,14 @@ public class GetAllBlogsQueryHandlerTests
         var publishDate = DateTime.UtcNow.AddDays(-25);
         var tags = new Tags(new[] { "Development", "Testing", "C#" });
 
-        var blog = new Blog
-        {
-            Id = Guid.NewGuid(),
-            ShortDescription = "Short blog description",
-            LongDescription = "Long blog description",
-            CreatedDate = createdDate,
-            PublishDate = publishDate,
-            Image = "https://example.com/blog.jpg",
-            Tags = tags
-        };
+        var blog = Aggregates.Blog(
+            id: Guid.NewGuid(),
+            shortDescription: "Short blog description",
+            longDescription: "Long blog description",
+            createdDate: createdDate,
+            publishDate: publishDate,
+            image: "https://example.com/blog.jpg",
+            tags: tags);
 
         _mockBlogRepository
             .Setup(x => x.GetAllAsync(MoqIt.IsAny<CancellationToken>()))
@@ -131,15 +129,13 @@ public class GetAllBlogsQueryHandlerTests
 
     private static Blog CreateTestBlog(string identifier, string[]? tags = null)
     {
-        return new Blog
-        {
-            Id = Guid.NewGuid(),
-            ShortDescription = $"Short description for {identifier}",
-            LongDescription = $"Long description for {identifier}",
-            CreatedDate = DateTime.UtcNow.AddDays(-30),
-            PublishDate = DateTime.UtcNow.AddDays(-25),
-            Image = $"https://example.com/{identifier.ToLower().Replace(" ", "-")}.jpg",
-            Tags = new Tags(tags ?? new[] { "Development", "Testing" })
-        };
+        return Aggregates.Blog(
+            id: Guid.NewGuid(),
+            shortDescription: $"Short description for {identifier}",
+            longDescription: $"Long description for {identifier}",
+            createdDate: DateTime.UtcNow.AddDays(-30),
+            publishDate: DateTime.UtcNow.AddDays(-25),
+            image: $"https://example.com/{identifier.ToLower().Replace(" ", "-")}.jpg",
+            tags: new Tags(tags ?? new[] { "Development", "Testing" }));
     }
 }

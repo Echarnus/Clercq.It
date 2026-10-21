@@ -29,16 +29,14 @@ public class UpdateBlogCommandHandlerTests
     {
         // Arrange
         var blogId = Guid.NewGuid();
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Old description",
-            LongDescription = "Old long description",
-            Image = "https://example.com/old-image.jpg",
-            CreatedDate = DateTime.UtcNow.AddDays(-10),
-            PublishDate = DateTime.UtcNow.AddDays(-5),
-            Tags = new Tags(new[] { "OldTag" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Old description",
+            longDescription: "Old long description",
+            image: "https://example.com/old-image.jpg",
+            createdDate: DateTime.UtcNow.AddDays(-10),
+            publishDate: DateTime.UtcNow.AddDays(-5),
+            tags: new Tags(new[] { "OldTag" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))
@@ -123,14 +121,12 @@ public class UpdateBlogCommandHandlerTests
     {
         // Arrange
         var blogId = Guid.NewGuid();
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Old description",
-            LongDescription = "Old long description",
-            Image = "https://example.com/old-image.jpg",
-            Tags = new Tags(new[] { "Tag1" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Old description",
+            longDescription: "Old long description",
+            image: "https://example.com/old-image.jpg",
+            tags: new Tags(new[] { "Tag1" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))
@@ -179,14 +175,12 @@ public class UpdateBlogCommandHandlerTests
         // Arrange
         var blogId = Guid.NewGuid();
         var existingImageUrl = "https://example.com/existing-image.jpg";
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Old description",
-            LongDescription = "Old long description",
-            Image = existingImageUrl,
-            Tags = new Tags(new[] { "Tag1" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Old description",
+            longDescription: "Old long description",
+            image: existingImageUrl,
+            tags: new Tags(new[] { "Tag1" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))
@@ -222,14 +216,12 @@ public class UpdateBlogCommandHandlerTests
     {
         // Arrange
         var blogId = Guid.NewGuid();
-        var existingBlog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Old description",
-            LongDescription = "Old long description",
-            Image = "https://example.com/image.jpg",
-            Tags = new Tags(new[] { "OldTag1", "OldTag2" })
-        };
+        var existingBlog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Old description",
+            longDescription: "Old long description",
+            image: "https://example.com/image.jpg",
+            tags: new Tags(new[] { "OldTag1", "OldTag2" }));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))

@@ -25,16 +25,14 @@ public class GetBlogByIdQueryHandlerTests
         var publishDate = DateTime.UtcNow.AddDays(-25);
         var tags = new Tags(new[] { "Development", "Testing", "C#" });
 
-        var blog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Short blog description",
-            LongDescription = "Long blog description",
-            CreatedDate = createdDate,
-            PublishDate = publishDate,
-            Image = "https://example.com/blog.jpg",
-            Tags = tags
-        };
+        var blog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Short blog description",
+            longDescription: "Long blog description",
+            createdDate: createdDate,
+            publishDate: publishDate,
+            image: "https://example.com/blog.jpg",
+            tags: tags);
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))
@@ -85,16 +83,14 @@ public class GetBlogByIdQueryHandlerTests
         // Arrange
         var blogId = Guid.NewGuid();
         var expectedTags = new[] { "C#", "DDD", "SOLID", "Testing", "Clean Architecture" };
-        var blog = new Blog
-        {
-            Id = blogId,
-            ShortDescription = "Short description",
-            LongDescription = "Long description",
-            CreatedDate = DateTime.UtcNow,
-            PublishDate = DateTime.UtcNow,
-            Image = "https://example.com/image.jpg",
-            Tags = new Tags(expectedTags)
-        };
+        var blog = Aggregates.Blog(
+            id: blogId,
+            shortDescription: "Short description",
+            longDescription: "Long description",
+            createdDate: DateTime.UtcNow,
+            publishDate: DateTime.UtcNow,
+            image: "https://example.com/image.jpg",
+            tags: new Tags(expectedTags));
 
         _mockBlogRepository
             .Setup(x => x.GetByIdAsync(blogId, MoqIt.IsAny<CancellationToken>()))

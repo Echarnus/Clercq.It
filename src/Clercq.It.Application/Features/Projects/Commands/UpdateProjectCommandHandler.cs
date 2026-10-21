@@ -38,17 +38,18 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
                 request.ImageContentType,
                 isInlineImage: false,
                 cancellationToken);
-            project.Image = imageUrl;
+            project.ChangeImage(imageUrl);
         }
 
         // Update other properties
-        project.Title = request.Title;
-        project.ShortDescription = request.ShortDescription;
-        project.LongDescription = request.LongDescription;
-        project.StartDate = request.StartDate;
-        project.EndDate = request.EndDate;
-        project.Featured = request.Featured;
-        project.Skills = new Skills(request.Skills);
+        project.Update(
+            request.Title,
+            request.ShortDescription,
+            request.LongDescription,
+            request.StartDate,
+            request.EndDate,
+            request.Featured,
+            new Skills(request.Skills));
 
         await _projectRepository.UpdateAsync(project, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

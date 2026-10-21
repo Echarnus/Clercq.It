@@ -22,30 +22,26 @@ public class GetAllProjectsQueryHandlerTests
         // Arrange
         var projects = new List<Project>
         {
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Title = "Project 1",
-                ShortDescription = "Short 1",
-                LongDescription = "Long 1",
-                Image = "https://example.com/image1.jpg",
-                StartDate = DateTime.UtcNow.AddYears(-1),
-                EndDate = DateTime.UtcNow,
-                Featured = true,
-                Skills = new Skills(new[] { "C#", ".NET" })
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Title = "Project 2",
-                ShortDescription = "Short 2",
-                LongDescription = "Long 2",
-                Image = "https://example.com/image2.jpg",
-                StartDate = DateTime.UtcNow.AddMonths(-6),
-                EndDate = DateTime.UtcNow.AddMonths(-3),
-                Featured = false,
-                Skills = new Skills(new[] { "Python", "Django" })
-            }
+            Aggregates.Project(
+                id: Guid.NewGuid(),
+                title: "Project 1",
+                shortDescription: "Short 1",
+                longDescription: "Long 1",
+                image: "https://example.com/image1.jpg",
+                startDate: DateTime.UtcNow.AddYears(-1),
+                endDate: DateTime.UtcNow,
+                featured: true,
+                skills: new Skills(new[] { "C#", ".NET" })),
+            Aggregates.Project(
+                id: Guid.NewGuid(),
+                title: "Project 2",
+                shortDescription: "Short 2",
+                longDescription: "Long 2",
+                image: "https://example.com/image2.jpg",
+                startDate: DateTime.UtcNow.AddMonths(-6),
+                endDate: DateTime.UtcNow.AddMonths(-3),
+                featured: false,
+                skills: new Skills(new[] { "Python", "Django" }))
         };
 
         _mockProjectRepository
@@ -90,18 +86,16 @@ public class GetAllProjectsQueryHandlerTests
         var endDate = new DateTime(2023, 12, 31, 0, 0, 0, DateTimeKind.Utc);
         var skills = new[] { "Angular", "TypeScript", "Node.js" };
 
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "Full Stack Application",
-            ShortDescription = "A modern web application",
-            LongDescription = "# Full Stack Application\n\nBuilt with Angular and Node.js",
-            Image = "https://storage.example.com/projects/fullstack.png",
-            StartDate = startDate,
-            EndDate = endDate,
-            Featured = true,
-            Skills = new Skills(skills)
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Full Stack Application",
+            shortDescription: "A modern web application",
+            longDescription: "# Full Stack Application\n\nBuilt with Angular and Node.js",
+            image: "https://storage.example.com/projects/fullstack.png",
+            startDate: startDate,
+            endDate: endDate,
+            featured: true,
+            skills: new Skills(skills));
 
         _mockProjectRepository
             .Setup(x => x.GetAllAsync(MoqIt.IsAny<CancellationToken>()))
@@ -171,20 +165,16 @@ public class GetAllProjectsQueryHandlerTests
         // Arrange
         var projects = new List<Project>
         {
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Title = "Featured Project",
-                Featured = true,
-                Skills = new Skills(Array.Empty<string>())
-            },
-            new()
-            {
-                Id = Guid.NewGuid(),
-                Title = "Regular Project",
-                Featured = false,
-                Skills = new Skills(Array.Empty<string>())
-            }
+            Aggregates.Project(
+                id: Guid.NewGuid(),
+                title: "Featured Project",
+                featured: true,
+                skills: new Skills(Array.Empty<string>())),
+            Aggregates.Project(
+                id: Guid.NewGuid(),
+                title: "Regular Project",
+                featured: false,
+                skills: new Skills(Array.Empty<string>()))
         };
 
         _mockProjectRepository
@@ -207,12 +197,10 @@ public class GetAllProjectsQueryHandlerTests
     public async Task Handle_ShouldHandleProjectWithEmptySkills()
     {
         // Arrange
-        var project = new Project
-        {
-            Id = Guid.NewGuid(),
-            Title = "Project with no skills",
-            Skills = new Skills(Array.Empty<string>())
-        };
+        var project = Aggregates.Project(
+            id: Guid.NewGuid(),
+            title: "Project with no skills",
+            skills: new Skills(Array.Empty<string>()));
 
         _mockProjectRepository
             .Setup(x => x.GetAllAsync(MoqIt.IsAny<CancellationToken>()))
@@ -234,9 +222,9 @@ public class GetAllProjectsQueryHandlerTests
         // Arrange
         var projects = new List<Project>
         {
-            new() { Id = Guid.NewGuid(), Title = "Alpha", Skills = new Skills(Array.Empty<string>()) },
-            new() { Id = Guid.NewGuid(), Title = "Beta", Skills = new Skills(Array.Empty<string>()) },
-            new() { Id = Guid.NewGuid(), Title = "Gamma", Skills = new Skills(Array.Empty<string>()) }
+            Aggregates.Project(id: Guid.NewGuid(), title: "Alpha", skills: new Skills(Array.Empty<string>())),
+            Aggregates.Project(id: Guid.NewGuid(), title: "Beta", skills: new Skills(Array.Empty<string>())),
+            Aggregates.Project(id: Guid.NewGuid(), title: "Gamma", skills: new Skills(Array.Empty<string>()))
         };
 
         _mockProjectRepository

@@ -1,4 +1,5 @@
 using Clercq.It.Domain.Entities;
+using Clercq.It.Domain.ValueObjects;
 using Clercq.It.Infrastructure.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -91,13 +92,59 @@ public sealed class ContentImporterTests : IDisposable
         (await db.Certifications.SingleAsync()).Title.Should().Be("AZ-204 Developer");
     }
 
+    [Fact(DisplayName = "Changing project and blog files updates their fields, dates and images")]
+    public async Task Import_ChangedProjectAndBlog_UpdatesRows()
+    {
+        Write("projects/site.md", "---\ntitle: Site\nshortDescription: v1\nstartDate: 2025-01-01\n---\n");
+        Write("blogs/hello.md", "---\nshortDescription: v1\ncreatedDate: 2025-01-01\ntags: [a]\n---\n");
+        await ImportAsync();
+
+        Write("projects/site.md",
+            "---\ntitle: Site\nshortDescription: v2\nstartDate: 2025-01-01\nendDate: 2025-02-01\nimage: /p.svg\n---\n");
+        Write("blogs/hello.md",
+            "---\nshortDescription: v1\ncreatedDate: 2025-01-01\npublishDate: 2025-01-05\ntags: [a, b]\nimage: /b.svg\n---\n");
+        var result = await ImportAsync();
+
+        result.Should().Be(new ImportResult(0, 2, 0));
+        await using var db = NewDb();
+        var project = await db.Projects.SingleAsync();
+        project.ShortDescription.Should().Be("v2");
+        project.EndDate.Should().Be(new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc));
+        project.Image.Should().Be("/p.svg");
+        var blog = await db.Blogs.SingleAsync();
+        blog.PublishDate.Should().Be(new DateTime(2025, 1, 5, 0, 0, 0, DateTimeKind.Utc));
+        blog.Image.Should().Be("/b.svg");
+        blog.Tags.Values.Should().Equal("a", "b");
+    }
+
+    [Fact(DisplayName = "A missing local image is reported against the file")]
+    public async Task Import_MissingImage_Throws()
+    {
+        Write("projects/site.md", "---\ntitle: Site\nshortDescription: x\nstartDate: 2025-01-01\nimage: images/none.png\n---\n");
+
+        var act = ImportAsync;
+
+        await act.Should().ThrowAsync<ContentException>().WithMessage("*projects/site.md*images/none.png*not found*");
+    }
+
+    [Fact(DisplayName = "A file that breaks an aggregate rule is reported against that file")]
+    public async Task Import_ProjectEndingBeforeItStarts_Throws()
+    {
+        Write("projects/backwards.md",
+            "---\ntitle: Backwards\nshortDescription: x\nstartDate: 2025-06-01\nendDate: 2025-01-01\n---\n");
+
+        var act = ImportAsync;
+
+        await act.Should().ThrowAsync<ContentException>().WithMessage("*projects/backwards.md*cannot end before it starts*");
+    }
+
     [Fact(DisplayName = "Rows created in the admin UI are left alone")]
     public async Task Import_LeavesAdminRowsAlone()
     {
         var adminId = Guid.NewGuid();
         await using (var db = NewDb())
         {
-            db.Projects.Add(new Project { Id = adminId, Title = "From admin", ShortDescription = "x", LongDescription = "x", Image = "x" });
+            db.Projects.Add(new Project(adminId, "From admin", "x", "x", "x", DateTime.UtcNow, DateTime.UtcNow, false, new Skills([])));
             await db.SaveChangesAsync();
         }
         Write("projects/clercqit.md", Project);

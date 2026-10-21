@@ -38,13 +38,11 @@ public class UpdateBlogCommandHandler : IRequestHandler<UpdateBlogCommand, BlogD
                 request.ImageContentType,
                 isInlineImage: false,
                 cancellationToken);
-            blog.Image = imageUrl;
+            blog.ChangeImage(imageUrl);
         }
 
         // Update other properties
-        blog.ShortDescription = request.ShortDescription;
-        blog.LongDescription = request.LongDescription;
-        blog.Tags = new Tags(request.Tags);
+        blog.Update(request.ShortDescription, request.LongDescription, new Tags(request.Tags));
 
         await _blogRepository.UpdateAsync(blog, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

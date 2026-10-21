@@ -4,92 +4,99 @@ namespace Clercq.It.Domain.Tests.Entities;
 
 public class CertificationTests
 {
-    [Fact]
-    public void Certification_ShouldInitializeWithDefaultValues()
-    {
-        // Act
-        var certification = new Certification();
+    private static readonly DateTime Issued = new(2023, 5, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Assert
-        certification.Id.Should().BeEmpty();
-        certification.Title.Should().BeEmpty();
-        certification.Issuer.Should().BeEmpty();
-        certification.CredentialId.Should().BeEmpty();
-        certification.CredentialUrl.Should().BeEmpty();
-        certification.Description.Should().BeEmpty();
-        certification.Image.Should().BeEmpty();
-        certification.IssueDate.Should().Be(default(DateTime));
-        certification.ExpiryDate.Should().BeNull();
-    }
+    private static Certification NewCertification() =>
+        new(Guid.NewGuid(), "AZ-204", "Microsoft", Issued, null, "", "", "", "img");
 
     [Fact]
-    public void Certification_ShouldSetAllProperties()
+    public void Constructor_WithValidValues_SetsAllProperties()
     {
         // Arrange
         var id = Guid.NewGuid();
-        var issueDate = DateTime.UtcNow.AddYears(-1);
-        var expiryDate = DateTime.UtcNow.AddYears(2);
 
         // Act
-        var certification = new Certification
-        {
-            Id = id,
-            Title = "AWS Certified Solutions Architect",
-            Issuer = "Amazon Web Services",
-            IssueDate = issueDate,
-            ExpiryDate = expiryDate,
-            CredentialId = "AWS-SAA-12345",
-            CredentialUrl = "https://aws.amazon.com/verification/12345",
-            Description = "Professional certification for AWS Solutions Architect",
-            Image = "https://example.com/cert.jpg"
-        };
+        var certification = new Certification(id, "AZ-204", "Microsoft", Issued, Issued.AddYears(1), "ABC",
+            "https://learn.microsoft.com/c", "Developer", "img");
 
         // Assert
         certification.Id.Should().Be(id);
-        certification.Title.Should().Be("AWS Certified Solutions Architect");
-        certification.Issuer.Should().Be("Amazon Web Services");
-        certification.IssueDate.Should().Be(issueDate);
-        certification.ExpiryDate.Should().Be(expiryDate);
-        certification.CredentialId.Should().Be("AWS-SAA-12345");
-        certification.CredentialUrl.Should().Be("https://aws.amazon.com/verification/12345");
-        certification.Description.Should().Be("Professional certification for AWS Solutions Architect");
-        certification.Image.Should().Be("https://example.com/cert.jpg");
+        certification.Title.Should().Be("AZ-204");
+        certification.Issuer.Should().Be("Microsoft");
+        certification.IssueDate.Should().Be(Issued);
+        certification.ExpiryDate.Should().Be(Issued.AddYears(1));
+        certification.CredentialId.Should().Be("ABC");
+        certification.CredentialUrl.Should().Be("https://learn.microsoft.com/c");
+        certification.Description.Should().Be("Developer");
+        certification.Image.Should().Be("img");
     }
 
     [Fact]
-    public void Certification_ShouldHandleNullExpiryDate()
+    public void Create_WithoutExpiry_AssignsNewId()
     {
         // Act
-        var certification = new Certification
-        {
-            Title = "Lifetime Certification",
-            Issuer = "Test Issuer",
-            IssueDate = DateTime.UtcNow,
-            ExpiryDate = null,
-            Description = "A certification that never expires"
-        };
+        var certification = Certification.Create("AZ-204", "Microsoft", Issued, null, "", "", "", "img");
 
         // Assert
+        certification.Id.Should().NotBeEmpty();
         certification.ExpiryDate.Should().BeNull();
     }
 
-    [Fact]
-    public void Certification_ShouldHandleOptionalCredentials()
+    [Theory]
+    [InlineData("", "Microsoft")]
+    [InlineData("AZ-204", " ")]
+    public void Constructor_WithBlankTitleOrIssuer_Throws(string title, string issuer)
     {
         // Act
-        var certification = new Certification
-        {
-            Title = "Test Certification",
-            Issuer = "Test Issuer",
-            IssueDate = DateTime.UtcNow,
-            Description = "Test description",
-            Image = "https://example.com/cert.jpg",
-            CredentialId = "",
-            CredentialUrl = ""
-        };
+        var act = () => new Certification(Guid.NewGuid(), title, issuer, Issued, null, "", "", "", "img");
 
         // Assert
-        certification.CredentialId.Should().BeEmpty();
-        certification.CredentialUrl.Should().BeEmpty();
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Update_WithExpiryBeforeIssue_ThrowsAndKeepsState()
+    {
+        // Arrange
+        var certification = NewCertification();
+
+        // Act
+        var act = () => certification.Update("New", "Microsoft", Issued, Issued.AddDays(-1), "", "", "");
+
+        // Assert
+        act.Should().Throw<ArgumentException>().WithMessage("*cannot expire before it was issued*");
+        certification.Title.Should().Be("AZ-204");
+    }
+
+    [Fact]
+    public void Update_WithValidValues_ReplacesContent()
+    {
+        // Arrange
+        var certification = NewCertification();
+
+        // Act
+        certification.Update("AZ-305", "Microsoft Learn", Issued.AddDays(1), Issued.AddYears(2), "X", "https://x", "Architect");
+
+        // Assert
+        certification.Title.Should().Be("AZ-305");
+        certification.Issuer.Should().Be("Microsoft Learn");
+        certification.IssueDate.Should().Be(Issued.AddDays(1));
+        certification.ExpiryDate.Should().Be(Issued.AddYears(2));
+        certification.CredentialId.Should().Be("X");
+        certification.CredentialUrl.Should().Be("https://x");
+        certification.Description.Should().Be("Architect");
+    }
+
+    [Fact]
+    public void ChangeImage_WithUrl_ReplacesImage()
+    {
+        // Arrange
+        var certification = NewCertification();
+
+        // Act
+        certification.ChangeImage("https://example.com/c.png");
+
+        // Assert
+        certification.Image.Should().Be("https://example.com/c.png");
     }
 }
