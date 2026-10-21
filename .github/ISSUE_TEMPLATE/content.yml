@@ -1,0 +1,39 @@
+name: Content
+description: A project, blog post or certification to publish
+labels: ["type:content", "status:ready"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What to publish and where it should appear.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Text, links and images to include.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checkable outcomes, one per line as "- [ ] ...".
+    validations:
+      required: true
+  - type: textarea
+    id: docs
+    attributes:
+      label: Docs to update
+      description: Which pages under docs/ change, or "none, because ...".
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [web, api, auth, infra, ci]
+    validations:
+      required: true

@@ -16,8 +16,20 @@ The project uses six main workflows:
 4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
 5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
 6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
+8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
+
+How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md).
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
+
+## Workflow and review pipelines
+
+### Docs check (`docs-check.yml`)
+Runs on every PR to `main` (skipped for Dependabot). If the PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, it must also change a file under `docs/`, `CLAUDE.md` or `README.md`. The `docs:not-needed` label overrides the check; the PR body must then say why.
+
+### Sync labels (`labels.yml`)
+Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates or updates each label listed there; labels not in the file are left alone.
 
 ## Test Pipeline (`test.yml`)
 
@@ -37,6 +49,11 @@ Additionally, **Dependabot** runs automatically to keep dependencies secure and 
 - Uses Node.js 23 and pnpm
 - Runs Jest tests and ESLint
 - Builds Next.js application to verify compilation
+
+
+#### docker-build
+- Pull requests only
+- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`
 
 ### Example
 
@@ -66,6 +83,10 @@ gh workflow run test.yml
   - Short SHA (e.g., `abc1234`)
   - `latest` (for main branch)
 - Generates build attestation for security
+
+### Third-party actions
+
+`aquasecurity/trivy-action` is pinned to a commit SHA (v0.36.0). Its old unprefixed tags such as `0.28.0` no longer exist upstream, which is what broke every build on `main` from 10 March 2026. Prefer SHA pins for third-party actions.
 
 ### Docker Image Tags
 
@@ -453,11 +474,14 @@ Advanced code analysis:
 - **Analysis**: Security-extended queries
 
 #### Dependabot
-Automated dependency updates:
+Automated dependency updates (`.github/dependabot.yml`):
 - **Schedule**: Weekly on Mondays at 8:00 AM UTC
-- **Ecosystems**: NuGet, npm, GitHub Actions, Docker, Terraform
-- **Auto-assignment**: PRs assigned to repository owner
-- **Labeling**: Categorized by dependency type
+- **Ecosystems**: NuGet, npm (`src/ClercqIt.Web` and `tests/ClercqIt.Web.Tests`), GitHub Actions, Docker, Terraform
+- **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
+- **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
+- **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
+- **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
+- **Security updates**: grouping applies to version updates only; Dependabot security updates still arrive as one PR per dependency.
 
 ## Best Practices
 
@@ -474,7 +498,7 @@ Automated dependency updates:
 4. Every automatic deploy is tagged `prod-<version>` with a GitHub Release (see [Versioning](./versioning.md#production-releases))
 
 ### Security
-1. **Review Dependabot PRs promptly**: Keep dependencies up to date
+1. **Keep the Dependabot queue short**: merge green grouped PRs weekly; plan majors as issues
 2. **Monitor security alerts**: Check GitHub Security tab regularly
 3. **Run local security scans**: Test before pushing changes
 4. **Never commit secrets**: Use environment variables and GitHub Secrets

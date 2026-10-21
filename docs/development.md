@@ -234,6 +234,38 @@ pnpm dev
 
 The web application will be available at `http://localhost:3000`
 
+## Cloud agent environment (Claude Code on the web)
+
+Agents work in a Claude Code cloud container. `.claude/hooks/session-start.sh` (registered in `.claude/settings.json`) runs at session start in that container only, and makes it able to build, test and plan:
+
+| Tool | How it is installed | Why |
+| --- | --- | --- |
+| .NET SDK 10 (`dotnet-sdk-10.0` from Ubuntu) | `apt-get` | Microsoft's .NET download hosts are blocked by the environment's network policy, and Ubuntu 24.04 ships no 9.0 SDK. SDK 10 builds the `net9.0` projects. |
+| `DOTNET_ROLL_FORWARD=Major` | written to the session environment | Lets the `net9.0` test hosts run on the 10.0 runtime. CI and the Docker image still use .NET 9. |
+| Terraform 1.6.6 | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
+| Scaleway CLI 2.40.0 (pinned) | binary from GitHub releases | Reading secrets from Scaleway Secret Manager |
+| NuGet and pnpm packages | `dotnet restore` (API and test projects, never the Aspire AppHost) and `pnpm install --frozen-lockfile` | Builds and tests run without further setup |
+
+The hook is idempotent and synchronous: the session starts once it finishes.
+
+What the owner configures on the cloud environment (Project settings → Cloud environment), not in the repo:
+
+- Network secrets `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID` for a read-only Secret Manager key (see issue #226).
+- Network access to `clercq.it` and the Scaleway APIs, for smoke tests and secret reads.
+
+No `global.json` pins the SDK on purpose: the cloud environment can only install SDK 10, while CI and Docker use 9.0. Pinning would break one of them.
+
+Commands agents run before opening a PR:
+
+```bash
+dotnet build src/ClercqIt.Api/ClercqIt.Api.csproj
+dotnet test tests/ClercqIt.Api.Tests
+dotnet test tests/Clercq.It.Application.Tests
+dotnet test tests/Clercq.It.Domain.Tests
+cd src/ClercqIt.Web && pnpm lint && pnpm build
+cd infra/terraform && terraform fmt -check
+```
+
 ## Configuration
 
 ### Connection Strings
