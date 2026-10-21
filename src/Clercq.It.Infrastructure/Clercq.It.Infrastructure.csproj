@@ -8,6 +8,10 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.7.7" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.9" />
+    <!-- Pinned so consumers get the version this assembly is built against. Without it,
+         Npgsql 9.0.4 pulls Relational 9.0.1 into projects that do not reference
+         EF Core Design, and they fail at runtime loading 9.0.9. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="9.0.9" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.9">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>

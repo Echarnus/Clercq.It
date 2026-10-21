@@ -84,6 +84,7 @@ Paths outside `content/` are rejected.
 - If you edit an imported item in the admin UI, the next import overwrites the fields that differ from the file. The file is the source of truth for items that have one.
 - All files are parsed before anything is written. One invalid file stops the import and fails the deploy, with the file name and the problem in the log.
 - The `RepoContentTests` test imports the real `content/` folder in CI, so a broken file already fails the pull request.
+- The project treats assembly version conflicts (MSB3277) as build errors. The test host loads mismatched assemblies that the real app cannot, so a conflict would otherwise pass CI and crash the deploy. `Clercq.It.Infrastructure` pins `Microsoft.EntityFrameworkCore.Relational` for the same reason; keep it on the same version as `Microsoft.EntityFrameworkCore`.
 
 ## Running it locally
 
