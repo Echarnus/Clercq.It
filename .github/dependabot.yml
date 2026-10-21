@@ -17,6 +17,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # FluentAssertions 8+ has a commercial licence; we stay on 7.x (#290).
+      - dependency-name: "FluentAssertions"
+        versions: [">= 8"]
     labels:
       - "dependencies"
       - "dotnet"
