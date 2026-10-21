@@ -1,5 +1,6 @@
 using System.Threading.RateLimiting;
 using Clercq.It.Api;
+using Clercq.It.Api.FeatureFlags;
 using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
 using Clercq.It.Application;
@@ -129,6 +130,7 @@ builder.Services.AddAuthorization(options =>
 
 // Add Clean Architecture layers
 builder.Services.AddApplication();
+builder.Services.AddFeatureFlags();
 
 // Validation failures from the MediatR pipeline become 400 responses
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
@@ -214,6 +216,7 @@ app.MapImagesEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 app.MapCertificationsEndpoints();
+app.MapFeatureFlagEndpoints();
 
 app.Run();
 

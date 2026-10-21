@@ -19,4 +19,6 @@ export const handlers = [
       ? HttpResponse.json(certification)
       : new HttpResponse(null, { status: 404 }),
   ),
+  // Every feature flag is off unless a test turns it on.
+  http.get(`${API}/api/features`, () => HttpResponse.json({})),
 ];
