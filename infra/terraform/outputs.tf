@@ -131,3 +131,22 @@ output "administration_infrastructure_summary" {
     }
   }
 }
+
+# =============================================================================
+# Secret Manager and IAM Outputs
+# =============================================================================
+
+output "secret_ids" {
+  description = "Secret Manager secret IDs by name (path /clercq-it)"
+  value       = { for name, secret in scaleway_secret.app : name => secret.id }
+}
+
+output "claude_agent_application_id" {
+  description = "IAM application to create the read-only API key for Claude cloud sessions"
+  value       = scaleway_iam_application.claude_agent.id
+}
+
+output "app_storage_application_id" {
+  description = "IAM application whose API key the container uses for object storage"
+  value       = scaleway_iam_application.app_storage.id
+}

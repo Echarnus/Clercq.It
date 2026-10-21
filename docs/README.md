@@ -8,6 +8,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [Architecture](./architecture.md) | Layers, design patterns, project structure |
 | [Development](./development.md) | Local setup with Aspire, Keycloak test users, troubleshooting |
 | [DevOps](./devops.md) | GitHub Actions pipelines, deployment, required secrets |
+| [Secrets](./secrets.md) | Scaleway Secret Manager: which secrets exist, who can read them, rotation |
 | [Versioning](./versioning.md) | GitVersion and branching strategy |
 | [Migrations](./migrations.md) | EF Core migrations and how they reach production |
 | [Cloud IAM](./ciam.md) | Production Keycloak (Cloud IAM) realm, clients and roles |

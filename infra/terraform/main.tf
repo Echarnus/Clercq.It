@@ -7,6 +7,10 @@ terraform {
       source  = "scaleway/scaleway"
       version = "~> 2.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.6"
+    }
   }
 
   # Backend configuration for remote state storage using Scaleway Object Storage
@@ -43,8 +47,13 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   is_ha_cluster  = false
   disable_backup = false
   user_name      = "clercqit_admin"
-  password       = var.database_password
+  password       = local.secrets["db-app-password"]
   region         = var.scaleway_region
+
+  # Public endpoint the serverless containers connect to. Declared explicitly:
+  # without it the provider leaves load_balancer empty and every
+  # load_balancer.0 reference fails at plan time.
+  load_balancer {}
 }
 
 # Database for the application (managed by Terraform)
@@ -57,7 +66,7 @@ resource "scaleway_rdb_database" "portfolio_app_db" {
 resource "scaleway_rdb_user" "portfolio_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
-  password    = var.database_password
+  password    = local.secrets["db-app-password"]
   is_admin    = false
 }
 
@@ -97,23 +106,28 @@ resource "scaleway_container" "portfolio_app" {
   timeout = 30
 
   environment_variables = {
-    "ObjectStorage__Endpoint"              = "https://s3.${var.scaleway_region}.scw.cloud"
-    "ObjectStorage__BucketName"            = scaleway_object_bucket.blog_images.name
-    "ObjectStorage__Region"                = var.scaleway_region
-    "ObjectStorage__AccessKey"             = var.scaleway_access_key
-    "ObjectStorage__SecretKey"             = var.scaleway_secret_key
-    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${var.database_password}"
-    "ASPNETCORE_ENVIRONMENT"               = "Production"
-    "NODE_ENV"                             = "production"
-    "OTEL_EXPORTER_OTLP_ENDPOINT"          = "https://cockpit.fr-par.scw.cloud:4317"
-    "OTEL_EXPORTER_OTLP_PROTOCOL"          = "grpc"
+    "ObjectStorage__Endpoint"     = "https://s3.${var.scaleway_region}.scw.cloud"
+    "ObjectStorage__BucketName"   = scaleway_object_bucket.blog_images.name
+    "ObjectStorage__Region"       = var.scaleway_region
+    "ASPNETCORE_ENVIRONMENT"      = "Production"
+    "NODE_ENV"                    = "production"
+    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
+    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
+    "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
+    "Keycloak__Realm"             = var.keycloak_realm
+    "Keycloak__ClientId"          = "clercqit-web"
+    "Keycloak__AdminClientId"     = "clercqit-admin"
+  }
+
+  # Secret values come from Scaleway Secret Manager (secrets.tf) and the
+  # Terraform-managed storage key (iam.tf); they are not shown in the console.
+  secret_environment_variables = {
+    "ObjectStorage__AccessKey"             = scaleway_iam_api_key.app_storage.access_key
+    "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${local.secrets["db-app-password"]}"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
-    "Keycloak__BaseUrl"                    = var.keycloak_base_url
-    "Keycloak__Realm"                      = var.keycloak_realm
-    "Keycloak__ClientId"                   = "clercqit-web"
-    "Keycloak__ClientSecret"               = var.keycloak_web_client_secret
-    "Keycloak__AdminClientId"              = "clercqit-admin"
-    "Keycloak__AdminClientSecret"          = var.keycloak_admin_client_secret
+    "Keycloak__ClientSecret"               = local.secrets["keycloak-web-client-secret"]
+    "Keycloak__AdminClientSecret"          = local.secrets["keycloak-admin-client-secret"]
   }
 
   tags = [
@@ -168,7 +182,7 @@ resource "scaleway_cockpit_token" "portfolio_logs_token" {
 resource "scaleway_rdb_user" "administration_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = var.administration_database_user
-  password    = var.administration_database_password
+  password    = local.secrets["db-administration-password"]
   is_admin    = false
 }
 
@@ -201,9 +215,6 @@ resource "scaleway_container" "administration_api" {
   timeout = 30
 
   environment_variables = {
-    # Database connection (same instance, administration schema via SearchPath)
-    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=${scaleway_rdb_user.administration_app_user.name};Password=${var.administration_database_password};SearchPath=administration"
-
     # ASP.NET Core settings
     "ASPNETCORE_ENVIRONMENT" = "Production"
     "ASPNETCORE_URLS"        = "http://+:8080"
@@ -211,16 +222,22 @@ resource "scaleway_container" "administration_api" {
     # OpenTelemetry (shared Cockpit token)
     "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
     "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_EXPORTER_OTLP_HEADERS"  = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "OTEL_SERVICE_NAME"           = "administration-api"
 
     # Keycloak (admin client)
-    "Keycloak__BaseUrl"           = var.keycloak_base_url
-    "Keycloak__Realm"             = var.keycloak_realm
-    "Keycloak__ClientId"          = "clercqit-admin"
-    "Keycloak__ClientSecret"      = var.keycloak_admin_client_secret
-    "Keycloak__AdminClientId"     = "clercqit-admin"
-    "Keycloak__AdminClientSecret" = var.keycloak_admin_client_secret
+    "Keycloak__BaseUrl"       = local.secrets["keycloak-base-url"]
+    "Keycloak__Realm"         = var.keycloak_realm
+    "Keycloak__ClientId"      = "clercqit-admin"
+    "Keycloak__AdminClientId" = "clercqit-admin"
+  }
+
+  # Secret values come from Scaleway Secret Manager (secrets.tf).
+  secret_environment_variables = {
+    # Database connection (same instance, administration schema via SearchPath)
+    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=${scaleway_rdb_user.administration_app_user.name};Password=${local.secrets["db-administration-password"]};SearchPath=administration"
+    "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
+    "Keycloak__ClientSecret"               = local.secrets["keycloak-admin-client-secret"]
+    "Keycloak__AdminClientSecret"          = local.secrets["keycloak-admin-client-secret"]
   }
 
   tags = [

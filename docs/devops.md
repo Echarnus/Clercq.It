@@ -216,6 +216,7 @@ gh workflow run codeql.yml
 - Creates Terraform execution plan
 - Runs on pull requests
 - Uses `infrastructure-plan` environment
+- A failing `terraform plan` fails the job (`set -o pipefail`, since the output is piped through `tee`). Before this fix the check stayed green on a broken plan. The plan is still posted as a PR comment when it fails.
 
 #### terraform-apply
 - Applies Terraform changes to production
@@ -342,16 +343,21 @@ Released versions are listed as GitHub Releases (`prod-<version>` tags).
 
 ## Required Secrets
 
-### Docker Hub
-- `DOCKER_USERNAME`: Docker Hub username
-- `DOCKER_PASSWORD`: Docker Hub password or token
+Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets.md)). GitHub keeps only what the pipelines need to reach Scaleway and Docker Hub, plus seed values that are read once while the secrets are created.
 
-### Scaleway
-- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for S3 backend)
-- `SCALEWAY_SECRET_KEY`: Scaleway API secret key (also used as AWS_SECRET_ACCESS_KEY for S3 backend)
+### Scaleway (GitHub repository secrets)
+- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for the S3 state backend). Needs IAM manager rights, because Terraform creates IAM applications and policies.
+- `SCALEWAY_SECRET_KEY`: Scaleway API secret key (also used as AWS_SECRET_ACCESS_KEY)
 - `SCALEWAY_ORGANIZATION_ID`: Scaleway organization ID
 - `SCALEWAY_PROJECT_ID`: Scaleway project ID
-- `DATABASE_PASSWORD`: Secure PostgreSQL database password
+
+### Docker Hub (GitHub repository secrets)
+- `DOCKER_USERNAME`: Docker Hub username
+- `DOCKER_PASSWORD`: Docker Hub access token
+
+### Seeds and transitional secrets (GitHub repository secrets)
+- `DATABASE_PASSWORD`, `ADMINISTRATION_DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`, `KEYCLOAK_WEB_CLIENT_SECRET`, `KEYCLOAK_ADMIN_CLIENT_SECRET`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `DATABASE_PASSWORD` is still read by the migration step in `deploy.yml` until the workflows read from Secret Manager directly.
+- `KEYCLOAK_REALM`: optional, defaults to `clercqit`.
 
 ### Environment Variables
 

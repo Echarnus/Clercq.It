@@ -37,26 +37,16 @@ variable "environment" {
 }
 
 variable "database_password" {
-  description = "Database password for the application user"
+  description = "Seed for the db-app-password secret. Only used when the secret is first created; afterwards Secret Manager owns the value. Leave unset to generate one."
   type        = string
-  sensitive   = true
-}
-
-variable "scaleway_access_key" {
-  description = "Scaleway access key for object storage"
-  type        = string
-  sensitive   = true
-}
-
-variable "scaleway_secret_key" {
-  description = "Scaleway secret key for object storage"
-  type        = string
+  default     = null
   sensitive   = true
 }
 
 variable "keycloak_base_url" {
-  description = "Keycloak base URL (e.g., https://lemur-6.cloud-iam.com/auth)"
+  description = "Seed for the keycloak-base-url secret (e.g. https://lemur-6.cloud-iam.com/auth). Only used when the secret is first created."
   type        = string
+  default     = null
 }
 
 variable "keycloak_realm" {
@@ -66,14 +56,16 @@ variable "keycloak_realm" {
 }
 
 variable "keycloak_web_client_secret" {
-  description = "Keycloak client secret for clercqit-web client"
+  description = "Seed for the keycloak-web-client-secret secret. Only used when the secret is first created."
   type        = string
+  default     = null
   sensitive   = true
 }
 
 variable "keycloak_admin_client_secret" {
-  description = "Keycloak client secret for clercqit-admin client"
+  description = "Seed for the keycloak-admin-client-secret secret. Only used when the secret is first created."
   type        = string
+  default     = null
   sensitive   = true
 }
 
@@ -94,8 +86,9 @@ variable "administration_database_user" {
 }
 
 variable "administration_database_password" {
-  description = "Database password for the Administration app user"
+  description = "Seed for the db-administration-password secret. Only used when the secret is first created. Leave unset to generate one."
   type        = string
+  default     = null
   sensitive   = true
 }
 
