@@ -81,6 +81,9 @@ The system uses **Cloud IAM (KeyCloak-based) Identity as a Service** for compreh
 
 ### User Management
 
+#### Content from the repository
+Projects, blog posts and certifications can also be added as Markdown files in `content/` through a pull request. See [content.md](./content.md).
+
 #### Accounts
 Registration is closed. The owner creates admin users and assigns roles in the Cloud IAM console, see [ciam.md](./ciam.md#7-create-admin-users).
 

@@ -12,6 +12,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [Migrations](./migrations.md) | EF Core migrations and how they reach production |
 | [Cloud IAM](./ciam.md) | Production Keycloak (Cloud IAM) realm, clients and roles |
 | [Features](./features.md) | Site features overview |
+| [Content](./content.md) | Adding projects, blog posts and certifications as Markdown files through PRs |
 | [Portfolio feature](./portfolio-feature.md) | Projects / portfolio pages |
 | [Portfolio implementation summary](./portfolio-implementation-summary.md) | How the portfolio feature was built |
 | [Blog deployment](./deployment-blog-creation.md) | Blog creation and object storage |

@@ -52,7 +52,7 @@ fi
 
 # Restore .NET projects (never the Aspire AppHost, which needs the Aspire workload).
 DOTNET_ROLL_FORWARD=Major DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj
-for project in tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests; do
+for project in tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests tests/Clercq.It.ContentImport.Tests; do
   DOTNET_ROLL_FORWARD=Major DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$project"
 done
 
