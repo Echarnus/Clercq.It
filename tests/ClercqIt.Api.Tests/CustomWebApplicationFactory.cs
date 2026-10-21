@@ -33,12 +33,10 @@ public class CustomWebApplicationFactory : WebApplicationFactory<Program>, IAsyn
     public const string WebClientId = "clercqit-web";
     public const string FakeImageUrl = "https://test-storage.example.com/test-image.png";
 
-    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder()
-        .WithImage("postgres:17-alpine")
+    private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:17-alpine")
         .Build();
 
-    private readonly KeycloakContainer _keycloak = new KeycloakBuilder()
-        .WithImage("keycloak/keycloak:26.4")
+    private readonly KeycloakContainer _keycloak = new KeycloakBuilder("keycloak/keycloak:26.4")
         .WithResourceMapping(
             new FileInfo(Path.Combine(AppContext.BaseDirectory, "Keycloak", "clercqit-realm.json")),
             "/opt/keycloak/data/import/")
