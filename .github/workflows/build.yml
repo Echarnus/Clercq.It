@@ -136,7 +136,8 @@ jobs:
         with:
           context: ./src
           file: ./src/Dockerfile
-          platforms: linux/amd64,linux/arm64
+          # Scaleway serverless containers run amd64 only; arm64 under QEMU added 20+ minutes.
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: |

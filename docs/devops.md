@@ -81,7 +81,7 @@ gh workflow run test.yml
 
 #### build
 - Uses GitVersion for semantic versioning
-- Multi-platform build (AMD64/ARM64)
+- Builds `linux/amd64` only: Scaleway serverless containers run amd64, and an emulated arm64 build added 20+ minutes per merge
 - Publishes to Docker Hub with multiple tags:
   - Semantic version (e.g., `1.0.1`)
   - Short SHA (e.g., `abc1234`)
@@ -291,6 +291,8 @@ gh workflow run infra.yml
 - On a failed smoke test: rolls back to `PREVIOUS_IMAGE`, opens a p1 bug issue and fails the run, so no release is tagged
 - Reports deployment status
 
+**Concurrency**: `deploy.yml` runs in the `production-deploy` concurrency group: one deploy at a time, and when several are waiting only the newest runs, so an older build that finishes late cannot replace a newer version. The `terraform-deploy` job in `infra.yml` has its own `production-terraform` group, so applies never race on the state.
+
 #### release
 - Runs only after an automatic deploy (not for manual deploys)
 - Creates tag `prod-<version>` on the deployed commit and a GitHub Release with generated notes
@@ -480,7 +482,7 @@ The CI/CD pipeline includes comprehensive automated security scanning:
 
 ### Build Security
 - **Build attestation**: Signed build provenance for container images
-- **Multi-platform builds**: Support for AMD64 and ARM64 architectures
+- **Single platform**: `linux/amd64`, the architecture Scaleway serverless containers run
 - **Vulnerability scanning**: Trivy scans on every build
 - **Secret management**: Sensitive data stored in GitHub Secrets
 - **Least privilege**: Minimal permissions for GitHub Actions

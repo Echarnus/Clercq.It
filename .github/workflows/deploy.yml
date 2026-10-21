@@ -24,6 +24,12 @@ permissions:
   contents: read
   actions: read
 
+# One production deploy at a time. A newer pending run replaces an older
+# pending one, so builds that finish out of order cannot roll production back.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     name: Deploy to Scaleway

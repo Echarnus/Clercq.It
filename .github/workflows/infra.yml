@@ -135,6 +135,11 @@ jobs:
   terraform-deploy:
     name: Deploy Infrastructure
     runs-on: ubuntu-latest
+    # One apply at a time on the shared Terraform state. Its own group: sharing
+    # deploy.yml's would let a pending image deploy cancel a pending apply.
+    concurrency:
+      group: production-terraform
+      cancel-in-progress: false
     if: |
       github.event_name == 'push' ||
       github.event_name == 'workflow_dispatch' ||
