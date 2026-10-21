@@ -448,11 +448,13 @@ Advanced code analysis:
 - **Analysis**: Security-extended queries
 
 #### Dependabot
-Automated dependency updates:
+Automated dependency updates (`.github/dependabot.yml`):
 - **Schedule**: Weekly on Mondays at 8:00 AM UTC
-- **Ecosystems**: NuGet, npm, GitHub Actions, Docker, Terraform
-- **Auto-assignment**: PRs assigned to repository owner
-- **Labeling**: Categorized by dependency type
+- **Ecosystems**: NuGet, npm (`src/ClercqIt.Web` and `tests/ClercqIt.Web.Tests`), GitHub Actions, Docker, Terraform
+- **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
+- **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
+- **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
+- **Stale PRs**: a Dependabot PR whose base is far behind `main` is closed rather than merged; Dependabot reopens a fresh PR against current `main` on its next run.
 
 ## Best Practices
 
@@ -469,7 +471,7 @@ Automated dependency updates:
 4. Keep production deployments during low-traffic hours
 
 ### Security
-1. **Review Dependabot PRs promptly**: Keep dependencies up to date
+1. **Keep the Dependabot queue short**: merge green grouped PRs weekly; plan majors as issues
 2. **Monitor security alerts**: Check GitHub Security tab regularly
 3. **Run local security scans**: Test before pushing changes
 4. **Never commit secrets**: Use environment variables and GitHub Secrets

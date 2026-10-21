@@ -1,4 +1,8 @@
 version: 2
+
+# Patch and minor updates arrive as one grouped PR per ecosystem per week.
+# Major updates arrive as separate PRs so they can be planned as their own issue.
+# PRs are reviewed by the agent reviewer, so no default assignee or reviewer is set.
 updates:
   # .NET dependencies
   - package-ecosystem: "nuget"
@@ -7,14 +11,15 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      nuget-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "dotnet"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -26,14 +31,15 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "frontend"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -45,15 +51,16 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      web-tests-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "frontend"
       - "testing"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -65,14 +72,15 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "ci/cd"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -84,14 +92,15 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      docker-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "docker"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
@@ -103,14 +112,15 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "08:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      terraform-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
     labels:
       - "dependencies"
       - "infrastructure"
-    assignees:
-      - "Echarnus"
-    reviewers:
-      - "Echarnus"
     commit-message:
       prefix: "chore(deps)"
       include: "scope"
