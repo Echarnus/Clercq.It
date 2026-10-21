@@ -72,9 +72,7 @@ The Admin Backoffice is a secure, role-based content management system accessibl
 The system uses **Cloud IAM (KeyCloak-based) Identity as a Service** for comprehensive authentication:
 
 #### Supported Authentication Methods
-1. **Username/Password Login**: Traditional credentials-based authentication with automatic MFA detection
-2. **GitHub OAuth**: Single sign-on via GitHub
-3. **LinkedIn OAuth**: Single sign-on via LinkedIn
+1. **Username/Password Login**: Credentials-based authentication with automatic MFA detection. This is the only login method.
 
 #### Multi-Factor Authentication (MFA)
 - Automatic detection of MFA-enabled accounts
@@ -83,11 +81,8 @@ The system uses **Cloud IAM (KeyCloak-based) Identity as a Service** for compreh
 
 ### User Management
 
-#### Registration Flow
-1. Users register at `/admin/register` with username, email, and password
-2. Email verification link sent to confirm account
-3. Account activated but without any roles assigned
-4. Administrator assigns roles via Cloud IAM dashboard
+#### Accounts
+Registration is closed. The owner creates admin users and assigns roles in the Cloud IAM console, see [ciam.md](./ciam.md#7-create-admin-users).
 
 #### Role-Based Access Control (RBAC)
 
@@ -112,13 +107,6 @@ The admin dashboard provides role-based tab visibility:
 - Tokens issued by Cloud IAM with embedded role claims
 - Backend validates tokens using Cloud IAM's public keys
 - No access for users without assigned roles
-
-### OAuth Configuration
-
-OAuth providers must be configured in the Cloud IAM dashboard:
-1. Create OAuth apps in GitHub and LinkedIn developer portals
-2. Add OAuth client IDs and secrets to Cloud IAM
-3. Configure redirect URLs to point to the backend API
 
 ### Protected Routes
 All blog and project creation/modification endpoints require valid JWT tokens with appropriate roles.
