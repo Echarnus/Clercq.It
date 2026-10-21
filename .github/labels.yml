@@ -17,7 +17,7 @@
 - { name: "priority:p3",   color: "c2e0c6", description: "Later" }
 - { name: "status:ready",        color: "0e8a16", description: "Can be picked up by an agent" }
 - { name: "status:in-progress",  color: "fbca04", description: "An agent is working on it" }
-- { name: "status:needs-review", color: "1d76db", description: "PR open, waiting for the reviewer agent" }
+- { name: "status:needs-review", color: "1d76db", description: "PR open, waiting on required checks" }
 - { name: "status:blocked",      color: "e4e669", description: "Waiting on another issue" }
 - { name: "status:needs-human",  color: "d93f0b", description: "Needs the owner: console, credentials or money" }
 - { name: "docs:not-needed", color: "ededed", description: "PR changes nothing that /docs describes (reason in PR body)" }

@@ -17,8 +17,7 @@ The project uses six main workflows:
 5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
 6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
 7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
-8. **Agent review** (`review.yml`) - The reviewer agent approves or requests changes on every PR
-9. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
+8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md).
 
@@ -28,9 +27,6 @@ Additionally, **Dependabot** runs automatically to keep dependencies secure and 
 
 ### Docs check (`docs-check.yml`)
 Runs on every PR to `main` (skipped for Dependabot). If the PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, it must also change a file under `docs/`, `CLAUDE.md` or `README.md`. The `docs:not-needed` label overrides the check; the PR body must then say why.
-
-### Agent review (`review.yml`)
-Runs `anthropics/claude-code-action` on every non-draft PR to `main` (skipped for Dependabot, which gets no repository secrets). The agent reads the linked issue, the diff and the docs, leaves inline comments, and ends with an approval or a change request. It needs the `ANTHROPIC_API_KEY` repository secret and the Claude GitHub app installed on the repository; without the key the job passes with a warning and no review is posted.
 
 ### Sync labels (`labels.yml`)
 Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates or updates each label listed there; labels not in the file are left alone.
