@@ -1,0 +1,7 @@
+# Commits that only reformat code. Use with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+# GitHub's blame view reads this file automatically.
+
+# chore(ci): Add .editorconfig and analyzers, enforce dotnet format in CI (#275)
+# One-time dotnet format pass over the solution (plus small analyzer fixes)
+d8e2a0c608f4aa23157cc2775477da953005dfd3

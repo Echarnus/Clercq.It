@@ -363,6 +363,8 @@ Analyzer policy:
 - Test projects relax a few naming and culture rules (`CA1707`, `CA1861`, `CA1304`, `CA1310`, `CA1311`). Logging-performance rules (`CA1848`, `CA1873`) are off.
 - EF Core migrations are treated as generated code.
 
+The one-time formatting commit is listed in `.git-blame-ignore-revs`, so `git blame` skips it. GitHub does this automatically; locally, run `git config blame.ignoreRevsFile .git-blame-ignore-revs` once.
+
 The Docker image builds from `src/` only, so these root files do not apply there. The `Test .NET API` check enforces them on every PR.
 
 ### Building and Running
