@@ -5,7 +5,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class ImageEndpointTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class ImageEndpointTests : IAsyncLifetime
 {
     private readonly CustomWebApplicationFactory _factory;
     private readonly HttpClient _client;
@@ -17,10 +18,14 @@ public class ImageEndpointTests : IClassFixture<CustomWebApplicationFactory>
         _client = _factory.CreateClient();
     }
 
+    public Task InitializeAsync() => _factory.ResetDatabaseAsync();
+
+    public Task DisposeAsync() => Task.CompletedTask;
+
     [Fact(DisplayName = "POST /api/images returns OK with valid image upload")]
     public async Task UploadImage_ValidImage_ReturnsOk()
     {
-        var client = CreateAuthenticatedClient();
+        var client = await CreateAuthenticatedClientAsync();
 
         using var formContent = new MultipartFormDataContent();
         var imageBytes = CreateMinimalPngBytes();
@@ -33,7 +38,7 @@ public class ImageEndpointTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var content = await response.Content.ReadAsStringAsync();
         var result = JsonSerializer.Deserialize<JsonElement>(content, JsonOptions);
-        result.GetProperty("url").GetString().Should().Be("https://test-storage.example.com/test-image.png");
+        result.GetProperty("url").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
     }
 
     [Fact(DisplayName = "POST /api/images returns Unauthorized without authentication token")]
@@ -50,13 +55,7 @@ public class ImageEndpointTests : IClassFixture<CustomWebApplicationFactory>
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
-    private HttpClient CreateAuthenticatedClient()
-    {
-        var client = _factory.CreateClient();
-        var token = TestJwtTokenHelper.GenerateToken("Admin.View", "Blogs.Contributor");
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        return client;
-    }
+    private Task<HttpClient> CreateAuthenticatedClientAsync() => _factory.CreateClientForUserAsync("blogger");
 
     private static byte[] CreateMinimalPngBytes()
     {

@@ -60,6 +60,8 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 | `Projects.Contributor` | Can create, edit, and delete projects |
 | `Certifications.Contributor` | Can create, edit, and delete certifications |
 
+The API enforces these per endpoint (issue #244): creating, updating or deleting blogs and uploading images needs `Blogs.Contributor`, projects need `Projects.Contributor`, certifications need `Certifications.Contributor`. A signed-in user without the role gets 403. Reads are public. The roles must arrive in the access token's `roles` claim (step 5); the API reads claim names as Keycloak sends them (`MapInboundClaims = false`).
+
 ### 5. Create the `roles` Client Scope
 
 1. Go to **Client Scopes > Create**

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Table,
   TableBody,
@@ -50,7 +50,7 @@ export function CertificationList() {
   const [certificationToDelete, setCertificationToDelete] = useState<Certification | null>(null);
   const { toast } = useToast();
 
-  const loadCertifications = async () => {
+  const loadCertifications = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await fetchAllCertifications();
@@ -64,11 +64,11 @@ export function CertificationList() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [toast]);
 
   useEffect(() => {
-    loadCertifications();
-  }, []);
+    void loadCertifications();
+  }, [loadCertifications]);
 
   const handleCreate = () => {
     setSelectedCertification(null);
@@ -99,8 +99,7 @@ export function CertificationList() {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to delete certification",
+        description: error instanceof Error ? error.message : "Failed to delete certification",
         variant: "destructive",
       });
     } finally {
@@ -162,8 +161,7 @@ export function CertificationList() {
     } catch (error) {
       toast({
         title: "Error",
-        description:
-          error instanceof Error ? error.message : "Failed to save certification",
+        description: error instanceof Error ? error.message : "Failed to save certification",
         variant: "destructive",
       });
     } finally {
@@ -194,21 +192,19 @@ export function CertificationList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-semibold">
-          All Certifications ({certifications.length})
-        </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold">All Certifications ({certifications.length})</h3>
         <Button onClick={handleCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Certification
         </Button>
       </div>
 
       {certifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg">
-          <Award className="h-12 w-12 text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No certifications yet</h3>
-          <p className="text-sm text-muted-foreground mb-6">
+        <div className="flex flex-col items-center justify-center rounded-lg border py-12 text-center">
+          <Award className="mb-4 h-12 w-12 text-muted-foreground" />
+          <h3 className="mb-2 text-lg font-semibold">No certifications yet</h3>
+          <p className="mb-6 text-sm text-muted-foreground">
             Add your first certification to showcase your expertise
           </p>
           <Button onClick={handleCreate}>
@@ -217,7 +213,7 @@ export function CertificationList() {
           </Button>
         </div>
       ) : (
-        <div className="border rounded-lg">
+        <div className="rounded-lg border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -233,16 +229,11 @@ export function CertificationList() {
               {certifications.map((cert) => (
                 <TableRow key={cert.id}>
                   <TableCell>
-                    <div className="relative w-16 h-16 rounded overflow-hidden bg-muted">
+                    <div className="relative h-16 w-16 overflow-hidden rounded bg-muted">
                       {cert.image ? (
-                        <Image
-                          src={cert.image}
-                          alt={cert.title}
-                          fill
-                          className="object-contain"
-                        />
+                        <Image src={cert.image} alt={cert.title} fill className="object-contain" />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-amber-500/20 to-orange-500/20">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-amber-500/20 to-orange-500/20">
                           <Award className="h-6 w-6 text-muted-foreground" />
                         </div>
                       )}
@@ -256,7 +247,7 @@ export function CertificationList() {
                           href={cert.credentialUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                          className="flex items-center gap-1 text-xs text-primary hover:underline"
                         >
                           Verify <ExternalLink className="h-3 w-3" />
                         </a>
@@ -272,9 +263,7 @@ export function CertificationList() {
                       isExpired(cert.expiryDate) ? (
                         <Badge variant="destructive">Expired</Badge>
                       ) : (
-                        <Badge variant="secondary">
-                          Expires {formatDate(cert.expiryDate)}
-                        </Badge>
+                        <Badge variant="secondary">Expires {formatDate(cert.expiryDate)}</Badge>
                       )
                     ) : (
                       <Badge variant="default">No Expiry</Badge>
@@ -282,18 +271,10 @@ export function CertificationList() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleEdit(cert)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleEdit(cert)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => handleDeleteClick(cert)}
-                      >
+                      <Button variant="ghost" size="icon" onClick={() => handleDeleteClick(cert)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -307,7 +288,7 @@ export function CertificationList() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedCertification ? "Edit Certification" : "Add Certification"}
@@ -328,29 +309,22 @@ export function CertificationList() {
       </Dialog>
 
       {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the
-              certification &quot;{certificationToDelete?.title}&quot;.
+              This action cannot be undone. This will permanently delete the certification &quot;
+              {certificationToDelete?.title}&quot;.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleDeleteConfirm}
+              onClick={() => void handleDeleteConfirm()}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                "Delete"
-              )}
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

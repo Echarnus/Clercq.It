@@ -252,7 +252,6 @@ Never weaken a rule or a severity threshold to get a PR green.
 
 | Where | What | Why |
 |-------|------|-----|
-| `components/ui/chart.tsx` | `dangerouslySetInnerHTML` | CSS generated from the chart config in code |
 | `.gitleaksignore` | 5 findings in old docs commits, 1 in the #237 probe commit | Placeholder `YOUR_JWT_TOKEN`, a truncated example JWT, and the random fake key that proved the gate fails |
 
 ### What does not block yet

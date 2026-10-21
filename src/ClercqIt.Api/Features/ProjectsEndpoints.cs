@@ -118,10 +118,10 @@ public static class ProjectsEndpoints
 
             return Results.Created($"/api/projects/{result.Id}", result);
         })
-        .RequireAuthorization()
+        .RequireAuthorization("ProjectsContributor")
         .WithName("CreateProject")
         .WithSummary("Create a new project")
-        .WithDescription("Creates a new project with markdown content and optional image. Requires authentication.")
+        .WithDescription("Creates a new project with markdown content and optional image. Requires the Projects.Contributor role.")
         .DisableAntiforgery();
 
         group.MapPut("/{id:guid}", async (Guid id, HttpRequest request, IMediator mediator) =>
@@ -194,10 +194,10 @@ public static class ProjectsEndpoints
 
             return result != null ? Results.Ok(result) : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("ProjectsContributor")
         .WithName("UpdateProject")
         .WithSummary("Update a project")
-        .WithDescription("Updates an existing project. Image is optional - if not provided, the existing image is retained. Requires authentication.")
+        .WithDescription("Updates an existing project. Image is optional - if not provided, the existing image is retained. Requires the Projects.Contributor role.")
         .DisableAntiforgery();
 
         group.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
@@ -206,10 +206,10 @@ public static class ProjectsEndpoints
             var result = await mediator.Send(command);
             return result ? Results.NoContent() : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("ProjectsContributor")
         .WithName("DeleteProject")
         .WithSummary("Delete a project")
-        .WithDescription("Deletes a project. Requires authentication.");
+        .WithDescription("Deletes a project. Requires the Projects.Contributor role.");
 
         return endpoints;
     }

@@ -66,7 +66,7 @@ export function BlogForm({ blog, onSubmit, onCancel, isSubmitting = false }: Blo
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)} className="space-y-6">
         <FormField
           control={form.control}
           name="shortDescription"
@@ -82,9 +82,7 @@ export function BlogForm({ blog, onSubmit, onCancel, isSubmitting = false }: Blo
                 />
               </FormControl>
               <FormMessage />
-              <p className="text-xs text-muted-foreground">
-                {field.value.length}/500 characters
-              </p>
+              <p className="text-xs text-muted-foreground">{field.value.length}/500 characters</p>
             </FormItem>
           )}
         />

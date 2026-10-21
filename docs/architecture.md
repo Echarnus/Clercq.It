@@ -88,7 +88,7 @@ Orchestrates application workflows and use cases.
 - **Commands**: `CreateProjectCommand`, `CreateBlogCommand` for creating projects and blog posts with images
 - **Handlers**: MediatR query and command handlers implementing CQRS pattern
 - **DTOs**: `ProjectDto`, `BlogDto` for data transfer
-- **Validation**: FluentValidation for request validation
+- **Validation**: FluentValidation validators run for every MediatR request through `ValidationBehavior` (Application/Common/Behaviors); a failure becomes a 400 validation problem via `ValidationExceptionHandler` in the API
 
 **Key Principles:**
 - Depends only on Domain layer

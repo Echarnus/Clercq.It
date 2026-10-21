@@ -64,10 +64,10 @@ public static class BlogsEndpoints
             var result = await mediator.Send(command);
             return Results.Created($"/api/blogs/{result.Id}", result);
         })
-        .RequireAuthorization()
+        .RequireAuthorization("BlogsContributor")
         .WithName("CreateBlog")
         .WithSummary("Create a new blog")
-        .WithDescription("Creates a new blog post with markdown content and an image. Requires authentication.")
+        .WithDescription("Creates a new blog post with markdown content and an image. Requires the Blogs.Contributor role.")
         .DisableAntiforgery();
 
         group.MapPut("/{id:guid}", async (Guid id, HttpRequest request, IMediator mediator) =>
@@ -112,10 +112,10 @@ public static class BlogsEndpoints
 
             return result != null ? Results.Ok(result) : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("BlogsContributor")
         .WithName("UpdateBlog")
         .WithSummary("Update a blog")
-        .WithDescription("Updates an existing blog post. Image is optional - if not provided, the existing image is retained. Requires authentication.")
+        .WithDescription("Updates an existing blog post. Image is optional - if not provided, the existing image is retained. Requires the Blogs.Contributor role.")
         .DisableAntiforgery();
 
         group.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
@@ -124,10 +124,10 @@ public static class BlogsEndpoints
             var result = await mediator.Send(command);
             return result ? Results.NoContent() : Results.NotFound();
         })
-        .RequireAuthorization()
+        .RequireAuthorization("BlogsContributor")
         .WithName("DeleteBlog")
         .WithSummary("Delete a blog")
-        .WithDescription("Deletes a blog post. Requires authentication.");
+        .WithDescription("Deletes a blog post. Requires the Blogs.Contributor role.");
 
         return endpoints;
     }

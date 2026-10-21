@@ -4,7 +4,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class AuthEndpointTests : IAsyncLifetime
 {
     private readonly HttpClient _client;
 
@@ -12,6 +13,10 @@ public class AuthEndpointTests : IClassFixture<CustomWebApplicationFactory>
     {
         _client = factory.CreateClient();
     }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "POST /api/auth/register does not exist, so nobody can self-register")]
     public async Task Register_Anonymous_ReturnsNotFound()
