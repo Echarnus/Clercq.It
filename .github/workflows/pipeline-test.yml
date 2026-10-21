@@ -95,10 +95,12 @@ jobs:
 
       - name: Generate Test Summary
         if: always()
+        env:
+          TEST_SCOPE: ${{ github.event.inputs.test_scope }}
         run: |
           echo "## 📊 Pipeline Test Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Test Scope: ${{ github.event.inputs.test_scope }}" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Scope: $TEST_SCOPE" >> $GITHUB_STEP_SUMMARY
           echo "### Status: ${{ job.status == 'success' && '✅ All tests passed' || '❌ Some tests failed' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### Next Steps:" >> $GITHUB_STEP_SUMMARY

@@ -170,6 +170,8 @@ jobs:
           ignore-unfixed: true
 
       - name: Output build information
+        env:
+          BRANCH: ${{ github.ref_name }}
         run: |
           echo "## 🏗️ Build Summary" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -178,5 +180,5 @@ jobs:
           echo "- **Image**: \`${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Version**: \`${{ steps.version.outputs.version }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **SHA**: \`${{ steps.gitversion.outputs.shortSha }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Branch**: \`${{ github.ref_name }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: \`$BRANCH\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Security**: ✅ Vulnerability scan completed" >> $GITHUB_STEP_SUMMARY

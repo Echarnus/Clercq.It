@@ -27,12 +27,14 @@ runs:
     - name: Calculate version
       id: calculate
       shell: bash
+      # Inputs go through env so a branch name cannot inject shell code.
+      env:
+        MAJOR: ${{ inputs.major }}
+        MINOR: ${{ inputs.minor }}
+        COMMITS: ${{ inputs.commits-since-version-source }}
+        BRANCH_NAME: ${{ inputs.branch-name }}
+        PRE_RELEASE_LABEL: ${{ inputs.pre-release-label }}
       run: |
-        MAJOR="${{ inputs.major }}"
-        MINOR="${{ inputs.minor }}"
-        COMMITS="${{ inputs.commits-since-version-source }}"
-        BRANCH_NAME="${{ inputs.branch-name }}"
-        PRE_RELEASE_LABEL="${{ inputs.pre-release-label }}"
         
         if [ "$BRANCH_NAME" == "main" ]; then
           # For main branch: use commit count as patch version

@@ -1,0 +1,49 @@
+# Repo-specific Semgrep rules, run with the registry packs in .github/workflows/sast.yml.
+# See docs/application-security.md#static-analysis-sast.
+rules:
+  - id: no-tls-verification-bypass
+    languages: [generic]
+    severity: ERROR
+    message: >-
+      NODE_TLS_REJECT_UNAUTHORIZED=0 turns off TLS certificate checks for every
+      request the process makes. Fix the certificate or trust the CA instead.
+    pattern-regex: NODE_TLS_REJECT_UNAUTHORIZED["']?\s*[=:]\s*["']?0
+    paths:
+      # Docs describe the rule; they do not run.
+      exclude: ["*.md"]
+    metadata:
+      cwe: "CWE-295: Improper Certificate Validation"
+
+  - id: efcore-raw-sql-interpolation
+    languages: [csharp]
+    severity: ERROR
+    message: >-
+      Raw SQL built from an interpolated or concatenated string is open to SQL
+      injection. Use FromSql/ExecuteSql (which parameterise interpolations) or
+      pass parameters explicitly.
+    pattern-either:
+      - pattern: $X.FromSqlRaw($"...", ...)
+      - pattern: $X.ExecuteSqlRaw($"...", ...)
+      - pattern: $X.ExecuteSqlRawAsync($"...", ...)
+      - pattern: $X.SqlQueryRaw<$T>($"...", ...)
+      - pattern: $X.FromSqlRaw($A + $B, ...)
+      - pattern: $X.ExecuteSqlRaw($A + $B, ...)
+      - pattern: $X.ExecuteSqlRawAsync($A + $B, ...)
+      - pattern: $X.FromSqlRaw(string.Format(...), ...)
+      - pattern: $X.ExecuteSqlRaw(string.Format(...), ...)
+      - pattern: $X.ExecuteSqlRawAsync(string.Format(...), ...)
+    metadata:
+      cwe: "CWE-89: SQL Injection"
+
+  - id: no-dangerously-set-inner-html-without-sanitising
+    languages: [typescript, javascript]
+    severity: ERROR
+    message: >-
+      dangerouslySetInnerHTML with unsanitised input allows XSS. Render Markdown
+      through the existing sanitising renderer, or sanitise with DOMPurify first.
+    patterns:
+      - pattern: "<$EL dangerouslySetInnerHTML={{__html: $X}} />"
+      - pattern-not: "<$EL dangerouslySetInnerHTML={{__html: DOMPurify.sanitize(...)}} />"
+      - pattern-not: "<$EL dangerouslySetInnerHTML={{__html: \"...\"}} />"
+    metadata:
+      cwe: "CWE-79: Cross-site Scripting"

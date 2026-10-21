@@ -100,7 +100,7 @@ This application implements controls aligned with the **NIST Cybersecurity Frame
   - Secure API-to-API communications
 
 - ✅ **PR.DS-5**: Protections against data leaks are implemented
-  - TruffleHog secret scanning
+  - gitleaks secret scanning on every PR (blocking)
   - GitHub native secret scanning
   - Input validation on all endpoints
   - Output encoding to prevent data exposure
@@ -366,7 +366,8 @@ The following are continuously monitored:
 - Dependency alerts (Dependabot)
 - Code quality issues (CodeQL)
 - Container vulnerabilities (Trivy)
-- Secret leaks (TruffleHog)
+- Secret leaks (gitleaks)
+- SAST findings (Semgrep, CodeQL)
 
 ## Audit Trail
 

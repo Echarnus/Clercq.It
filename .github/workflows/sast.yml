@@ -1,0 +1,82 @@
+---
+name: SAST
+
+# Blocking static analysis on every PR (issue #237). Semgrep and gitleaks
+# fail the check on a finding; results also go to the Security tab.
+# See docs/application-security.md#static-analysis-sast.
+
+"on":
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    container:
+      image: semgrep/semgrep:1.182.0
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        # Blocking: ERROR severity from the registry packs and every rule in .semgrep/.
+        run: |
+          semgrep scan \
+            --config p/csharp --config p/typescript --config p/react --config p/nextjs \
+            --config p/owasp-top-ten --config p/secrets --config p/dockerfile --config p/terraform \
+            --config .semgrep \
+            --severity ERROR --metrics off --error \
+            --sarif --output semgrep.sarif \
+            --text-output semgrep.txt
+
+      - name: Show findings
+        if: always()
+        run: cat semgrep.txt 2>/dev/null || true
+
+      - name: Upload Semgrep results
+        if: always() && hashFiles('semgrep.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: semgrep.sarif
+          category: semgrep
+
+  gitleaks:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    env:
+      GITLEAKS_VERSION: 8.24.3
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install gitleaks
+        run: |
+          curl -fsSL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          sudo mv /tmp/gitleaks /usr/local/bin/gitleaks
+
+      - name: Scan for secrets
+        # PRs: only the PR's own commits. main and manual runs: full history.
+        # Known false positives are listed in .gitleaksignore with a reason.
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            gitleaks git . --no-banner --redact --log-opts="origin/$BASE_REF..HEAD"
+          else
+            gitleaks git . --no-banner --redact
+          fi

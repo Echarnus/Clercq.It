@@ -1,0 +1,12 @@
+# Findings gitleaks may skip (.github/workflows/sast.yml). One fingerprint per
+# line; every entry needs a reason. See docs/application-security.md.
+
+# Placeholder "Bearer YOUR_JWT_TOKEN" and a truncated example JWT in old API docs.
+f92f61e6f3fc6d752505e0718f324be5b945a212:docs/api-project-creation.md:curl-auth-header:78
+b916ecece2dc176f6912929f1a6819a9bcf9da5b:docs/api-project-creation.md:curl-auth-header:78
+a3f3b8afb8ec127a916bd895e08ac6eeef4e60cd:docs/admin-authentication-demo.md:curl-auth-header:136
+a3f3b8afb8ec127a916bd895e08ac6eeef4e60cd:docs/admin-authentication-demo.md:generic-api-key:121
+27bfae3d613d2e127f944e69970eae1d313d5ceb:docs/api-blog-creation.md:curl-auth-header:67
+
+# Random fake key in the throwaway commit that proved the gate fails (#237, reverted in the next commit).
+078881de60246af0a34a76db8a095d3cf91f99dd:src/Clercq.It.Infrastructure/SastProbe/SastProbe.cs:generic-api-key:9
