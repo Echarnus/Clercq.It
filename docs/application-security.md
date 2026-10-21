@@ -254,7 +254,7 @@ Never weaken a rule or a severity threshold to get a PR green.
 |-------|------|-----|
 | `src/Dockerfile` | Semgrep `missing-user`, `missing-user-entrypoint` | The image runs as root; moving to a non-root user is #280 |
 | `components/ui/chart.tsx` | `dangerouslySetInnerHTML` | CSS generated from the chart config in code |
-| `.gitleaksignore` | 5 findings in old docs commits | Placeholder `YOUR_JWT_TOKEN` and a truncated example JWT |
+| `.gitleaksignore` | 5 findings in old docs commits, 1 in the #237 probe commit | Placeholder `YOUR_JWT_TOKEN`, a truncated example JWT, and the random fake key that proved the gate fails |
 
 ### What does not block yet
 
