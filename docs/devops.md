@@ -15,7 +15,7 @@ The project uses six main workflows:
 3. **Security Scanning** (`security-scan.yml`) - Comprehensive security analysis
 4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
 5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
-6. **Deploy Pipeline** (`deploy.yml`) - Deploys to production
+6. **Deploy Pipeline** (`deploy.yml`) - Verifies the image in the verify environment, then deploys the same digest to production
 7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
 8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
 
@@ -238,6 +238,8 @@ gh workflow run codeql.yml
 - **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
+- **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
+
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
 
 ### Terraform Backend Configuration
@@ -283,7 +285,10 @@ gh workflow run infra.yml
 ### Jobs
 
 #### deploy
-- Validates Docker image exists
+- Validates the Docker image exists and resolves its digest
+- Reads container IDs, database and bucket names for both environments from the Terraform outputs
+- **Verify stage** (see [Verify stage](#verify-stage)): migrates the verify database, imports content into it, deploys the image to `clercq-it-verify` and smoke-tests it. A failure here opens a p1 issue and stops the run before production is touched
+- Checks the tag still points at the verified digest
 - Runs database migrations, then imports `content/` into the database (see [Content](./content.md#how-the-import-runs))
 - Records the image the container runs now (`PREVIOUS_IMAGE`)
 - Sets the new image and forces container recreation to bypass the image cache (scales min_scale: 0→1→0), with `.github/scripts/set-container-image.sh`
@@ -299,6 +304,42 @@ gh workflow run infra.yml
 - Uses the `prod-` prefix so GitVersion ignores the tag (see [Versioning](./versioning.md#production-releases))
 
 **Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
+
+### Verify stage
+
+Trunk-based means every merge to `main` goes to production. So before production is touched, `deploy.yml` runs the real image against real infrastructure. It is one pipeline, not a branch or a manual staging step:
+
+```
+merge to main
+  └─ build.yml: tests → image pushed (tag = version, digest D) → migration.sql
+       └─ deploy.yml (one job, stops at the first failure)
+            1. resolve digest D of echarnus/clercq-it:<version>
+            2. verify: migrate clercqit_verify → import content → deploy image to clercq-it-verify → smoke test
+               (e2e #246 and DAST #239 join here)
+               ✗ → issue "Verify stage failed for <version>" (p1), production untouched, no release
+            3. tag still resolves to D?  ✗ → stop
+            4. production: migrate → import content → deploy image → smoke test
+               ✗ → roll back, issue "Production smoke test failed for <version>" (p1), no release
+            5. release job: tag prod-<version>
+```
+
+| Gate | Fails when | Effect |
+|------|------------|--------|
+| Image check | The tag is missing or has no digest | Stop, p1 issue, production untouched |
+| Verify migration / content import | `migration.sql` or a content file breaks against a real PostgreSQL | Stop, p1 issue, production untouched |
+| Verify smoke test | `/version.json`, `/` or `/api/projects` fail on the verify URL | Stop, p1 issue, production untouched |
+| Digest check | The tag moved after verification | Stop, production untouched |
+| Production smoke test | Same checks on https://www.clercq.it | Roll back, p1 issue |
+
+**What verify shares with production**: only the RDB instance and the container namespace. It has its own database (`clercqit_verify`, user `clercqit_verify_user`), bucket (`clercq-it-verify-images`), storage key, Cockpit token and secrets (`/clercq-it/verify`, see [Secrets](./secrets.md#verify-environment-path-clercq-itverify)). It scales to zero, so it costs almost nothing.
+
+**Same image**: production is set to the same tag only after the pipeline checks that the tag still resolves to the digest that passed verification. Terraform ignores `registry_image` on both containers (`lifecycle.ignore_changes`), so an infra apply never swaps the running image for `:latest`.
+
+**Manual deploys** (`workflow_dispatch`) also go through the verify container and its smoke test. As before, they skip migrations and the content import.
+
+**Login on verify** uses separate Keycloak clients, `clercqit-web-verify` and `clercqit-admin-verify`. Sign-in on the verify URL does not work until the owner does three things in Cloud IAM: create those clients, add the verify URL as their redirect URI, and put their secrets in `/clercq-it/verify`. The smoke test does not need sign-in.
+
+The verify URL is the `verify_container_url` Terraform output (a Scaleway container domain).
 
 ### Manual Deployment
 
@@ -377,7 +418,8 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 4. Docker image is built with semantic version
 5. Image is pushed to Docker Hub
 6. Deploy pipeline is triggered automatically
-7. New version is deployed to production
+7. The image is verified in the verify environment ([Verify stage](#verify-stage))
+8. The same digest is deployed to production
 
 ### Manual Deployment
 
