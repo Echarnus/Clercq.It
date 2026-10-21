@@ -12,17 +12,53 @@ The project follows **Clean Architecture** principles with **Domain-Driven Desig
 
 ## Layer Structure
 
+Dependencies point inwards. Domain knows nothing about the other layers; the
+Api and the two tools are composition roots that wire Infrastructure in.
+
 ```
-┌─────────────────────────────────┐
-│         API Layer               │  ← ASP.NET Core Minimal APIs
-├─────────────────────────────────┤
-│      Application Layer          │  ← MediatR, FluentValidation
-├─────────────────────────────────┤
-│     Infrastructure Layer        │  ← EF Core, PostgreSQL, Repos
-├─────────────────────────────────┤
-│        Domain Layer             │  ← Entities, Value Objects, Rules
-└─────────────────────────────────┘
+            ClercqIt.Api ─────────────┐
+   (also: ContentImport, EF.Migrations)│
+              │                       │
+              ▼                       ▼
+        Application ◄──────── Infrastructure
+   (MediatR, FluentValidation)  (EF Core, Npgsql, S3)
+              │                       │
+              └─────────► Domain ◄────┘
+                (entities, value objects, repository contracts)
 ```
+
+## Architecture rules
+
+`tests/Clercq.It.Architecture.Tests` enforces these rules with
+[NetArchTest](https://github.com/BenMorris/NetArchTest). It runs with the rest
+of the suite in CI, so a violation fails the PR.
+
+| Rule | Test |
+|------|------|
+| Domain depends on no other layer and no framework (EF Core, ASP.NET Core, Npgsql, MediatR, FluentValidation, AWS SDK) | `LayeringTests` |
+| Application depends only on Domain, MediatR and FluentValidation | `LayeringTests` |
+| Infrastructure does not depend on the Api | `LayeringTests` |
+| Endpoint modules under `Clercq.It.Api.Features` go through MediatR, never the DbContext or repositories | `LayeringTests` |
+| Only `ClercqIt.Api`, `Clercq.It.Infrastructure.EF.Migrations` and `Clercq.It.ContentImport` reference the Infrastructure project | `LayeringTests` |
+| Aggregates (`IAggregateRoot`) live in `Clercq.It.Domain.Entities` and have no public setters (init is fine) | `DomainModelTests` |
+| Value objects in `Clercq.It.Domain.ValueObjects` are records or sealed, without public setters | `DomainModelTests` |
+| Repository contracts are interfaces in Domain, implemented in Infrastructure | `DomainModelTests` |
+| MediatR requests end in `Command` or `Query`, handlers in `Handler`, validators in `Validator`, all in Application | `DomainModelTests` |
+
+Known exception: `Blog`, `Certification` and `Project` still have public
+setters. They are on an allow-list in `DomainModelTests` until #277 moves them
+to constructors and behaviour methods. Do not add new aggregates to that list;
+a test fails if the list names an aggregate that no longer exists.
+
+Run only these tests:
+
+```bash
+dotnet test tests/Clercq.It.Architecture.Tests -c Release
+```
+
+When a rule fails, the message lists the offending types. Fix the dependency
+rather than the rule. If a rule is genuinely wrong, change it in the test and
+in this table in the same PR.
 
 ## Layer Responsibilities
 
@@ -265,6 +301,7 @@ dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 
 ### Test Pyramid
 - **Unit Tests**: Domain logic and application handlers
+- **Architecture Tests**: Layering and DDD rules (see [Architecture rules](#architecture-rules))
 - **Integration Tests**: API endpoints and database operations
 - **End-to-End Tests**: Frontend integration (planned)
 

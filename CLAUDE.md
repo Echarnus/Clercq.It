@@ -42,7 +42,7 @@ Local full stack: `dotnet run --project src/Clercq.It.AppHost` (needs Docker and
 
 ## Pointers
 
-- Architecture and layering: [docs/architecture.md](docs/architecture.md)
+- Architecture and layering: [docs/architecture.md](docs/architecture.md); the rules are enforced by `tests/Clercq.It.Architecture.Tests`
 - Pipelines and deployment: [docs/devops.md](docs/devops.md)
 - Versioning: [docs/versioning.md](docs/versioning.md)
 - Production auth (Cloud IAM): [docs/ciam.md](docs/ciam.md)
