@@ -13,18 +13,6 @@ namespace Clercq.It.Architecture.Tests;
 /// </summary>
 public class DomainModelTests
 {
-    /// <summary>
-    /// Aggregates that still expose public setters. EF Core, the admin handlers and
-    /// the content import set their properties directly; moving them to constructors
-    /// and behaviour methods is tracked in #277. New aggregates must not join this list.
-    /// </summary>
-    private static readonly string[] AggregatesWithPublicSetters =
-    [
-        "Clercq.It.Domain.Entities.Blog",
-        "Clercq.It.Domain.Entities.Certification",
-        "Clercq.It.Domain.Entities.Project",
-    ];
-
     [Fact(DisplayName = "Aggregates live in Domain.Entities")]
     public void Aggregates_LiveInDomainEntities()
     {
@@ -41,24 +29,12 @@ public class DomainModelTests
     {
         var offenders = Layers.Domain.GetTypes()
             .Where(t => t.IsClass && typeof(IAggregateRoot).IsAssignableFrom(t))
-            .Where(t => !AggregatesWithPublicSetters.Contains(t.FullName))
             .SelectMany(t => t.GetProperties(BindingFlags.Public | BindingFlags.Instance)
                 .Where(p => p.SetMethod is { IsPublic: true } && !IsInitOnly(p))
                 .Select(p => $"{t.Name}.{p.Name}"))
             .ToList();
 
         offenders.Should().BeEmpty("aggregates change state through constructors and methods, not public setters");
-    }
-
-    [Fact(DisplayName = "The public-setter allow-list only names existing aggregates")]
-    public void AllowList_IsCurrent()
-    {
-        var aggregates = Layers.Domain.GetTypes()
-            .Where(t => t.IsClass && typeof(IAggregateRoot).IsAssignableFrom(t))
-            .Select(t => t.FullName)
-            .ToList();
-
-        aggregates.Should().Contain(AggregatesWithPublicSetters, "remove an aggregate from the list once it is encapsulated or deleted");
     }
 
     [Fact(DisplayName = "Value objects are immutable records or sealed types")]

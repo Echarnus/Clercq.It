@@ -75,18 +75,16 @@ public class GetFeaturedProjectsQueryHandlerTests
         var endDate = DateTime.UtcNow.AddMonths(-1);
         var skills = new Skills(new[] { "TypeScript", "Next.js", "PostgreSQL" });
 
-        var featuredProject = new Project
-        {
-            Id = Guid.NewGuid(),
-            Title = "Featured Test Project",
-            ShortDescription = "Featured short description",
-            LongDescription = "Featured long description",
-            StartDate = startDate,
-            EndDate = endDate,
-            Image = "https://example.com/featured.jpg",
-            Featured = true,
-            Skills = skills
-        };
+        var featuredProject = Aggregates.Project(
+            id: Guid.NewGuid(),
+            title: "Featured Test Project",
+            shortDescription: "Featured short description",
+            longDescription: "Featured long description",
+            startDate: startDate,
+            endDate: endDate,
+            image: "https://example.com/featured.jpg",
+            featured: true,
+            skills: skills);
 
         _mockProjectRepository
             .Setup(x => x.GetFeaturedAsync(MoqIt.IsAny<CancellationToken>()))
@@ -112,17 +110,15 @@ public class GetFeaturedProjectsQueryHandlerTests
 
     private static Project CreateTestProject(string title, bool featured = false)
     {
-        return new Project
-        {
-            Id = Guid.NewGuid(),
-            Title = title,
-            ShortDescription = $"Short description for {title}",
-            LongDescription = $"Long description for {title}",
-            StartDate = DateTime.UtcNow.AddMonths(-6),
-            EndDate = DateTime.UtcNow.AddMonths(-3),
-            Image = $"https://example.com/{title.ToLower().Replace(" ", "-")}.jpg",
-            Featured = featured,
-            Skills = new Skills(new[] { "C#", "React" })
-        };
+        return Aggregates.Project(
+            id: Guid.NewGuid(),
+            title: title,
+            shortDescription: $"Short description for {title}",
+            longDescription: $"Long description for {title}",
+            startDate: DateTime.UtcNow.AddMonths(-6),
+            endDate: DateTime.UtcNow.AddMonths(-3),
+            image: $"https://example.com/{title.ToLower().Replace(" ", "-")}.jpg",
+            featured: featured,
+            skills: new Skills(new[] { "C#", "React" }));
     }
 }

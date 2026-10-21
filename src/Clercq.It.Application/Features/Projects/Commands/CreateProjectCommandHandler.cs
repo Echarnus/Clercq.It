@@ -37,18 +37,15 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
         }
 
         // Create project entity
-        var project = new Project
-        {
-            Id = Guid.NewGuid(),
-            Title = request.Title,
-            ShortDescription = request.ShortDescription,
-            LongDescription = request.LongDescription,
-            Image = imageUrl,
-            StartDate = request.StartDate,
-            EndDate = request.EndDate,
-            Featured = request.Featured,
-            Skills = new Skills(request.Skills)
-        };
+        var project = Project.Create(
+            request.Title,
+            request.ShortDescription,
+            request.LongDescription,
+            imageUrl,
+            request.StartDate,
+            request.EndDate,
+            request.Featured,
+            new Skills(request.Skills));
 
         // Add to repository
         await _projectRepository.AddAsync(project, cancellationToken);

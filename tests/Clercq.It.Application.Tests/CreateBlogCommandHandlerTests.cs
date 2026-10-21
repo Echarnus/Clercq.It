@@ -133,7 +133,7 @@ public class CreateBlogCommandHandlerTests
         _mockBlogRepository
             .Setup(x => x.AddAsync(MoqIt.IsAny<Blog>(), MoqIt.IsAny<CancellationToken>()))
             .Callback(() => callSequence.Add("AddBlog"))
-            .ReturnsAsync(new Blog());
+            .ReturnsAsync(Aggregates.Blog());
 
         _mockUnitOfWork
             .Setup(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()))

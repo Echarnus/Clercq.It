@@ -74,18 +74,16 @@ public class GetAllCertificationsQueryHandlerTests
         var issueDate = DateTime.UtcNow.AddYears(-1);
         var expiryDate = DateTime.UtcNow.AddYears(2);
 
-        var certification = new Certification
-        {
-            Id = Guid.NewGuid(),
-            Title = "AWS Certified Solutions Architect",
-            Issuer = "Amazon Web Services",
-            IssueDate = issueDate,
-            ExpiryDate = expiryDate,
-            CredentialId = "AWS-SAA-12345",
-            CredentialUrl = "https://aws.amazon.com/verification/12345",
-            Description = "Professional certification for AWS Solutions Architect",
-            Image = "https://example.com/cert.jpg"
-        };
+        var certification = Aggregates.Certification(
+            id: Guid.NewGuid(),
+            title: "AWS Certified Solutions Architect",
+            issuer: "Amazon Web Services",
+            issueDate: issueDate,
+            expiryDate: expiryDate,
+            credentialId: "AWS-SAA-12345",
+            credentialUrl: "https://aws.amazon.com/verification/12345",
+            description: "Professional certification for AWS Solutions Architect",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetAllAsync(MoqIt.IsAny<CancellationToken>()))
@@ -135,18 +133,16 @@ public class GetAllCertificationsQueryHandlerTests
     public async Task Handle_ShouldHandleCertificationsWithOptionalCredentials()
     {
         // Arrange
-        var cert = new Certification
-        {
-            Id = Guid.NewGuid(),
-            Title = "Test Certification",
-            Issuer = "Test Issuer",
-            IssueDate = DateTime.UtcNow,
-            ExpiryDate = null,
-            CredentialId = "",
-            CredentialUrl = "",
-            Description = "Test description",
-            Image = "https://example.com/cert.jpg"
-        };
+        var cert = Aggregates.Certification(
+            id: Guid.NewGuid(),
+            title: "Test Certification",
+            issuer: "Test Issuer",
+            issueDate: DateTime.UtcNow,
+            expiryDate: null,
+            credentialId: "",
+            credentialUrl: "",
+            description: "Test description",
+            image: "https://example.com/cert.jpg");
 
         _mockCertificationRepository
             .Setup(x => x.GetAllAsync(MoqIt.IsAny<CancellationToken>()))
@@ -165,17 +161,15 @@ public class GetAllCertificationsQueryHandlerTests
 
     private static Certification CreateTestCertification(string title, bool hasExpiry = true)
     {
-        return new Certification
-        {
-            Id = Guid.NewGuid(),
-            Title = title,
-            Issuer = "Test Issuer",
-            IssueDate = DateTime.UtcNow.AddYears(-1),
-            ExpiryDate = hasExpiry ? DateTime.UtcNow.AddYears(2) : null,
-            CredentialId = "TEST-12345",
-            CredentialUrl = "https://example.com/verification/12345",
-            Description = $"Description for {title}",
-            Image = $"https://example.com/{title.ToLower().Replace(" ", "-")}.jpg"
-        };
+        return Aggregates.Certification(
+            id: Guid.NewGuid(),
+            title: title,
+            issuer: "Test Issuer",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: hasExpiry ? DateTime.UtcNow.AddYears(2) : null,
+            credentialId: "TEST-12345",
+            credentialUrl: "https://example.com/verification/12345",
+            description: $"Description for {title}",
+            image: $"https://example.com/{title.ToLower().Replace(" ", "-")}.jpg");
     }
 }

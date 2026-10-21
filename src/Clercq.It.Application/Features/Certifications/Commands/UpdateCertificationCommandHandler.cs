@@ -37,17 +37,18 @@ public class UpdateCertificationCommandHandler : IRequestHandler<UpdateCertifica
                 request.ImageContentType,
                 isInlineImage: false,
                 cancellationToken);
-            certification.Image = imageUrl;
+            certification.ChangeImage(imageUrl);
         }
 
         // Update other properties
-        certification.Title = request.Title;
-        certification.Issuer = request.Issuer;
-        certification.IssueDate = request.IssueDate;
-        certification.ExpiryDate = request.ExpiryDate;
-        certification.CredentialId = request.CredentialId;
-        certification.CredentialUrl = request.CredentialUrl;
-        certification.Description = request.Description;
+        certification.Update(
+            request.Title,
+            request.Issuer,
+            request.IssueDate,
+            request.ExpiryDate,
+            request.CredentialId,
+            request.CredentialUrl,
+            request.Description);
 
         await _certificationRepository.UpdateAsync(certification, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

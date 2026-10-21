@@ -33,16 +33,12 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, BlogD
             cancellationToken);
 
         // Create blog entity
-        var blog = new Blog
-        {
-            Id = Guid.NewGuid(),
-            CreatedDate = DateTime.UtcNow,
-            PublishDate = DateTime.UtcNow,
-            ShortDescription = request.ShortDescription,
-            LongDescription = request.LongDescription,
-            Image = imageUrl,
-            Tags = new Tags(request.Tags)
-        };
+        var blog = Blog.Create(
+            request.ShortDescription,
+            request.LongDescription,
+            imageUrl,
+            new Tags(request.Tags),
+            DateTime.UtcNow);
 
         // Add to repository
         await _blogRepository.AddAsync(blog, cancellationToken);

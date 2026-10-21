@@ -25,16 +25,14 @@ public class DeleteProjectCommandHandlerTests
     public async Task Handle_ShouldReturnTrue_WhenProjectExists()
     {
         // Arrange
-        var existingProject = new Project
-        {
-            Title = "Old Project",
-            ShortDescription = "Old desc",
-            LongDescription = "Old long desc",
-            Image = "https://example.com/old.jpg",
-            StartDate = DateTime.UtcNow.AddMonths(-6),
-            EndDate = DateTime.UtcNow,
-            Featured = false
-        };
+        var existingProject = Aggregates.Project(
+            title: "Old Project",
+            shortDescription: "Old desc",
+            longDescription: "Old long desc",
+            image: "https://example.com/old.jpg",
+            startDate: DateTime.UtcNow.AddMonths(-6),
+            endDate: DateTime.UtcNow,
+            featured: false);
         typeof(Project).GetProperty("Skills")!.SetValue(existingProject, (Skills)new[] { "OldSkill" });
         typeof(Project).GetProperty("Id")!.SetValue(existingProject, Guid.NewGuid());
 
@@ -84,16 +82,14 @@ public class DeleteProjectCommandHandlerTests
     public async Task Handle_ShouldCallDeleteOnRepository()
     {
         // Arrange
-        var existingProject = new Project
-        {
-            Title = "Old Project",
-            ShortDescription = "Old desc",
-            LongDescription = "Old long desc",
-            Image = "https://example.com/old.jpg",
-            StartDate = DateTime.UtcNow.AddMonths(-6),
-            EndDate = DateTime.UtcNow,
-            Featured = false
-        };
+        var existingProject = Aggregates.Project(
+            title: "Old Project",
+            shortDescription: "Old desc",
+            longDescription: "Old long desc",
+            image: "https://example.com/old.jpg",
+            startDate: DateTime.UtcNow.AddMonths(-6),
+            endDate: DateTime.UtcNow,
+            featured: false);
         typeof(Project).GetProperty("Skills")!.SetValue(existingProject, (Skills)new[] { "OldSkill" });
         typeof(Project).GetProperty("Id")!.SetValue(existingProject, Guid.NewGuid());
 

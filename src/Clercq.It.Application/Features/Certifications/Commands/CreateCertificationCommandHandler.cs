@@ -32,18 +32,15 @@ public class CreateCertificationCommandHandler : IRequestHandler<CreateCertifica
             cancellationToken);
 
         // Create certification entity
-        var certification = new Certification
-        {
-            Id = Guid.NewGuid(),
-            Title = request.Title,
-            Issuer = request.Issuer,
-            IssueDate = request.IssueDate,
-            ExpiryDate = request.ExpiryDate,
-            CredentialId = request.CredentialId,
-            CredentialUrl = request.CredentialUrl,
-            Description = request.Description,
-            Image = imageUrl
-        };
+        var certification = Certification.Create(
+            request.Title,
+            request.Issuer,
+            request.IssueDate,
+            request.ExpiryDate,
+            request.CredentialId,
+            request.CredentialUrl,
+            request.Description,
+            imageUrl);
 
         // Add to repository
         await _certificationRepository.AddAsync(certification, cancellationToken);

@@ -29,51 +29,48 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
 
         foreach (var file in projects)
         {
-            var desired = new Project
-            {
-                Id = StableId.For("project", file.Slug),
-                Title = file.RequiredString("title"),
-                ShortDescription = file.RequiredString("shortDescription"),
-                LongDescription = BodyOr(file, file.RequiredString("shortDescription")),
-                StartDate = file.RequiredDate("startDate"),
-                EndDate = file.OptionalDate("endDate") ?? file.RequiredDate("startDate"),
-                Featured = file.OptionalBool("featured"),
-                Image = await ImageAsync(contentRoot, file, cancellationToken),
-                Skills = new Skills(file.StringList("skills"))
-            };
+            var image = await ImageAsync(contentRoot, file, cancellationToken);
+            var desired = Build(file, () => new Project(
+                StableId.For("project", file.Slug),
+                file.RequiredString("title"),
+                file.RequiredString("shortDescription"),
+                BodyOr(file, file.RequiredString("shortDescription")),
+                image,
+                file.RequiredDate("startDate"),
+                file.OptionalDate("endDate") ?? file.RequiredDate("startDate"),
+                file.OptionalBool("featured"),
+                new Skills(file.StringList("skills"))));
             await UpsertAsync(db.Projects, desired, Copy, counts, file, cancellationToken);
         }
 
         foreach (var file in blogs)
         {
             var created = file.RequiredDate("createdDate");
-            var desired = new Blog
-            {
-                Id = StableId.For("blog", file.Slug),
-                ShortDescription = file.RequiredString("shortDescription"),
-                LongDescription = BodyOr(file, file.RequiredString("shortDescription")),
-                CreatedDate = created,
-                PublishDate = file.OptionalDate("publishDate") ?? created,
-                Image = await ImageAsync(contentRoot, file, cancellationToken),
-                Tags = new Tags(file.StringList("tags"))
-            };
+            var image = await ImageAsync(contentRoot, file, cancellationToken);
+            var desired = Build(file, () => new Blog(
+                StableId.For("blog", file.Slug),
+                created,
+                file.OptionalDate("publishDate") ?? created,
+                file.RequiredString("shortDescription"),
+                BodyOr(file, file.RequiredString("shortDescription")),
+                image,
+                new Tags(file.StringList("tags"))));
             await UpsertAsync(db.Blogs, desired, Copy, counts, file, cancellationToken);
         }
 
         foreach (var file in certifications)
         {
-            var desired = new Certification
-            {
-                Id = StableId.For("certification", file.Slug),
-                Title = file.RequiredString("title"),
-                Issuer = file.RequiredString("issuer"),
-                IssueDate = file.RequiredDate("issueDate"),
-                ExpiryDate = file.OptionalDate("expiryDate"),
-                CredentialId = file.OptionalString("credentialId") ?? string.Empty,
-                CredentialUrl = file.OptionalString("credentialUrl") ?? string.Empty,
-                Description = file.Body,
-                Image = await ImageAsync(contentRoot, file, cancellationToken)
-            };
+            var image = await ImageAsync(contentRoot, file, cancellationToken);
+            var desired = Build(file, () => new Certification(
+                StableId.For("certification", file.Slug),
+                file.RequiredString("title"),
+                file.RequiredString("issuer"),
+                file.RequiredDate("issueDate"),
+                file.OptionalDate("expiryDate"),
+                file.OptionalString("credentialId") ?? string.Empty,
+                file.OptionalString("credentialUrl") ?? string.Empty,
+                file.Body,
+                image));
             await UpsertAsync(db.Certifications, desired, Copy, counts, file, cancellationToken);
         }
 
@@ -141,52 +138,71 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
         }
     }
 
-    // Each Copy assigns only the fields that differ and returns whether any did.
+    // The aggregates enforce their own invariants; report a violation against the file it came from.
+    private static T Build<T>(ContentFile file, Func<T> create)
+    {
+        try
+        {
+            return create();
+        }
+        catch (ArgumentException ex)
+        {
+            throw new ContentException(file.Path, ex.Message);
+        }
+    }
+
+    // Each Copy updates the existing row only when the file differs, and returns whether it did.
     private static bool Copy(Project from, Project to)
     {
         var changed = false;
-        Set(from.Title, to.Title, v => to.Title = v, ref changed);
-        Set(from.ShortDescription, to.ShortDescription, v => to.ShortDescription = v, ref changed);
-        Set(from.LongDescription, to.LongDescription, v => to.LongDescription = v, ref changed);
-        Set(from.StartDate, to.StartDate, v => to.StartDate = v, ref changed);
-        Set(from.EndDate, to.EndDate, v => to.EndDate = v, ref changed);
-        Set(from.Featured, to.Featured, v => to.Featured = v, ref changed);
-        Set(from.Image, to.Image, v => to.Image = v, ref changed);
-        if (!from.Skills.Values.SequenceEqual(to.Skills.Values)) { to.Skills = from.Skills; changed = true; }
-        return changed;
+        if (from.Title != to.Title || from.ShortDescription != to.ShortDescription
+            || from.LongDescription != to.LongDescription || from.StartDate != to.StartDate
+            || from.EndDate != to.EndDate || from.Featured != to.Featured
+            || !from.Skills.Values.SequenceEqual(to.Skills.Values))
+        {
+            to.Update(from.Title, from.ShortDescription, from.LongDescription, from.StartDate, from.EndDate,
+                from.Featured, from.Skills);
+            changed = true;
+        }
+        return ChangeImage(from.Image, to.Image, to.ChangeImage) || changed;
     }
 
     private static bool Copy(Blog from, Blog to)
     {
         var changed = false;
-        Set(from.ShortDescription, to.ShortDescription, v => to.ShortDescription = v, ref changed);
-        Set(from.LongDescription, to.LongDescription, v => to.LongDescription = v, ref changed);
-        Set(from.CreatedDate, to.CreatedDate, v => to.CreatedDate = v, ref changed);
-        Set(from.PublishDate, to.PublishDate, v => to.PublishDate = v, ref changed);
-        Set(from.Image, to.Image, v => to.Image = v, ref changed);
-        if (!from.Tags.Values.SequenceEqual(to.Tags.Values)) { to.Tags = from.Tags; changed = true; }
-        return changed;
+        if (from.ShortDescription != to.ShortDescription || from.LongDescription != to.LongDescription
+            || !from.Tags.Values.SequenceEqual(to.Tags.Values))
+        {
+            to.Update(from.ShortDescription, from.LongDescription, from.Tags);
+            changed = true;
+        }
+        if (from.CreatedDate != to.CreatedDate || from.PublishDate != to.PublishDate)
+        {
+            to.Reschedule(from.CreatedDate, from.PublishDate);
+            changed = true;
+        }
+        return ChangeImage(from.Image, to.Image, to.ChangeImage) || changed;
     }
 
     private static bool Copy(Certification from, Certification to)
     {
         var changed = false;
-        Set(from.Title, to.Title, v => to.Title = v, ref changed);
-        Set(from.Issuer, to.Issuer, v => to.Issuer = v, ref changed);
-        Set(from.IssueDate, to.IssueDate, v => to.IssueDate = v, ref changed);
-        Set(from.ExpiryDate, to.ExpiryDate, v => to.ExpiryDate = v, ref changed);
-        Set(from.CredentialId, to.CredentialId, v => to.CredentialId = v, ref changed);
-        Set(from.CredentialUrl, to.CredentialUrl, v => to.CredentialUrl = v, ref changed);
-        Set(from.Description, to.Description, v => to.Description = v, ref changed);
-        Set(from.Image, to.Image, v => to.Image = v, ref changed);
-        return changed;
+        if (from.Title != to.Title || from.Issuer != to.Issuer || from.IssueDate != to.IssueDate
+            || from.ExpiryDate != to.ExpiryDate || from.CredentialId != to.CredentialId
+            || from.CredentialUrl != to.CredentialUrl || from.Description != to.Description)
+        {
+            to.Update(from.Title, from.Issuer, from.IssueDate, from.ExpiryDate, from.CredentialId, from.CredentialUrl,
+                from.Description);
+            changed = true;
+        }
+        return ChangeImage(from.Image, to.Image, to.ChangeImage) || changed;
     }
 
-    private static void Set<TValue>(TValue desired, TValue current, Action<TValue> assign, ref bool changed)
+    private static bool ChangeImage(string desired, string current, Action<string> change)
     {
-        if (EqualityComparer<TValue>.Default.Equals(desired, current)) return;
-        assign(desired);
-        changed = true;
+        if (desired == current) return false;
+        change(desired);
+        return true;
     }
 
     private sealed class Counts

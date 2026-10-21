@@ -5,82 +5,108 @@ namespace Clercq.It.Domain.Tests.Entities;
 
 public class BlogTests
 {
-    [Fact]
-    public void Blog_ShouldInitializeWithDefaultValues()
-    {
-        // Act
-        var blog = new Blog();
+    private static readonly DateTime Created = new(2024, 3, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Assert
-        blog.Id.Should().BeEmpty();
-        blog.ShortDescription.Should().BeEmpty();
-        blog.LongDescription.Should().BeEmpty();
-        blog.Image.Should().BeEmpty();
-        blog.Tags.Should().NotBeNull();
-        blog.Tags.Values.Should().BeEmpty();
-        blog.CreatedDate.Should().Be(default(DateTime));
-        blog.PublishDate.Should().Be(default(DateTime));
-    }
+    private static Blog NewBlog() =>
+        new(Guid.NewGuid(), Created, Created.AddDays(1), "Short", "Long", "https://example.com/a.png", new Tags(["a"]));
 
     [Fact]
-    public void Blog_ShouldSetAllProperties()
+    public void Constructor_WithValidValues_SetsAllProperties()
     {
         // Arrange
         var id = Guid.NewGuid();
-        var createdDate = DateTime.UtcNow.AddDays(-30);
-        var publishDate = DateTime.UtcNow.AddDays(-25);
-        var tags = new Tags(new[] { "Development", "Testing", "C#" });
 
         // Act
-        var blog = new Blog
-        {
-            Id = id,
-            ShortDescription = "Short blog description",
-            LongDescription = "Long blog description",
-            CreatedDate = createdDate,
-            PublishDate = publishDate,
-            Image = "https://example.com/blog.jpg",
-            Tags = tags
-        };
+        var blog = new Blog(id, Created, Created.AddDays(5), "Short", "Long", "https://example.com/a.png",
+            new Tags(["Development", "C#"]));
 
         // Assert
         blog.Id.Should().Be(id);
-        blog.ShortDescription.Should().Be("Short blog description");
-        blog.LongDescription.Should().Be("Long blog description");
-        blog.CreatedDate.Should().Be(createdDate);
-        blog.PublishDate.Should().Be(publishDate);
-        blog.Image.Should().Be("https://example.com/blog.jpg");
-        blog.Tags.Should().Be(tags);
-        blog.Tags.Values.Should().BeEquivalentTo(new[] { "Development", "Testing", "C#" });
+        blog.CreatedDate.Should().Be(Created);
+        blog.PublishDate.Should().Be(Created.AddDays(5));
+        blog.ShortDescription.Should().Be("Short");
+        blog.LongDescription.Should().Be("Long");
+        blog.Image.Should().Be("https://example.com/a.png");
+        blog.Tags.Values.Should().Equal("Development", "C#");
     }
 
     [Fact]
-    public void Blog_ShouldHandleNullTags()
+    public void Create_WithNow_PublishesImmediatelyWithNewId()
     {
         // Act
-        var blog = new Blog
-        {
-            Tags = null!
-        };
+        var blog = Blog.Create("Short", "Long", "img", new Tags([]), Created);
 
         // Assert
-        blog.Tags.Should().BeNull();
+        blog.Id.Should().NotBeEmpty();
+        blog.CreatedDate.Should().Be(Created);
+        blog.PublishDate.Should().Be(Created);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Constructor_WithBlankShortDescription_Throws(string shortDescription)
+    {
+        // Act
+        var act = () => new Blog(Guid.NewGuid(), Created, Created, shortDescription, "Long", "img", new Tags([]));
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
     }
 
     [Fact]
-    public void Blog_ShouldHandleEmptyTags()
+    public void Update_WithValidValues_ReplacesContent()
     {
         // Arrange
-        var emptyTags = new Tags(Array.Empty<string>());
+        var blog = NewBlog();
 
         // Act
-        var blog = new Blog
-        {
-            Tags = emptyTags
-        };
+        blog.Update("New short", "New long", new Tags(["b", "c"]));
 
         // Assert
-        blog.Tags.Should().NotBeNull();
-        blog.Tags.Values.Should().BeEmpty();
+        blog.ShortDescription.Should().Be("New short");
+        blog.LongDescription.Should().Be("New long");
+        blog.Tags.Values.Should().Equal("b", "c");
+    }
+
+    [Fact]
+    public void Update_WithBlankShortDescription_ThrowsAndKeepsState()
+    {
+        // Arrange
+        var blog = NewBlog();
+
+        // Act
+        var act = () => blog.Update(" ", "New long", new Tags([]));
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+        blog.ShortDescription.Should().Be("Short");
+    }
+
+    [Fact]
+    public void Reschedule_WithDates_SetsBothDates()
+    {
+        // Arrange
+        var blog = NewBlog();
+
+        // Act
+        blog.Reschedule(Created.AddDays(-1), Created.AddDays(10));
+
+        // Assert
+        blog.CreatedDate.Should().Be(Created.AddDays(-1));
+        blog.PublishDate.Should().Be(Created.AddDays(10));
+    }
+
+    [Fact]
+    public void ChangeImage_WithUrl_ReplacesImage()
+    {
+        // Arrange
+        var blog = NewBlog();
+
+        // Act
+        blog.ChangeImage("https://example.com/b.png");
+
+        // Assert
+        blog.Image.Should().Be("https://example.com/b.png");
     }
 }

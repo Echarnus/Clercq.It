@@ -21,18 +21,16 @@ public class GetProjectByIdQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "Test Project",
-            ShortDescription = "A test project",
-            LongDescription = "# Test Project\n\nThis is a detailed description.",
-            Image = "https://example.com/project.jpg",
-            StartDate = new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
-            EndDate = new DateTime(2023, 6, 30, 0, 0, 0, DateTimeKind.Utc),
-            Featured = true,
-            Skills = new Skills(new[] { "C#", "ASP.NET Core", "PostgreSQL" })
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Test Project",
+            shortDescription: "A test project",
+            longDescription: "# Test Project\n\nThis is a detailed description.",
+            image: "https://example.com/project.jpg",
+            startDate: new DateTime(2023, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            endDate: new DateTime(2023, 6, 30, 0, 0, 0, DateTimeKind.Utc),
+            featured: true,
+            skills: new Skills(new[] { "C#", "ASP.NET Core", "PostgreSQL" }));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
@@ -125,18 +123,16 @@ public class GetProjectByIdQueryHandlerTests
         var endDate = new DateTime(2023, 9, 20, 0, 0, 0, DateTimeKind.Utc);
         var skills = new[] { "React", "TypeScript", "GraphQL", "Node.js" };
 
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "E-Commerce Platform",
-            ShortDescription = "Modern e-commerce solution",
-            LongDescription = "# E-Commerce Platform\n\n## Features\n- Shopping cart\n- Payment integration\n- Inventory management",
-            Image = "https://storage.example.com/ecommerce.png",
-            StartDate = startDate,
-            EndDate = endDate,
-            Featured = false,
-            Skills = new Skills(skills)
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "E-Commerce Platform",
+            shortDescription: "Modern e-commerce solution",
+            longDescription: "# E-Commerce Platform\n\n## Features\n- Shopping cart\n- Payment integration\n- Inventory management",
+            image: "https://storage.example.com/ecommerce.png",
+            startDate: startDate,
+            endDate: endDate,
+            featured: false,
+            skills: new Skills(skills));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
@@ -165,12 +161,10 @@ public class GetProjectByIdQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "Simple Project",
-            Skills = new Skills(Array.Empty<string>())
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Simple Project",
+            skills: new Skills(Array.Empty<string>()));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
@@ -187,19 +181,17 @@ public class GetProjectByIdQueryHandlerTests
     }
 
     [Fact]
-    public async Task Handle_ShouldHandleProjectWithEmptyStrings()
+    public async Task Handle_ShouldHandleProjectWithEmptyOptionalStrings()
     {
-        // Arrange
+        // Arrange (a project needs a title; the other texts and the image may be empty)
         var projectId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "",
-            ShortDescription = "",
-            LongDescription = "",
-            Image = "",
-            Skills = new Skills(Array.Empty<string>())
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Untitled",
+            shortDescription: "",
+            longDescription: "",
+            image: "",
+            skills: new Skills(Array.Empty<string>()));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
@@ -212,7 +204,7 @@ public class GetProjectByIdQueryHandlerTests
 
         // Assert
         result.Should().NotBeNull();
-        result!.Title.Should().BeEmpty();
+        result!.Title.Should().Be("Untitled");
         result.ShortDescription.Should().BeEmpty();
         result.LongDescription.Should().BeEmpty();
         result.Image.Should().BeEmpty();
@@ -223,13 +215,11 @@ public class GetProjectByIdQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "Featured Project",
-            Featured = true,
-            Skills = new Skills(new[] { "Skill1" })
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Featured Project",
+            featured: true,
+            skills: new Skills(new[] { "Skill1" }));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
@@ -250,13 +240,11 @@ public class GetProjectByIdQueryHandlerTests
     {
         // Arrange
         var projectId = Guid.NewGuid();
-        var project = new Project
-        {
-            Id = projectId,
-            Title = "Regular Project",
-            Featured = false,
-            Skills = new Skills(new[] { "Skill1" })
-        };
+        var project = Aggregates.Project(
+            id: projectId,
+            title: "Regular Project",
+            featured: false,
+            skills: new Skills(new[] { "Skill1" }));
 
         _mockProjectRepository
             .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))

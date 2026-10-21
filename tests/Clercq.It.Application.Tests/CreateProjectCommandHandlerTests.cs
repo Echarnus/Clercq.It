@@ -126,7 +126,7 @@ public class CreateProjectCommandHandlerTests
         _mockProjectRepository
             .Setup(x => x.AddAsync(MoqIt.IsAny<Project>(), MoqIt.IsAny<CancellationToken>()))
             .Callback(() => callSequence.Add("AddProject"))
-            .ReturnsAsync(new Project());
+            .ReturnsAsync(Aggregates.Project());
 
         _mockUnitOfWork
             .Setup(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()))

@@ -244,7 +244,7 @@ public class CreateCertificationCommandHandlerTests
         _mockCertificationRepository
             .Setup(x => x.AddAsync(MoqIt.IsAny<Certification>(), MoqIt.IsAny<CancellationToken>()))
             .Callback(() => callSequence.Add("AddCertification"))
-            .ReturnsAsync(new Certification());
+            .ReturnsAsync(Aggregates.Certification());
 
         _mockUnitOfWork
             .Setup(x => x.SaveChangesAsync(MoqIt.IsAny<CancellationToken>()))
