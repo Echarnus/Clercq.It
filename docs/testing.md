@@ -58,7 +58,7 @@ dotnet tool run reportgenerator -reports:"./coverage/**/coverage.cobertura.xml" 
 python3 .github/scripts/check_coverage.py ./coverage/report/Summary.json tests/coverage-thresholds.json
 ```
 
-Open `coverage/report/index.html` for line-by-line coverage. In a Claude Code cloud session, set `DOTNET_ROLL_FORWARD=Major` first (the session-start hook does this).
+Open `coverage/report/index.html` for line-by-line coverage.
 
 ## API integration tests
 
@@ -89,19 +89,21 @@ In CI they are a separate step, `API integration tests`, after `Unit tests` in t
 
 The `Test .NET API` job fails when line coverage is below `tests/coverage-thresholds.json`, per assembly and in total. It prints a table in the job summary and uploads the HTML report as the `coverage-report` artifact. Coverage also still goes to Codecov.
 
-Thresholds (21 October 2026, the measured coverage rounded down; raised when the integration tests in #244 started covering Infrastructure):
+Thresholds (21 October 2026, the measured coverage rounded down; raised when the integration tests in #244 started covering Infrastructure, and again in #247 once compiler-generated code was excluded):
 
 | Assembly | Minimum line coverage |
 | --- | ---: |
-| Total | 92% |
+| Total | 96% |
 | `Clercq.It.Domain` | 100% |
 | `Clercq.It.Application` | 98% |
-| `ClercqIt.Api` | 92% |
-| `Clercq.It.ContentImport` | 73% |
+| `ClercqIt.Api` | 98% |
+| `Clercq.It.ContentImport` | 82% |
 | `Clercq.It.ServiceDefaults` | 97% |
-| `Clercq.It.Infrastructure` | 89% |
+| `Clercq.It.Infrastructure` | 95% |
 
 Domain and Application together are above the 80% target.
+
+Compiler-generated code is not counted: `tests/coverage.runsettings` (applied to every `dotnet test` through `RunSettingsFilePath` in `Directory.Build.props`) excludes `[GeneratedCode]` and `[CompilerGenerated]` code and the .NET 10 OpenAPI XML-comment generator (`Microsoft.AspNetCore.OpenApi.Generated`), which otherwise adds about 250 uncoverable lines to `ClercqIt.Api`.
 
 Ratchet rule: when a PR raises coverage, raise the matching number in the same PR. Never lower a number without saying why in the PR body. A new production assembly needs a threshold, or the gate fails.
 

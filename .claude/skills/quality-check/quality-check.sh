@@ -9,7 +9,7 @@ fast=0
 [ "${1:-}" = "--fast" ] && fast=1
 root=$(git rev-parse --show-toplevel)
 cd "$root" || exit 1
-export DOTNET_ROLL_FORWARD=${DOTNET_ROLL_FORWARD:-Major} CHECKPOINT_DISABLE=1
+export CHECKPOINT_DISABLE=1
 log_dir=$(mktemp -d)
 rows=()
 failed=0

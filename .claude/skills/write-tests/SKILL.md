@@ -37,7 +37,6 @@ New endpoints also need: 400 for invalid input, 404 where it applies, 401 anonym
 ## 4. Run them
 
 ```bash
-export DOTNET_ROLL_FORWARD=Major                         # cloud sessions
 dotnet test Clercq.It.CI.slnf -c Release --filter "FullyQualifiedName~<TestClass>"
 cd src/ClercqIt.Web && pnpm vitest run <path/to/file.test.tsx>
 ```

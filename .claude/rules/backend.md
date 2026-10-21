@@ -11,7 +11,7 @@ paths:
 
 Full policy: docs/architecture.md#architecture-rules and docs/development.md#code-style.
 
-- Use `Clercq.It.CI.slnf` for restore, build, test and format. Never build the Aspire AppHost in CI or Docker. In a cloud session `DOTNET_ROLL_FORWARD=Major` must be set.
+- Use `Clercq.It.CI.slnf` for restore, build, test and format. Never build the Aspire AppHost in CI or Docker.
 - `dotnet format Clercq.It.CI.slnf --verify-no-changes` and `dotnet build Clercq.It.CI.slnf -c Release` (warnings are errors) must pass. Fix with `dotnet format Clercq.It.CI.slnf`.
 - Analyzers: fix the code. If a rule truly does not fit, change its severity in `.editorconfig` with a comment saying why. No `#pragma warning disable`.
 - Layering (enforced by `tests/Clercq.It.Architecture.Tests`): Domain depends on nothing; Application only on Domain, MediatR and FluentValidation; endpoints go through MediatR, never the DbContext or repositories. Fix the dependency, not the test.

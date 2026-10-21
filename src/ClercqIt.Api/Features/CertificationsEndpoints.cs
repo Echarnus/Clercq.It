@@ -10,7 +10,6 @@ public static class CertificationsEndpoints
     {
         var group = endpoints.MapGroup("/api/certifications")
             .WithTags("Certifications")
-            .WithOpenApi()
             .RequireRateLimiting("api");
 
         group.MapGet("/", async (IMediator mediator) =>

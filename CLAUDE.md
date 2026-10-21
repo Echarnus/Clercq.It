@@ -1,6 +1,6 @@
 # Clercq.It agent guide
 
-Personal website www.clercq.it: .NET 9 API (Clean Architecture, EF Core, PostgreSQL) and Next.js 16 frontend, shipped as one Docker image to a Scaleway serverless container. Production auth is Cloud IAM (hosted Keycloak). Full docs: [docs/README.md](docs/README.md).
+Personal website www.clercq.it: .NET 10 API (Clean Architecture, EF Core, PostgreSQL) and Next.js 16 frontend, shipped as one Docker image to a Scaleway serverless container. Production auth is Cloud IAM (hosted Keycloak). Full docs: [docs/README.md](docs/README.md).
 
 ## How work flows
 
@@ -42,7 +42,7 @@ cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm forma
 cd infra/terraform && terraform fmt -check && terraform validate
 ```
 
-Local full stack: `dotnet run --project src/Clercq.It.AppHost` (needs Docker and the Aspire workload); see [docs/development.md](docs/development.md).
+Local full stack: `dotnet run --project src/Clercq.It.AppHost` (needs Docker; Aspire 13 comes from NuGet); see [docs/development.md](docs/development.md).
 
 ## Pointers
 

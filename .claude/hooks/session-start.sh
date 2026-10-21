@@ -15,15 +15,14 @@ SUDO=""
 if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
 
 # .NET SDK. Microsoft's download hosts are not reachable from the cloud
-# environment, so use Ubuntu's dotnet-sdk-10.0 package. It builds the net9.0
-# projects; DOTNET_ROLL_FORWARD lets net9.0 test hosts run on the 10.0 runtime.
+# environment, so use Ubuntu's dotnet-sdk-10.0 package, the SDK the projects
+# target (global.json).
 if ! command -v dotnet >/dev/null 2>&1; then
   $SUDO apt-get update -qq
   DEBIAN_FRONTEND=noninteractive $SUDO apt-get install -y -qq dotnet-sdk-10.0
 fi
 if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
   {
-    echo 'export DOTNET_ROLL_FORWARD=Major'
     echo 'export DOTNET_CLI_TELEMETRY_OPTOUT=1'
     echo 'export DOTNET_NOLOGO=1'
     echo 'export PATH="$PATH:$HOME/.dotnet/tools"'
@@ -50,10 +49,10 @@ if ! command -v scw >/dev/null 2>&1; then
   fi
 fi
 
-# Restore .NET projects (never the Aspire AppHost, which needs the Aspire workload).
-DOTNET_ROLL_FORWARD=Major DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj
+# Restore .NET projects (never the local-only Aspire AppHost).
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj
 for project in tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests tests/Clercq.It.ContentImport.Tests; do
-  DOTNET_ROLL_FORWARD=Major DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$project"
+  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$project"
 done
 
 # Frontend dependencies.

@@ -9,7 +9,6 @@ public static class ImagesEndpoints
     {
         var group = endpoints.MapGroup("/api/images")
             .WithTags("Images")
-            .WithOpenApi()
             .RequireRateLimiting("api");
 
         group.MapPost("/", async (HttpRequest request, IMediator mediator) =>

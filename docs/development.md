@@ -5,7 +5,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 ## Prerequisites
 
 ### Required Software
-- **.NET 9.0 SDK** - [Download](https://dotnet.microsoft.com/download/dotnet/9.0)
+- **.NET 10 SDK** (LTS) - [Download](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Node.js 24 LTS** - [Download](https://nodejs.org/). CI (`test.yml`, `security-scan.yml`) and the Docker image (`node:24-slim`) use the same major.
 - **pnpm 10.12.4+** - Install with `npm install -g pnpm`
 - **Docker** - [Download](https://www.docker.com/products/docker-desktop)
@@ -62,9 +62,10 @@ You can develop using either **Aspire orchestration** (recommended) or **manual 
 .NET Aspire is a development orchestration tool that simplifies running the entire application stack locally with enhanced observability.
 
 ### Prerequisites
-- .NET 9.0 SDK
+- .NET 10 SDK
 - Docker Desktop
-- **Aspire workload** (install with `dotnet workload install aspire`)
+
+The AppHost uses Aspire 13 (`Aspire.AppHost.Sdk/13.6.2`); no workload is needed. The frontend runs through `AddJavaScriptApp` with pnpm.
 
 > **Note**: The Aspire workload is only required for local development when running the AppHost. Production builds and CI/CD pipelines do NOT require this workload.
 
@@ -147,9 +148,9 @@ For production authentication configuration, see the [Cloud IAM documentation](.
 | Components | AppHost, ServiceDefaults, Dashboard | API, frontend, nginx only |
 | Database | Containerized PostgreSQL + pgAdmin | Managed PostgreSQL (Scaleway, etc.) |
 | Features | Hot reload, tracing, metrics | Optimized for performance |
-| Workload Required | Yes (`dotnet workload install aspire`) | No - AppHost excluded from builds |
+| Aspire | Aspire 13 SDK (NuGet, no workload) | No - AppHost excluded from builds |
 
-> **Key Point**: The `Clercq.It.AppHost` project is **excluded from production Docker builds and CI/CD pipelines**. The ServiceDefaults project is included in production but does not require the Aspire workload.
+> **Key Point**: The `Clercq.It.AppHost` project is **excluded from production Docker builds and CI/CD pipelines**. The ServiceDefaults project is included in production.
 
 ## Option B: Manual Setup
 
@@ -241,8 +242,7 @@ Agents work in a Claude Code cloud container. `.claude/hooks/session-start.sh` (
 
 | Tool | How it is installed | Why |
 | --- | --- | --- |
-| .NET SDK 10 (`dotnet-sdk-10.0` from Ubuntu) | `apt-get` | Microsoft's .NET download hosts are blocked by the environment's network policy, and Ubuntu 24.04 ships no 9.0 SDK. SDK 10 builds the `net9.0` projects. |
-| `DOTNET_ROLL_FORWARD=Major` | written to the session environment | Lets the `net9.0` test hosts run on the 10.0 runtime. CI and the Docker image still use .NET 9. |
+| .NET SDK 10 (`dotnet-sdk-10.0` from Ubuntu) | `apt-get` | Microsoft's .NET download hosts are blocked by the environment's network policy. The projects target `net10.0`, so this is the same SDK CI and Docker use. |
 | Terraform 1.6.6 | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
 | Scaleway CLI 2.40.0 (pinned) | binary from GitHub releases | Reading secrets from Scaleway Secret Manager |
 | NuGet and pnpm packages | `dotnet restore` (API and test projects, never the Aspire AppHost) and `pnpm install --frozen-lockfile` | Builds and tests run without further setup |
@@ -254,7 +254,7 @@ What the owner configures on the cloud environment (Project settings → Cloud e
 - Network secrets `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID` for a read-only Secret Manager key (see issue #226).
 - Network access to `clercq.it` and the Scaleway APIs, for smoke tests and secret reads.
 
-No `global.json` pins the SDK on purpose: the cloud environment can only install SDK 10, while CI and Docker use 9.0. Pinning would break one of them.
+`global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`setup-dotnet` `10.0.x`) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`).
 
 Commands agents run before opening a PR:
 
@@ -531,18 +531,11 @@ dotnet build
 2. **Docker Requirements**: PostgreSQL requires Docker Desktop to be running
 3. **Network Connectivity**: Ensure Docker networks allow inter-container communication
 
-#### Aspire Workload Issues
+#### Aspire SDK Issues
 
-If you get an error like `error NETSDK1147: To build this project, the following workloads must be installed: aspire`:
+Aspire 13 comes from the `Aspire.AppHost.Sdk/13.6.2` NuGet SDK; there is no workload to install (an old `aspire` workload can be removed with `dotnet workload uninstall aspire`). If restore of the AppHost fails, check that `dotnet --version` is 10.x (`global.json`).
 
-```bash
-# Install the Aspire workload (for local development only)
-dotnet workload install aspire
-```
-
-**Note**: This error should ONLY occur when running the AppHost project locally. Production builds and CI/CD pipelines explicitly exclude the AppHost project and do not require the Aspire workload.
-
-If you're seeing this error in CI/CD or Docker builds, check that:
+If an AppHost error shows up in CI/CD or Docker builds, check that:
 - The build is not trying to restore/build the `Clercq.It.AppHost` project
 - The solution-level restore/build is not being used
 - Only the specific production projects are being built
