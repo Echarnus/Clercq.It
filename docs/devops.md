@@ -147,7 +147,7 @@ gh workflow run build.yml
 Secret scanning moved to gitleaks in `sast.yml` (see [Application security](./application-security.md#static-analysis-sast)).
 
 #### security-scorecard
-- Runs OpenSSF Scorecard evaluation
+- Runs OpenSSF Scorecard evaluation on pushes to `main` and the daily schedule (not on PRs), with `ossf/scorecard-action` v2.4.4 pinned by commit SHA. Versions before 2.4.2 pull their image from `gcr.io`, which no longer serves it, so the job failed on every run (#286).
 - Assesses security best practices
 - Publishes results to GitHub Security
 - Provides security posture visibility
