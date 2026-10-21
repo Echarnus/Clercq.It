@@ -9,7 +9,7 @@ export default async function BlogsPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       {/* Blogs Header */}

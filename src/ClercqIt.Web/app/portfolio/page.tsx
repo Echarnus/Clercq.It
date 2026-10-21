@@ -11,7 +11,7 @@ export default async function PortfolioPage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       {/* Portfolio Header */}
@@ -44,13 +44,13 @@ export default async function PortfolioPage() {
             ) : (
               projects.map((project) => (
                 <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
-                  <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20 md:flex md:flex-row">
+                  <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                     <BlurImage
                       src={project.image || "/placeholder.svg"}
                       alt={project.title}
                       width={200}
                       height={200}
-                      containerClassName="w-full md:w-48 h-48 flex-shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                      containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                     />
 
                     <CardContent className="flex flex-col justify-center p-6 md:flex-1">

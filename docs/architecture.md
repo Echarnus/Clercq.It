@@ -231,7 +231,7 @@ Config-driven flags hide unfinished work in production (issue #253). The API own
 - **Next.js 15** - React framework with App Router
 - **React 19** - Latest React with concurrent features
 - **TypeScript** - Type-safe JavaScript development
-- **Tailwind CSS** - Utility-first CSS framework
+- **Tailwind CSS 4** - Utility-first CSS framework, configured CSS-first in `app/globals.css`
 - **Radix UI** - Accessible component primitives
 
 ### Infrastructure & DevOps

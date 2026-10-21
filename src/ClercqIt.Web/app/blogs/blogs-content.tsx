@@ -112,13 +112,13 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
           ) : (
             paginatedBlogs.map((blog) => (
               <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
-                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20 md:flex md:flex-row">
+                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <BlurImage
                     src={blog.image || "/placeholder.svg"}
                     alt={blog.shortDescription}
                     width={200}
                     height={200}
-                    containerClassName="w-full md:w-48 h-48 flex-shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                    containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                   />
 
                   <CardContent className="flex flex-col justify-center p-6 md:flex-1">
@@ -189,7 +189,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
       {/* Sidebar Filters */}
       <div className="lg:col-span-1">
         <div className="sticky top-4 space-y-6">
-          <Card className="bg-white/80 p-6 backdrop-blur-sm dark:bg-slate-800/80">
+          <Card className="bg-white/80 p-6 backdrop-blur-xs dark:bg-slate-800/80">
             <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filters</h3>
 
             {/* Title Filter */}

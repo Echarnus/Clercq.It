@@ -64,7 +64,7 @@ export function ImageUpload({
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute right-2 top-2"
+              className="absolute top-2 right-2"
               onClick={handleRemove}
               aria-label="Remove image"
             >

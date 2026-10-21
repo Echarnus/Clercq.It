@@ -4,7 +4,7 @@ import { FileQuestion } from "lucide-react";
 export default function NotFound() {
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       <section className="container mx-auto px-4 py-16">
@@ -13,27 +13,27 @@ export default function NotFound() {
           <div className="relative mb-8">
             <div className="relative">
               {/* Large 404 Text - solid color matching text */}
-              <h1 className="select-none text-[150px] font-bold leading-none text-slate-900 dark:text-white md:text-[200px]">
+              <h1 className="text-[150px] leading-none font-bold text-slate-900 select-none md:text-[200px] dark:text-white">
                 404
               </h1>
 
               {/* Floating icon */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce">
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 animate-bounce">
                 <FileQuestion
-                  className="h-16 w-16 text-slate-400 opacity-50 dark:text-slate-500 md:h-20 md:w-20"
+                  className="h-16 w-16 text-slate-400 opacity-50 md:h-20 md:w-20 dark:text-slate-500"
                   strokeWidth={1.5}
                 />
               </div>
             </div>
 
             {/* Decorative elements */}
-            <div className="absolute -left-4 -top-4 h-24 w-24 animate-pulse rounded-full bg-slate-200/50 blur-xl dark:bg-slate-700/50"></div>
-            <div className="absolute -bottom-4 -right-4 h-32 w-32 animate-pulse rounded-full bg-slate-300/50 blur-xl delay-700 dark:bg-slate-600/50"></div>
+            <div className="absolute -top-4 -left-4 h-24 w-24 animate-pulse rounded-full bg-slate-200/50 blur-xl dark:bg-slate-700/50"></div>
+            <div className="absolute -right-4 -bottom-4 h-32 w-32 animate-pulse rounded-full bg-slate-300/50 blur-xl delay-700 dark:bg-slate-600/50"></div>
           </div>
 
           {/* Message */}
           <div className="mb-8 space-y-4">
-            <h2 className="text-3xl font-bold text-slate-900 dark:text-white md:text-4xl">
+            <h2 className="text-3xl font-bold text-slate-900 md:text-4xl dark:text-white">
               Page Not Found
             </h2>
             <p className="text-xl leading-relaxed text-slate-600 dark:text-slate-300">

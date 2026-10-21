@@ -99,7 +99,7 @@ export default function AdminDashboard() {
 
   if (!hasAnyPermission) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-800">
+      <div className="flex min-h-screen items-center justify-center bg-linear-to-br from-slate-50 to-slate-100 p-4 dark:from-slate-900 dark:to-slate-800">
         <Card className="w-full max-w-md shadow-xl">
           <CardHeader>
             <CardTitle className="text-center text-2xl">No Access</CardTitle>
@@ -129,9 +129,9 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
       {/* Header */}
-      <header className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80">
+      <header className="border-b bg-white/80 backdrop-blur-xs dark:bg-slate-900/80">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <div>
             <h1 className="text-2xl font-bold">Clercq.It Admin</h1>

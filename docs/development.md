@@ -13,7 +13,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 
 ### Frontend versions
 
-The frontend runs Next.js 15.5, React 19, Tailwind CSS 3.4 (`tailwind.config.ts`) and zod 4 with `@hookform/resolvers` 5. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. The remaining major upgrades (Next.js 16, Tailwind 4) are tracked in #248. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
+The frontend runs Next.js 15.5, React 19, Tailwind CSS 4 and zod 4 with `@hookform/resolvers` 5. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. Tailwind 4 has no `tailwind.config.ts`: the theme (colours, radii, animations) lives in `@theme` in `app/globals.css`, PostCSS uses `@tailwindcss/postcss`, and animations come from `tw-animate-css`. Next.js 16 is tracked in #248. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
 
 `package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
 
@@ -377,7 +377,7 @@ The Next.js app in `src/ClercqIt.Web` has three gates (issue #240). The `Test Ne
 | Command | Tool | Fix with |
 | --- | --- | --- |
 | `pnpm lint` | ESLint 9, `eslint.config.mjs`, zero warnings allowed | `pnpm lint:fix`, then fix the rest by hand |
-| `pnpm format:check` | Prettier, `.prettierrc.json` (2 spaces from `.editorconfig`, width 100, Tailwind class order) | `pnpm format` |
+| `pnpm format:check` | Prettier, `.prettierrc.json` (2 spaces from `.editorconfig`, width 100, Tailwind class order read from `app/globals.css`) | `pnpm format` |
 | `pnpm typecheck` | `tsc --noEmit` | by hand |
 
 ESLint config (flat): `next/core-web-vitals`, `typescript-eslint` `recommendedTypeChecked` (type-aware), `jsx-a11y` recommended, `eslint-plugin-security` recommended, and `eslint-config-prettier` last so formatting is Prettier's job. The `e2e/` Playwright tests and the Vitest unit tests are linted with the app.

@@ -29,7 +29,7 @@ export default async function HomePage() {
 
   return (
     <div
-      className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
+      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
       style={{ fontFamily: "Arial, sans-serif" }}
     >
       {/* Hero Section */}
@@ -79,7 +79,7 @@ export default async function HomePage() {
           {skills.map((skill, index) => (
             <Card
               key={index}
-              className="border-0 bg-white/80 text-center shadow-lg backdrop-blur-sm dark:bg-slate-800/80 dark:shadow-slate-900/20"
+              className="border-0 bg-white/80 text-center shadow-lg backdrop-blur-xs dark:bg-slate-800/80 dark:shadow-slate-900/20"
             >
               <CardHeader>
                 <skill.icon className="mx-auto mb-4 h-12 w-12 text-slate-700 dark:text-slate-300" />
@@ -115,7 +115,7 @@ export default async function HomePage() {
           ) : (
             featuredProjects.slice(0, 3).map((project) => (
               <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
-                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-sm transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
+                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <CardHeader className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <Image
