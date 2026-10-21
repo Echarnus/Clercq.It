@@ -2,7 +2,6 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +15,6 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Lock, LogIn, Shield } from "lucide-react";
-import { Github, Linkedin } from "lucide-react";
 import {
   InputOTP,
   InputOTPGroup,
@@ -82,16 +80,6 @@ function AdminLoginForm() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGitHubLogin = () => {
-    // Redirect to backend GitHub OAuth endpoint
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/github`;
-  };
-
-  const handleLinkedInLogin = () => {
-    // Redirect to backend LinkedIn OAuth endpoint
-    window.location.href = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/api/auth/linkedin`;
   };
 
   return (
@@ -181,47 +169,6 @@ function AdminLoginForm() {
                 </>
               )}
             </Button>
-
-            <div className="relative w-full">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
-                  Or continue with
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 w-full">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleGitHubLogin}
-                disabled={isLoading}
-              >
-                <Github className="mr-2 h-4 w-4" />
-                GitHub
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleLinkedInLogin}
-                disabled={isLoading}
-              >
-                <Linkedin className="mr-2 h-4 w-4" />
-                LinkedIn
-              </Button>
-            </div>
-
-            <div className="text-center text-sm">
-              <span className="text-muted-foreground">
-                Don&apos;t have an account?{" "}
-              </span>
-              <Link href="/admin/register" className="text-primary hover:underline">
-                Create Account
-              </Link>
-            </div>
           </CardFooter>
         </form>
       </Card>

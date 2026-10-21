@@ -60,8 +60,13 @@ Implements multi-tier rate limiting to prevent DDoS attacks:
 
 #### Authentication Endpoints Rate Limit
 - **10 requests per minute** - Stricter limit for sensitive operations
-- Applied to: Login, token refresh, authentication endpoints
+- Applied to: `POST /api/auth/login`, the only authentication endpoint
 - Prevents brute force attacks
+
+#### Closed Registration
+- There is no self-registration. The API has no register or social-login endpoints, the Next.js app has no `/admin/register` page, and the `clercqit` realm has `registrationAllowed: false`.
+- Admin users are created by the owner in the Cloud IAM console (see [ciam.md](./ciam.md#7-create-admin-users)).
+- `AuthEndpointTests` checks that the removed endpoints stay gone.
 
 ### JWT Token Validation
 
@@ -203,7 +208,7 @@ Limits buffer sizes to prevent memory exhaustion attacks.
 | **.NET API** | Rate limiting, JWT validation, CORS | Program.cs |
 | **Next.js** | Security headers, CSP | next.config.mjs |
 | **Database** | Parameterized queries | Entity Framework |
-| **Authentication** | MFA, JWT, RBAC | Quasr.io integration |
+| **Authentication** | MFA, JWT, RBAC, closed registration | Cloud IAM (hosted Keycloak) |
 
 ### Attack Prevention
 

@@ -2,7 +2,7 @@
   "realm": "clercqit",
   "enabled": true,
   "displayName": "Clercq.It Local Development",
-  "registrationAllowed": true,
+  "registrationAllowed": false,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
   "verifyEmail": false,

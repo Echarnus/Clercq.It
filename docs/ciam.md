@@ -20,7 +20,7 @@ Because Cloud IAM is standard Keycloak, the same `LocalKeycloakAuthService` used
 Create a new realm named `clercqit` with the following settings (matching the local realm configuration):
 
 - **Display Name**: Clercq.It
-- **Registration Allowed**: true
+- **Registration Allowed**: false (admin users are created by hand, see step 7)
 - **Login with Email Allowed**: true
 - **Remember Me**: true
 - **Brute Force Protection**: enabled
@@ -77,6 +77,17 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 ### 6. Configure Scope Mappings
 
 Under **Client Scopes > roles > Scope**, assign all four realm roles so they appear in tokens.
+
+### 7. Create Admin Users
+
+Registration is closed, so every account is created by the owner:
+
+1. Open the Keycloak admin console (`https://{deployment}.cloud-iam.com/admin`) and pick the `clercqit` realm.
+2. **Users > Add user**: set username and email, tick **Email verified**, and save.
+3. **Credentials > Set password**: set a strong password with **Temporary** off.
+4. **Role mapping > Assign role**: assign `Admin.View`, `Blogs.Contributor`, `Projects.Contributor` and `Certifications.Contributor`.
+5. Recommended: **Required user actions > Configure OTP**, so the account uses MFA from its first login.
+6. Sign in at `https://www.clercq.it/admin` to check the account.
 
 ## Production Configuration
 
@@ -140,14 +151,9 @@ resource "keycloak_role" "admin_view" {
 
 **Note**: Add the Terraform runner's IP address to the Cloud IAM admin allow list in your deployment settings.
 
-## CloudIAMAuthService (Legacy)
+## Configuration Check
 
-The codebase contains a `CloudIAMAuthService` that was built for a custom (non-Keycloak) identity API. This service is **not used** when connecting to Cloud IAM (cloud-iam.com), because Cloud IAM is standard Keycloak.
-
-- **Cloud IAM (cloud-iam.com)**: Uses `LocalKeycloakAuthService` (standard Keycloak API)
-- **Custom identity provider**: Would use `CloudIAMAuthService` (custom REST endpoints like `/v1/auth/login`)
-
-If you are only using Keycloak (local or Cloud IAM), `CloudIAMAuthService` can be considered legacy code.
+The API needs `Keycloak:BaseUrl` (and optionally `Keycloak:Realm`, default `clercqit`). If neither that nor an Aspire Keycloak reference is set, the API refuses to start with `Authentication is not configured`. There is no other auth provider to fall back to.
 
 ## Security Notes
 

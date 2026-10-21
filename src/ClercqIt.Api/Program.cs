@@ -4,7 +4,6 @@ using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
-using ClercqIt.Api.Configuration;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Options;
@@ -135,44 +134,9 @@ else if (useKeycloak)
 }
 else
 {
-    // Fallback: Use Cloud IAM (custom auth API)
-    builder.Services.AddOptions<CloudIAMSettings>()
-        .BindConfiguration(CloudIAMSettings.SectionName)
-        .ValidateDataAnnotations()
-        .ValidateOnStart();
-
-    var cloudIAMSettings = builder.Configuration
-        .GetSection(CloudIAMSettings.SectionName)
-        .Get<CloudIAMSettings>() ?? throw new InvalidOperationException(
-            "Authentication configuration is missing. Either configure Keycloak:BaseUrl for Keycloak, " +
-            "or CloudIAM settings for custom authentication. See docs/ciam.md for instructions.");
-
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.Authority = cloudIAMSettings.ApiUrl;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = cloudIAMSettings.ApiUrl,
-                RoleClaimType = System.Security.Claims.ClaimTypes.Role
-            };
-
-            if (builder.Environment.IsDevelopment())
-            {
-                options.RequireHttpsMetadata = false;
-            }
-            else
-            {
-                options.RequireHttpsMetadata = true;
-            }
-        });
-
-    // Register Cloud IAM auth service
-    builder.Services.AddSingleton<ICloudIAMAuthService, CloudIAMAuthService>();
+    throw new InvalidOperationException(
+        "Authentication is not configured. Set Keycloak:BaseUrl (and optionally Keycloak:Realm) " +
+        "to the Cloud IAM or local Keycloak URL. See docs/ciam.md.");
 }
 
 // Add Authorization
