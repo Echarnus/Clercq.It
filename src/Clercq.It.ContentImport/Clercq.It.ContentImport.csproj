@@ -5,6 +5,8 @@
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- An unresolved assembly version conflict builds fine but crashes at runtime. -->
+    <WarningsAsErrors>$(WarningsAsErrors);MSB3277</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>
