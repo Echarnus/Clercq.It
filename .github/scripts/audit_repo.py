@@ -200,25 +200,29 @@ def doc_paths(root: Path) -> list[Path]:
     return files
 
 
-def check_docs(root: Path) -> list:
+def check_doc(root: Path, doc: Path) -> list:
+    """Links and backticked repository paths in one doc that do not exist."""
     findings = []
-    for doc in doc_paths(root):
-        text = doc.read_text(encoding="utf-8")
-        rel_doc = doc.relative_to(root).as_posix()
-        for target in LINK.findall(text):
-            target = target.split("#", 1)[0]
-            if not target or re.match(r"^[a-z]+:", target) or PLACEHOLDER.search(target):
-                continue
-            base = root if target.startswith("/") else doc.parent
-            if not (base / target.lstrip("/")).exists():
-                findings.append(f"`{rel_doc}` links to `{target}`, which does not exist.")
-        for target in CODE_PATH.findall(text):
-            if not target.startswith(PATH_ROOTS) or PLACEHOLDER.search(target):
-                continue
-            target = target.split("#", 1)[0].split(":", 1)[0].rstrip(".,")
-            if not (root / target).exists():
-                findings.append(f"`{rel_doc}` names `{target}`, which does not exist.")
-    return sorted(set(findings))
+    text = doc.read_text(encoding="utf-8")
+    rel_doc = doc.relative_to(root).as_posix()
+    for target in LINK.findall(text):
+        target = target.split("#", 1)[0]
+        if not target or re.match(r"^[a-z]+:", target) or PLACEHOLDER.search(target):
+            continue
+        base = root if target.startswith("/") else doc.parent
+        if not (base / target.lstrip("/")).exists():
+            findings.append(f"`{rel_doc}` links to `{target}`, which does not exist.")
+    for target in CODE_PATH.findall(text):
+        if not target.startswith(PATH_ROOTS) or PLACEHOLDER.search(target):
+            continue
+        target = target.split("#", 1)[0].split(":", 1)[0].rstrip(".,")
+        if not (root / target).exists():
+            findings.append(f"`{rel_doc}` names `{target}`, which does not exist.")
+    return findings
+
+
+def check_docs(root: Path) -> list:
+    return sorted({f for doc in doc_paths(root) for f in check_doc(root, doc)})
 
 
 # ---------------------------------------------------------------- main

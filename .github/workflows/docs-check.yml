@@ -27,27 +27,9 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           DOCS_NOT_NEEDED: ${{ contains(github.event.pull_request.labels.*.name, 'docs:not-needed') }}
         run: |
-          changed=$(git diff --name-only "$BASE_SHA"..."$HEAD_SHA")
-          echo "Changed files:"
-          echo "$changed"
-
-          needs_docs=$(echo "$changed" | grep -E '^(src/|infra/|tests/|\.github/(workflows|actions)/|\.claude/)' || true)
-          has_docs=$(echo "$changed" | grep -E '^(docs/|CLAUDE\.md$|README\.md$)' || true)
-
-          if [ -z "$needs_docs" ]; then
-            echo "No code, infra or workflow changes; docs not required."
-            exit 0
-          fi
-          if [ -n "$has_docs" ]; then
-            echo "Docs updated:"
-            echo "$has_docs"
-            exit 0
-          fi
+          flag=""
           if [ "$DOCS_NOT_NEEDED" = "true" ]; then
             echo "Label docs:not-needed is set; the reason must be in the PR body."
-            exit 0
+            flag="--docs-not-needed"
           fi
-
-          echo "::error::This PR changes code, infra or workflows but no file under docs/ (or CLAUDE.md/README.md)."
-          echo "::error::Update the matching docs page, or add the docs:not-needed label with a reason in the PR body."
-          exit 1
+          python3 .github/scripts/docs_check.py --base "$BASE_SHA" --head "$HEAD_SHA" $flag

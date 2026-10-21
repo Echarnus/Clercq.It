@@ -30,7 +30,28 @@ Labels are defined in `.github/labels.yml` and synced by `.github/workflows/labe
 
 ## Docs rule
 
-Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR. `docs-check.yml` enforces this: it fails a PR that touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/` without touching `docs/`, `CLAUDE.md` or `README.md`, unless it has the `docs:not-needed` label.
+Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR.
+
+### Docs check
+
+`docs-check.yml` (the `Docs updated` check) runs `.github/scripts/docs_check.py` on every PR except Dependabot's. Agents run the same script through the `quality-check` skill. It fails when:
+
+1. The PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, but no file under `docs/`, `CLAUDE.md` or `README.md`.
+2. An area with its own doc changed, but none of that area's docs did:
+
+   | Area | Docs (one of them must change) |
+   | --- | --- |
+   | `infra/` | `docs/devops.md`, `docs/secrets.md` |
+   | `.github/workflows/`, `.github/actions/`, `.github/rulesets/` | `docs/devops.md`, `docs/contributing.md`, `docs/application-security.md`, `docs/testing.md`, `docs/versioning.md` |
+   | Keycloak realm (`src/Clercq.It.AppHost/KeycloakRealms/`) | `docs/ciam.md`, `docs/development.md` |
+   | Container image (`src/Dockerfile`, `src/start.sh`, `src/nginx.conf`) | `docs/architecture.md`, `docs/devops.md`, `docs/application-security.md` |
+   | Coverage thresholds (`tests/coverage-thresholds.json`, `src/ClercqIt.Web/vitest.config.mts`) | `docs/testing.md` |
+   | Claude Code hooks and skills (`.claude/hooks/`, `.claude/skills/`, `.claude/settings.json`) | `docs/development.md`, `CLAUDE.md` |
+
+   Application code has no mapping of its own, so a refactor only needs rule 1.
+3. A doc the PR changed links to, or names in backticks, a repository file that does not exist (the same check as the weekly audit, but only on the changed docs).
+
+The `docs:not-needed` label skips rules 1 and 2, never rule 3; the PR body must say why. To add an area, extend `AREAS` in the script, its tests in `.github/scripts/tests/test_docs_check.py`, and the table above.
 
 New pages are added to the index in [docs/README.md](./README.md).
 

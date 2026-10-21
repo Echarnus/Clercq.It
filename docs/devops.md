@@ -27,7 +27,7 @@ Additionally, **Dependabot** runs automatically to keep dependencies secure and 
 ## Workflow and review pipelines
 
 ### Docs check (`docs-check.yml`)
-Runs on every PR to `main` (skipped for Dependabot). If the PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, it must also change a file under `docs/`, `CLAUDE.md` or `README.md`. The `docs:not-needed` label overrides the check; the PR body must then say why.
+Runs `.github/scripts/docs_check.py` on every PR to `main` (skipped for Dependabot). If the PR touches `src/`, `tests/`, `infra/`, `.github/workflows/`, `.github/actions/` or `.claude/`, it must also change a file under `docs/`, `CLAUDE.md` or `README.md`; areas with their own doc (infra, pipelines, container image, coverage thresholds, Keycloak realm, Claude Code hooks and skills) must change that doc; and changed docs must not link to missing files. The `docs:not-needed` label overrides the first two rules; the PR body must then say why. Details: [contributing.md](./contributing.md#docs-check).
 
 ### Sync labels (`labels.yml`)
 Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates or updates each label listed there; labels not in the file are left alone.

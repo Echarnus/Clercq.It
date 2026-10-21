@@ -387,32 +387,70 @@ Policy:
 - An `eslint-disable` comment must say why after `--`, for example `// eslint-disable-next-line security/detect-object-injection -- index is a numeric slot position`.
 - Fix the code; do not loosen `eslint.config.mjs`, `.prettierrc.json` or `tsconfig.json` to get a check green.
 
+### Quality gates
+
+With no human review, agents are the only thing between a change and production, so every gate CI enforces is also known to the agent while it writes code (issue #234). Three layers do that, all under `.claude/`:
+
+**Rules** (`.claude/rules/*.md`) load into Claude's context. A rule with `paths:` front matter loads only when Claude works on matching files; one without loads always.
+
+| Rule | Loads for | Covers |
+| --- | --- | --- |
+| `backend.md` | `src/**/*.cs`, `tests/**/*.cs`, project files | layering, analyzer policy, format/build/test commands |
+| `frontend.md` | `src/ClercqIt.Web/**` | ESLint, Prettier and TypeScript policy |
+| `testing.md` | `src/**`, `tests/**` | test conventions and coverage ratchet |
+| `infra.md` | `infra/**` | `terraform fmt`/`validate`, secrets in Terraform |
+| `security.md` | always | no secrets, SAST, suppressions need a reason |
+| `docs.md` | always | the docs rule and the docs check |
+
+**Skills** (`.claude/skills/<name>/SKILL.md`) are commands Claude runs on request or by itself:
+
+| Skill | What it does |
+| --- | --- |
+| `quality-check` | Runs every PR gate as CI does and prints a pass/fail table: docs check, pipeline script tests, `dotnet format`, Release build, unit and architecture tests, API integration tests and the coverage gate (when Docker runs), ESLint, Prettier, `tsc`, Vitest with coverage, `next build`, `terraform fmt` and `validate`. `--fast` skips the integration tests, coverage gate and `next build`. This is the definition-of-done command: a PR is opened only after a full run passes. |
+| `fix-quality` | Runs the auto-fixers (`dotnet format`, `eslint --fix`, Prettier, `terraform fmt`), then `quality-check` again. |
+
+You can run the check yourself too: `.claude/skills/quality-check/quality-check.sh`.
+
+**Hooks** (below) format and check files while Claude edits them.
+
+Every gate in `quality-check` also runs in CI, so nothing depends on the agent running it. All of them are required checks in `.github/rulesets/main.json` (`Test .NET API`, `Test Next.js Frontend`, `Test deploy scripts`, `Docs updated`) except Terraform: `terraform fmt` and `validate` run in `Terraform Plan` (`infra.yml`), which only runs on PRs that change `infra/`, and a required check that does not run would block every other PR.
+
+To add a gate: add the CI step, add a matching `step` line to `.claude/skills/quality-check/quality-check.sh`, mention it in the rule for its area, and update the tables here. To add a rule, create `.claude/rules/<area>.md` with `paths:` front matter for the files it is about. To add a skill, create `.claude/skills/<name>/SKILL.md` with `name` and `description` front matter; the description says when Claude should use it.
+
 ### Claude Code hooks
 
-Two hook scripts keep agents inside these gates while they edit:
+Four hook scripts keep agents inside these gates while they edit:
 
 | Script | Event | What it does |
 | --- | --- | --- |
 | `.claude/hooks/frontend-format.sh` | `PostToolUse` on `Edit\|Write\|MultiEdit` | For a changed file in `src/ClercqIt.Web`: `prettier --write`, then `eslint --fix`, then `eslint`. Remaining ESLint errors go back to Claude (exit code 2). `.json`, `.css` and `.md` files only get Prettier. |
+| `.claude/hooks/backend-format.sh` | `PostToolUse` on `Edit\|Write\|MultiEdit` | For a changed `.cs` file under `src/` or `tests/`: `dotnet format whitespace` on that file (about 5 seconds, no project load). For a `.tf` file under `infra/`: `terraform fmt`. A syntax error goes back to Claude. |
 | `.claude/hooks/frontend-stop-check.sh` | `Stop` | Runs Prettier and ESLint on the frontend files changed versus `main`, plus `tsc --noEmit`. Any failure blocks ending the turn, once per stop. |
+| `.claude/hooks/backend-stop-check.sh` | `Stop` | Runs `dotnet format Clercq.It.CI.slnf --verify-no-changes` (whitespace, style and analyzers) on the C# files changed versus `main`, and `terraform fmt -check` on changed Terraform files. Any failure blocks ending the turn, once per stop. |
 
-They are registered in `.claude/settings.json`. Agents cannot edit that file (it counts as self-modification), so the owner adds this once, next to the existing `SessionStart` entry:
+They are registered in `.claude/settings.json`. Agents cannot edit that file (it counts as self-modification), so the owner adds this once, next to the existing `SessionStart` entry (issue #304):
 
 ```json
 "PostToolUse": [
   {
     "matcher": "Edit|Write|MultiEdit",
-    "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-format.sh" }]
+    "hooks": [
+      { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-format.sh" },
+      { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/backend-format.sh" }
+    ]
   }
 ],
 "Stop": [
   {
-    "hooks": [{ "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-stop-check.sh" }]
+    "hooks": [
+      { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/frontend-stop-check.sh" },
+      { "type": "command", "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/backend-stop-check.sh" }
+    ]
   }
 ]
 ```
 
-Conventions for agents are also in `.claude/rules/frontend.md`.
+Test a hook by hand by piping the JSON Claude Code sends, for example `echo '{"tool_input":{"file_path":"'"$PWD"'/src/Clercq.It.Domain/Entities/Blog.cs"}}' | CLAUDE_PROJECT_DIR=$PWD .claude/hooks/backend-format.sh`.
 
 ### Building and Running
 
