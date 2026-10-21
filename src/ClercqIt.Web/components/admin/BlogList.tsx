@@ -45,21 +45,22 @@ export function BlogList() {
   const [blogToDelete, setBlogToDelete] = useState<Blog | null>(null);
   const { toast } = useToast();
 
-  const loadBlogs = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const data = await fetchAllBlogs();
-      setBlogs(data);
-    } catch {
-      toast({
-        title: "Error",
-        description: "Failed to load blogs",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
+  // isLoading starts true; a reload after a change keeps the list on screen.
+  // State is only set in promise callbacks, never synchronously in the effect.
+  const loadBlogs = useCallback(
+    () =>
+      fetchAllBlogs()
+        .then(setBlogs)
+        .catch(() =>
+          toast({
+            title: "Error",
+            description: "Failed to load blogs",
+            variant: "destructive",
+          }),
+        )
+        .finally(() => setIsLoading(false)),
+    [toast],
+  );
 
   useEffect(() => {
     void loadBlogs();

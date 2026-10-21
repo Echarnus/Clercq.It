@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useIsClient } from "@/hooks/use-is-client";
 import { createPortal } from "react-dom";
 import { Menu, X } from "lucide-react";
 
@@ -15,17 +16,11 @@ const navItems = [
 
 export function Navigation() {
   const pathname = usePathname();
-  const [isHydrated, setIsHydrated] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  useEffect(() => {
-    setIsHydrated(true);
-  }, []);
-
-  // Close mobile menu when route changes
-  useEffect(() => {
-    setIsMobileMenuOpen(false);
-  }, [pathname]);
+  const isHydrated = useIsClient();
+  // The menu is open for the page it was opened on, so a route change closes it.
+  const [menuOpenOn, setMenuOpenOn] = useState<string | null>(null);
+  const isMobileMenuOpen = menuOpenOn === pathname;
+  const setIsMobileMenuOpen = (open: boolean) => setMenuOpenOn(open ? pathname : null);
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {

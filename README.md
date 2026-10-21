@@ -27,7 +27,7 @@ The badges above show the live state of each pipeline. Pipelines, triggers and r
 - **OpenAPI/Swagger** - API documentation and testing
 
 ### Frontend  
-- **Next.js 15** - React framework with App Router
+- **Next.js 16** - React framework with App Router
 - **React 19** - Latest React with concurrent features
 - **TypeScript** - Type-safe JavaScript development
 - **Tailwind CSS** - Utility-first CSS framework
@@ -66,7 +66,7 @@ Built with Clean Architecture principles and Domain-Driven Design:
 - **PostgreSQL** - Primary database with EF Core
 - **MediatR** - CQRS and mediator pattern implementation  
 - **FluentValidation** - Request validation
-- **Next.js 15** - React framework with TypeScript
+- **Next.js 16** - React framework with TypeScript
 - **Docker** - Containerization with multi-stage builds
 - **Aspire** - Local development orchestration and tooling
 
