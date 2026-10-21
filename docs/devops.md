@@ -454,7 +454,8 @@ Automated dependency updates (`.github/dependabot.yml`):
 - **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
 - **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
-- **Stale PRs**: a Dependabot PR whose base is far behind `main` is closed rather than merged; Dependabot reopens a fresh PR against current `main` on its next run.
+- **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
+- **Security updates**: grouping applies to version updates only; Dependabot security updates still arrive as one PR per dependency.
 
 ## Best Practices
 
