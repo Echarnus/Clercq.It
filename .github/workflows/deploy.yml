@@ -138,8 +138,6 @@ jobs:
           # Initialize Terraform backend
           export AWS_ACCESS_KEY_ID="${{ secrets.SCALEWAY_ACCESS_KEY }}"
           export AWS_SECRET_ACCESS_KEY="${{ secrets.SCALEWAY_SECRET_KEY }}"
-          export TF_VAR_scaleway_access_key="${{ secrets.SCALEWAY_ACCESS_KEY }}"
-          export TF_VAR_scaleway_secret_key="${{ secrets.SCALEWAY_SECRET_KEY }}"
           export TF_VAR_scaleway_organization_id="${{ secrets.SCALEWAY_ORGANIZATION_ID }}"
           export TF_VAR_scaleway_project_id="${{ secrets.SCALEWAY_PROJECT_ID }}"
           export TF_VAR_database_password="${{ secrets.DATABASE_PASSWORD }}"
