@@ -13,6 +13,6 @@ public class ProjectRepository : Repository<Project>, IProjectRepository
 
     public async Task<IEnumerable<Project>> GetFeaturedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.Where(p => p.Featured).ToListAsync(cancellationToken);
+        return await DbSet.Where(p => p.Featured).ToListAsync(cancellationToken);
     }
 }

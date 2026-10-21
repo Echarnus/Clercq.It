@@ -55,7 +55,7 @@ public class ObjectStorageService : IObjectStorageService
         var key = uri.AbsolutePath.TrimStart('/');
 
         // Remove bucket name from the beginning if present
-        if (key.StartsWith(_settings.BucketName + "/"))
+        if (key.StartsWith(_settings.BucketName + "/", StringComparison.Ordinal))
         {
             key = key.Substring(_settings.BucketName.Length + 1);
         }

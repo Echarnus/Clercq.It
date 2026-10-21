@@ -14,5 +14,5 @@ public class ObjectStorageSettings
     /// When true: http://endpoint/bucket/key
     /// When false: http://bucket.endpoint/key
     /// </summary>
-    public bool UsePathStyle { get; set; } = false;
+    public bool UsePathStyle { get; set; }
 }

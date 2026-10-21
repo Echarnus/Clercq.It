@@ -85,7 +85,7 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
         return result;
     }
 
-    private static IReadOnlyList<ContentFile> Read(string contentRoot, string folder)
+    private static List<ContentFile> Read(string contentRoot, string folder)
     {
         var dir = Path.Combine(contentRoot, folder);
         if (!Directory.Exists(dir)) return [];

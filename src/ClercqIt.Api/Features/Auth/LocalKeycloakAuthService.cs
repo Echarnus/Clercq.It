@@ -10,6 +10,8 @@ namespace Clercq.It.Api.Features.Auth;
 /// </summary>
 public class LocalKeycloakAuthService : ICloudIAMAuthService
 {
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
+
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IConfiguration _configuration;
     private readonly ILogger<LocalKeycloakAuthService> _logger;
@@ -69,10 +71,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
 
             if (response.IsSuccessStatusCode)
             {
-                var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent, JsonOptions);
 
                 if (tokenResponse == null || string.IsNullOrEmpty(tokenResponse.AccessToken))
                 {
@@ -112,10 +111,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
             }
 
             // Handle error responses
-            var errorResponse = JsonSerializer.Deserialize<KeycloakErrorResponse>(responseContent, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true
-            });
+            var errorResponse = JsonSerializer.Deserialize<KeycloakErrorResponse>(responseContent, JsonOptions);
 
             // Check for MFA requirement
             if (errorResponse?.Error == "invalid_grant" &&
@@ -170,10 +166,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var keycloakUser = JsonSerializer.Deserialize<KeycloakUser>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var keycloakUser = JsonSerializer.Deserialize<KeycloakUser>(responseContent, JsonOptions);
 
                 if (keycloakUser == null) return null;
 
@@ -220,10 +213,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent, JsonOptions);
                 return tokenResponse?.AccessToken;
             }
 
@@ -252,10 +242,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
             if (response.IsSuccessStatusCode)
             {
                 var responseContent = await response.Content.ReadAsStringAsync();
-                var roles = JsonSerializer.Deserialize<List<KeycloakRole>>(responseContent, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                var roles = JsonSerializer.Deserialize<List<KeycloakRole>>(responseContent, JsonOptions);
                 return roles?.Select(r => r.Name ?? "").Where(n => !string.IsNullOrEmpty(n)).ToList() ?? new List<string>();
             }
 
@@ -268,7 +255,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
         }
     }
 
-    private List<string> ExtractRolesFromToken(JwtSecurityToken jwt)
+    private static List<string> ExtractRolesFromToken(JwtSecurityToken jwt)
     {
         var roles = new List<string>();
 
@@ -298,7 +285,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
     }
 
     // Internal DTOs for Keycloak responses
-    private class KeycloakTokenResponse
+    private sealed class KeycloakTokenResponse
     {
         [JsonPropertyName("access_token")]
         public string? AccessToken { get; set; }
@@ -313,7 +300,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
         public string? TokenType { get; set; }
     }
 
-    private class KeycloakErrorResponse
+    private sealed class KeycloakErrorResponse
     {
         public string? Error { get; set; }
 
@@ -324,7 +311,7 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
         public string? ErrorMessage { get; set; }
     }
 
-    private class KeycloakUser
+    private sealed class KeycloakUser
     {
         public string? Id { get; set; }
         public string? Username { get; set; }
@@ -333,13 +320,13 @@ public class LocalKeycloakAuthService : ICloudIAMAuthService
         public bool Enabled { get; set; }
     }
 
-    private class KeycloakRole
+    private sealed class KeycloakRole
     {
         public string? Id { get; set; }
         public string? Name { get; set; }
     }
 
-    private class RealmAccess
+    private sealed class RealmAccess
     {
         public List<string>? Roles { get; set; }
     }

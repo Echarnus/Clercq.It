@@ -13,6 +13,6 @@ public class BlogRepository : Repository<Blog>, IBlogRepository
 
     public async Task<IEnumerable<Blog>> GetPublishedAsync(CancellationToken cancellationToken = default)
     {
-        return await _dbSet.Where(b => b.PublishDate <= DateTime.UtcNow).ToListAsync(cancellationToken);
+        return await DbSet.Where(b => b.PublishDate <= DateTime.UtcNow).ToListAsync(cancellationToken);
     }
 }
