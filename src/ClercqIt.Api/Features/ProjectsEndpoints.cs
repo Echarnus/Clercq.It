@@ -10,7 +10,6 @@ public static class ProjectsEndpoints
     {
         var group = endpoints.MapGroup("/api/projects")
             .WithTags("Projects")
-            .WithOpenApi()
             .RequireRateLimiting("api");
 
         group.MapGet("/", async (IMediator mediator) =>

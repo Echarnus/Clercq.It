@@ -219,9 +219,9 @@ Config-driven flags hide unfinished work in production (issue #253). The API own
 ## Technology Stack
 
 ### Backend
-- **.NET 9** - Latest LTS with minimal APIs
+- **.NET 10** (LTS) - Minimal APIs
 - **ASP.NET Core** - High-performance web framework
-- **Entity Framework Core 9** - ORM with PostgreSQL provider
+- **Entity Framework Core 10** - ORM with PostgreSQL provider
 - **PostgreSQL 16+** - Primary database
 - **MediatR** - CQRS and mediator pattern implementation
 - **FluentValidation** - Request validation

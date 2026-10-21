@@ -18,7 +18,7 @@ The badges above show the live state of each pipeline. Pipelines, triggers and r
 ## 🚀 Tech Stack
 
 ### Backend
-- **.NET 9.0** - Modern C# web API with minimal APIs
+- **.NET 10** - Modern C# web API with minimal APIs
 - **ASP.NET Core** - High-performance web framework
 - **Entity Framework Core** - ORM with PostgreSQL
 - **MediatR** - CQRS pattern implementation
@@ -62,7 +62,7 @@ Built with Clean Architecture principles and Domain-Driven Design:
 
 ## 🚀 Tech Stack
 
-- **.NET 9** - Modern C# with minimal APIs
+- **.NET 10** - Modern C# with minimal APIs
 - **PostgreSQL** - Primary database with EF Core
 - **MediatR** - CQRS and mediator pattern implementation  
 - **FluentValidation** - Request validation
@@ -83,7 +83,7 @@ Comprehensive technical documentation is available in the [`/docs`](./docs) fold
 
 ## 🚀 Quick Start
 
-1. **Prerequisites**: .NET 9, Docker, Node.js 23+
+1. **Prerequisites**: .NET 10, Docker, Node.js 23+
 2. **Clone**: `git clone https://github.com/Echarnus/Clercq.It.git`
 3. **Database**: `docker run -d --name clercq-postgres -e POSTGRES_DB=ClercqItDb -e POSTGRES_USER=clercq_user -e POSTGRES_PASSWORD=clercq_pass -p 5432:5432 postgres:16`
 4. **Migrate**: `cd src/Clercq.It.Infrastructure && dotnet ef database update --startup-project ../ClercqIt.Api`
@@ -133,7 +133,7 @@ docker run -p 80:80 clercq-it
 ## 🛠️ Development
 
 ### Prerequisites
-- .NET 9.0 SDK
+- .NET 10 SDK
 - Node.js 23+  
 - pnpm 10.12.4+
 - Docker

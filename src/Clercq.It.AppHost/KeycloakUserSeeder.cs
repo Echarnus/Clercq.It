@@ -1,7 +1,5 @@
 using System.Net.Http.Json;
 using System.Text.Json;
-using Aspire.Hosting;
-using Aspire.Hosting.ApplicationModel;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -152,7 +150,7 @@ internal static class KeycloakUserSeeder
         }
     }
 
-    private record TestUser(string Username, string Password, string Email, string FirstName, string LastName, string[] Roles);
-    private record KeycloakRole(string Id, string Name);
-    private record KeycloakUser(string Id, string Username);
+    private sealed record TestUser(string Username, string Password, string Email, string FirstName, string LastName, string[] Roles);
+    private sealed record KeycloakRole(string Id, string Name);
+    private sealed record KeycloakUser(string Id, string Username);
 }

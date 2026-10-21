@@ -39,12 +39,12 @@ var api = builder.AddProject<Projects.ClercqIt_Api>("clercqit-api")
 // Add the Next.js frontend with fixed port 3000 for Keycloak redirect URIs
 // Path is relative to AppHost directory
 var frontendPath = Path.Combine(builder.AppHostDirectory, "..", "ClercqIt.Web");
-var web = builder.AddNpmApp("clercqit-web", frontendPath, "dev")
+var web = builder.AddJavaScriptApp("clercqit-web", frontendPath, "dev")
+    .WithPnpm()
     .WithReference(api)
     .WithReference(keycloak)
     .WithHttpEndpoint(port: 3000, env: "PORT")
     .WithEnvironment("NEXT_PUBLIC_API_URL", "http://localhost:5001")
-    .WithExternalHttpEndpoints()
-    .PublishAsDockerFile();
+    .WithExternalHttpEndpoints();
 
 builder.Build().Run();

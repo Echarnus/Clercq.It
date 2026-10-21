@@ -41,7 +41,7 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 ### Jobs
 
 #### test-dotnet
-- Uses .NET 9.0
+- Uses .NET 10
 - Runs xUnit tests with code coverage
 - Uploads coverage to Codecov
 - Tests located in `/tests/` directory

@@ -8,6 +8,8 @@
     <!-- Needed for IDE0005 (unused usings) on build; we do not require XML docs. -->
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
+    <!-- Coverage excludes compiler-generated code; see docs/testing.md#coverage. -->
+    <RunSettingsFilePath>$(MSBuildThisFileDirectory)tests/coverage.runsettings</RunSettingsFilePath>
   </PropertyGroup>
   <!-- The Aspire AppHost is local-only and never built in CI. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(MSBuildProjectName)' != 'Clercq.It.AppHost'">

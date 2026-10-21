@@ -8,7 +8,6 @@ public static class AuthEndpoints
     {
         var group = endpoints.MapGroup("/api/auth")
             .WithTags("Authentication")
-            .WithOpenApi()
             // Public, static settings: the normal API limit. The stricter "auth"
             // policy was for the password endpoint this replaced.
             .RequireRateLimiting("api");

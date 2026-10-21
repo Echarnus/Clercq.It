@@ -8,7 +8,7 @@ description: Apply the Clercq.It auto-fixers (dotnet format, ESLint --fix, Prett
 1. Run the auto-fixers from the repo root (each only touches what it owns):
 
    ```bash
-   DOTNET_ROLL_FORWARD=Major dotnet format Clercq.It.CI.slnf   # C# whitespace, style and fixable analyzer findings
+   dotnet format Clercq.It.CI.slnf   # C# whitespace, style and fixable analyzer findings
    pnpm --dir src/ClercqIt.Web lint:fix                          # ESLint --fix
    pnpm --dir src/ClercqIt.Web format                            # Prettier --write
    terraform -chdir=infra/terraform fmt -recursive               # Terraform

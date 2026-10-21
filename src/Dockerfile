@@ -1,5 +1,5 @@
 # Build stage for .NET API
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS dotnet-build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS dotnet-build
 WORKDIR /src
 
 # Accept version build arguments
@@ -82,8 +82,8 @@ ARG BUILD_DATE=unknown
 RUN apt-get update && apt-get upgrade -y && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Copy .NET runtime from Microsoft's runtime image
-COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/share/dotnet /usr/share/dotnet
-COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/bin/dotnet /usr/bin/dotnet
+COPY --from=mcr.microsoft.com/dotnet/aspnet:10.0 /usr/share/dotnet /usr/share/dotnet
+COPY --from=mcr.microsoft.com/dotnet/aspnet:10.0 /usr/bin/dotnet /usr/bin/dotnet
 
 # Copy the Node.js binary only: start.sh runs `node server.js`, and leaving npm
 # out of the runtime image drops its dependencies from the attack surface.

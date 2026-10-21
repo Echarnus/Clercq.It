@@ -1,12 +1,12 @@
 {
   "_comment": "Minimum line coverage (%) per assembly and in total. CI fails below these. Raise a number when coverage goes up; never lower one without saying why in the PR. See docs/testing.md#coverage.",
-  "total": 92,
+  "total": 96,
   "assemblies": {
     "Clercq.It.Domain": 100,
     "Clercq.It.Application": 98,
-    "ClercqIt.Api": 92,
-    "Clercq.It.ContentImport": 73,
+    "ClercqIt.Api": 98,
+    "Clercq.It.ContentImport": 82,
     "Clercq.It.ServiceDefaults": 97,
-    "Clercq.It.Infrastructure": 89
+    "Clercq.It.Infrastructure": 95
   }
 }

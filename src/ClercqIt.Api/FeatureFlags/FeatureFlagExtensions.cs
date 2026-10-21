@@ -24,7 +24,6 @@ public static class FeatureFlagExtensions
     {
         endpoints.MapGet("/api/features", (IFeatureFlags flags) => Results.Ok(flags.All()))
             .WithTags("Feature flags")
-            .WithOpenApi()
             .WithName("GetFeatureFlags")
             .WithSummary("Get the feature flags")
             .WithDescription("Returns every configured feature flag and whether it is on")
