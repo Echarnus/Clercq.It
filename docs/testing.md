@@ -1,6 +1,6 @@
 # Testing
 
-How the backend is tested, and the coverage gate CI enforces (issues #242 and #244). Browser end-to-end tests come with #246 (Playwright).
+How the backend and the frontend are tested, including API integration tests against real Postgres and Keycloak, and the coverage gates CI enforces (issues #242, #244 and #246). Browser end-to-end tests in CI come with #314 (Playwright).
 
 ## Stack
 
@@ -95,3 +95,44 @@ Thresholds (21 October 2026, the measured coverage rounded down; raised when the
 Domain and Application together are above the 80% target.
 
 Ratchet rule: when a PR raises coverage, raise the matching number in the same PR. Never lower a number without saying why in the PR body. A new production assembly needs a threshold, or the gate fails.
+
+## Frontend unit and component tests
+
+The frontend tests live next to the code in `src/ClercqIt.Web` (issue #246). The separate Jest test package that used to sit under `tests/` is gone.
+
+| Concern | Choice |
+| --- | --- |
+| Runner | Vitest, config in `src/ClercqIt.Web/vitest.config.mts` |
+| DOM | jsdom, with React Testing Library and `@testing-library/user-event` |
+| Matchers | `@testing-library/jest-dom` (set up in `test/setup.ts`) |
+| API mocking | MSW: default handlers in `test/msw/handlers.ts`, fixtures in `test/msw/fixtures.ts` |
+| Coverage | `@vitest/coverage-v8` |
+
+Conventions:
+
+- A test sits beside the file it tests: `lib/api/adminApi.ts` is tested by `lib/api/adminApi.test.ts`, `components/admin/TagInput.tsx` by `TagInput.test.tsx`.
+- Mock the network with MSW, never by stubbing `fetch`. Unhandled requests fail the test. Override a handler for one test with `server.use(...)`; handlers reset after each test.
+- Query the DOM the way a user does: by role and accessible name, label or text. If an element has no accessible name, give it one (an `aria-label`) rather than reaching for test ids.
+- Unit-test `lib/`, hooks and components with logic (forms, inputs, conditional rendering). Whole pages, routing and the real API belong to Playwright e2e (`e2e/`).
+- `components/ui/` is generated shadcn/ui code and is excluded from coverage.
+
+Running, from `src/ClercqIt.Web`:
+
+```bash
+pnpm test               # all unit tests once
+pnpm test:watch         # watch mode
+pnpm test:coverage      # with the coverage gate CI uses; HTML report in coverage/
+```
+
+### Frontend coverage
+
+The `Test Next.js Frontend` job runs `pnpm test:coverage` and fails below the thresholds in `vitest.config.mts`. It uploads the report as the `frontend-coverage` artifact.
+
+Starting thresholds (21 October 2026, measured coverage rounded down) over `lib/`, `hooks/` and `components/` (without `components/ui/`):
+
+| Scope | Lines | Branches | Functions | Statements |
+| --- | ---: | ---: | ---: | ---: |
+| `lib/api/**` | 100% | 95% | 100% | 99% |
+| Total | 56% | 47% | 43% | 56% |
+
+The same ratchet rule as the backend applies: raise the numbers when coverage rises, and never lower one without a reason in the PR body.

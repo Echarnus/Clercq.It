@@ -546,7 +546,7 @@ Advanced code analysis:
 #### Dependabot
 Automated dependency updates (`.github/dependabot.yml`):
 - **Schedule**: Weekly on Mondays at 8:00 AM UTC
-- **Ecosystems**: NuGet, npm (`src/ClercqIt.Web` and `tests/ClercqIt.Web.Tests`), GitHub Actions, Docker, Terraform
+- **Ecosystems**: NuGet, npm (`src/ClercqIt.Web`), GitHub Actions, Docker, Terraform
 - **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
 - **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)

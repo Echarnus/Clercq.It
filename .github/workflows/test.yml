@@ -124,10 +124,6 @@ jobs:
         working-directory: ./src/ClercqIt.Web
         run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies for tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: pnpm install --frozen-lockfile
-
       # Lint, format and type checks block the PR (issue #240, docs/development.md#frontend-lint-format-and-types)
       - name: Lint (ESLint, no warnings allowed)
         working-directory: ./src/ClercqIt.Web
@@ -149,13 +145,19 @@ jobs:
           echo "## ✅ Next.js Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "- Production build completed successfully" >> $GITHUB_STEP_SUMMARY
 
-      - name: Run frontend tests
-        working-directory: ./tests/ClercqIt.Web.Tests
-        run: |
-          echo "🧪 Running frontend tests..."
-          pnpm run test --passWithNoTests
-          echo "## ✅ Frontend Tests Completed" >> $GITHUB_STEP_SUMMARY
-          echo "- All frontend unit tests executed" >> $GITHUB_STEP_SUMMARY
+      # Vitest unit and component tests with the coverage gate in vitest.config.mts (issue #246, docs/testing.md)
+      - name: Unit tests with coverage gate (Vitest)
+        working-directory: ./src/ClercqIt.Web
+        run: pnpm run test:coverage
+
+      - name: Upload frontend coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: src/ClercqIt.Web/coverage/
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Run npm security audit
         working-directory: ./src/ClercqIt.Web
