@@ -75,20 +75,18 @@ ARG VERSION=0.0.0
 ARG GIT_SHA=unknown
 ARG BUILD_DATE=unknown
 
-# Install curl for health checks
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# Take the Debian security updates released since the base image was built
+# (Trivy blocks on fixable HIGH/CRITICAL findings, issue #281), and install
+# curl for health checks.
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # Copy .NET runtime from Microsoft's runtime image
 COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/share/dotnet /usr/share/dotnet
 COPY --from=mcr.microsoft.com/dotnet/aspnet:9.0 /usr/bin/dotnet /usr/bin/dotnet
 
-# Copy Node.js from Node.js image  
+# Copy the Node.js binary only: start.sh runs `node server.js`, and leaving npm
+# out of the runtime image drops its dependencies from the attack surface.
 COPY --from=node:24-slim /usr/local/bin/node /usr/local/bin/node
-COPY --from=node:24-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
-
-# Create symlinks for npm and npx
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 # Everything runs as one unprivileged user (issue #280). nginx keeps listening
 # on port 80 through the CAP_NET_BIND_SERVICE file capability, so the
