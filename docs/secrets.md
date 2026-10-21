@@ -24,6 +24,8 @@ The verify stage (see [DevOps](./devops.md#verify-stage)) has its own secrets, c
 | `keycloak-web-client-secret` | `Keycloak__ClientSecret` on `clercq-it-verify` (client `clercqit-web-verify`) | placeholder, owner replaces it |
 | `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on `clercq-it-verify` (client `clercqit-admin-verify`) | placeholder, owner replaces it |
 
+`db-password` is fully Terraform-owned: `random_password.db_verify` writes it as a secret version without `ignore_changes`, so do not edit it in the console (the next apply overwrites it). Scaleway RDB requires at least one digit, uppercase, lowercase and special character; the special characters are limited to `!#%*-_+.` so the value stays safe unquoted in an Npgsql connection string and in `PGPASSWORD`. The Keycloak secrets are only seeded once and then ignored by Terraform.
+
 The verify container also has its own object storage key (IAM application `clercq-it-verify-storage`) and Cockpit token (`verify-container-logs`).
 
 Other credentials Terraform manages itself, without a Secret Manager entry:
