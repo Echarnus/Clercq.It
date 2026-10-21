@@ -213,7 +213,7 @@ terraform plan
 terraform apply
 ```
 
-For detailed infrastructure documentation, see [`infra/README.md`](infra/README.md).
+For detailed infrastructure documentation, see [DevOps](docs/devops.md) and [Secrets](docs/secrets.md).
 
 ## 📊 Monitoring & Observability
 

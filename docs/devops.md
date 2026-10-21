@@ -20,7 +20,7 @@ The project uses six main workflows:
 8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
 9. **SAST** (`sast.yml`) - Semgrep and gitleaks on every PR and on `main`, blocking (see [Application security](./application-security.md#static-analysis-sast))
 
-How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md).
+How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md). The rules GitHub enforces on `main` and on release tags, and the weekly audit that checks them, are in [Enforced rules](./contributing.md#enforced-rules).
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
 
@@ -761,4 +761,3 @@ gh secret list
 - [GitVersion Documentation](https://gitversion.net/docs/learn/branching-strategies/githubflow/examples)
 - [GitHub Actions Documentation](https://docs.github.com/en/actions)
 - [Scaleway Container Documentation](https://www.scaleway.com/en/docs/serverless/containers/)
-- [Infrastructure Setup Guide](../infra/README.md)

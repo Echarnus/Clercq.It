@@ -9,7 +9,7 @@ The owner only steps in for things an agent cannot do: console logins, accounts,
 1. **Issue.** Every change starts as an issue created from a template in `.github/ISSUE_TEMPLATE/` (feature, bug, infra change, content). It has a `type:`, `area:` and `priority:` label, acceptance criteria and a "Docs to update" section. Ready work is labelled `status:ready`.
 2. **Branch.** The agent picking it up sets `status:in-progress` and creates a branch from `main` named `<type>/<issue>-<slug>`, for example `fix/231-admin-login` or `chore/225-agent-workflow`. Allowed types: `feat`, `fix`, `chore`, `infra`, `content`, `docs`, `security`.
 3. **Pull request.** The PR uses `.github/PULL_REQUEST_TEMPLATE.md`, starts with `Closes #<issue>`, lists the docs it changed and how it was tested. The agent enables auto-merge (squash) on it right away. The issue moves to `status:needs-review`.
-4. **Checks.** The required checks (tests and docs check) must be green. The building agent fixes failures and pushes again.
+4. **Checks.** The required checks (see [Enforced rules](#enforced-rules)) must be green. The building agent fixes failures and pushes again.
 5. **Merge and deploy.** Once green, GitHub merges the PR and deletes the branch. The merge to `main` runs `build`, `Deploy to Scaleway` and `Deploy Infra`.
 
 Auto-merge is enabled by the agent with its own GitHub credentials, not by a workflow: a merge made with the workflow `GITHUB_TOKEN` would not trigger the deploy pipeline.
@@ -34,13 +34,61 @@ Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration
 
 New pages are added to the index in [docs/README.md](./README.md).
 
-## Branch protection for `main`
+## Enforced rules
 
-The owner switches this on once under Settings → Rules (it will move to rulesets-as-code in issue #245):
+GitHub enforces the trunk-based model (issue #245). The rules live as code in `.github/rulesets/` and a weekly audit checks they are still in place.
 
-- Require a pull request before merging, with **0** required approvals.
-- Require status checks to pass: `Test .NET API`, `Test Next.js Frontend`, `Docs updated`, and require branches to be up to date.
-- Block force pushes and deletion.
-- Under Settings → General: allow auto-merge, allow squash merging, and automatically delete head branches.
+### Ruleset `main` (`.github/rulesets/main.json`)
 
-Required status checks are essential: without them, auto-merge merges a PR immediately, before any test has run.
+| Rule | Setting |
+| --- | --- |
+| Pull request required | Yes, **0** approvals (no human review; a reviewer agent may be added in #251), stale approvals dismissed, squash merge only |
+| Required status checks | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts`, `Docs updated`, `PR conventions`, `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan` |
+| Branch up to date | Required before merging (strict checks) |
+| Linear history | Required |
+| Force push and deletion | Blocked |
+| Bypass | Nobody, including admins |
+
+A direct push to `main` is rejected. Required status checks are essential: without them, auto-merge merges a PR immediately, before any test has run. When you add a check that must block merging, add its job name to `main.json` in the same PR.
+
+### Ruleset `prod-tags` (`.github/rulesets/prod-tags.json`)
+
+Tags `prod-*` and `v*` can only be created by GitHub Actions (the release job in `deploy.yml`). Nobody can update or delete them.
+
+### Repository settings
+
+Squash merge only (merge commits and rebase merges off), auto-merge allowed, head branches deleted after merge.
+
+### PR conventions check
+
+`.github/workflows/pr-conventions.yml` runs `.github/scripts/check-pr-conventions.sh` on every PR:
+
+- The head branch matches `<type>/<issue>-<slug>`: type is one of `feat`, `fix`, `chore`, `infra`, `content`, `docs`, `security`, and the slug is lowercase kebab-case. Bot branches (`dependabot/`, `renovate/`) are exempt.
+- The body links its issue (`Closes #<n>`; `Fixes` and `Resolves` also work). Bot PRs are exempt.
+
+### Weekly audit
+
+`.github/workflows/repo-audit.yml` runs `.github/scripts/audit_repo.py` every Monday at 06:00 UTC (and on demand). It opens a `type:bug` `priority:p1` issue titled "Repository audit: drift from the trunk-based rules", or comments on the open one, when it finds:
+
+- a ruleset missing, disabled or different from its JSON in `.github/rulesets/` (rules, required checks, refs, bypass list);
+- a repository setting above changed;
+- a `release/*`, `develop`, `development` or `master` branch;
+- a branch older than 7 days that has an open PR or no PR (short-lived branches only);
+- a production deploy from `main` in the last 14 days without a `prod-<version>` tag;
+- a page in `docs/`, `CLAUDE.md` or `README.md` that links to, or names in backticks, a repository file that no longer exists.
+
+Run it locally with `GITHUB_REPOSITORY=Echarnus/Clercq.It python3 .github/scripts/audit_repo.py --dry-run` (needs `gh` signed in). Its tests run in the `Test deploy scripts` job.
+
+### Changing a rule
+
+Edit the JSON in `.github/rulesets/` and this section in one PR. After it merges, an admin applies it:
+
+```bash
+# Look up the ruleset id, then update it from the file
+gh api repos/Echarnus/Clercq.It/rulesets --jq '.[] | "\(.id) \(.name)"'
+gh api -X PUT repos/Echarnus/Clercq.It/rulesets/<id> --input .github/rulesets/main.json
+# A new ruleset
+gh api -X POST repos/Echarnus/Clercq.It/rulesets --input .github/rulesets/<name>.json
+```
+
+Until it is applied, the next audit reports the difference.

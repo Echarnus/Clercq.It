@@ -38,7 +38,6 @@ The blog creation feature adds the ability to create blog posts through the API 
 
 - `src/Clercq.It.Domain/Abstractions/IObjectStorageService.cs`
 - `src/Clercq.It.Infrastructure/Configuration/ObjectStorageSettings.cs`
-- `src/Clercq.It.Infrastructure/Configuration/AuthenticationSettings.cs`
 - `src/Clercq.It.Infrastructure/Services/ObjectStorageService.cs`
 - `src/Clercq.It.Application/Features/Blogs/Commands/CreateBlogCommand.cs`
 - `src/Clercq.It.Application/Features/Blogs/Commands/CreateBlogCommandHandler.cs`

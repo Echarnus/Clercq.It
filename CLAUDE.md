@@ -44,6 +44,7 @@ Local full stack: `dotnet run --project src/Clercq.It.AppHost` (needs Docker and
 
 - Architecture and layering: [docs/architecture.md](docs/architecture.md); the rules are enforced by `tests/Clercq.It.Architecture.Tests`
 - Pipelines and deployment: [docs/devops.md](docs/devops.md)
+- Enforced repo rules (rulesets, PR conventions, weekly audit): [docs/contributing.md#enforced-rules](docs/contributing.md#enforced-rules)
 - Versioning: [docs/versioning.md](docs/versioning.md)
 - Production auth (Cloud IAM): [docs/ciam.md](docs/ciam.md)
 - Coding conventions: `.github/instructions/*.instructions.md`; code style and analyzer policy: [docs/development.md#code-style](docs/development.md#code-style)

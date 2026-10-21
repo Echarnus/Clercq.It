@@ -160,7 +160,8 @@ jobs:
   deploy-scripts:
     name: Test deploy scripts
     runs-on: ubuntu-latest
-    # Smoke test and rollback scripts used by deploy.yml (issue #232)
+    # Smoke test and rollback scripts used by deploy.yml (issue #232),
+    # PR conventions and repository audit scripts (issue #245)
     if: github.event_name == 'pull_request'
     steps:
       - name: Checkout code
@@ -171,3 +172,9 @@ jobs:
 
       - name: Rollback on failed smoke test
         run: bash .github/scripts/tests/rollback.test.sh
+
+      - name: PR conventions check
+        run: bash .github/scripts/tests/check-pr-conventions.test.sh
+
+      - name: Repository audit
+        run: python3 -m unittest discover -s .github/scripts/tests -v
