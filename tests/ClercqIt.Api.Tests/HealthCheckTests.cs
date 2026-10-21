@@ -3,7 +3,8 @@ using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
-public class HealthCheckTests : IClassFixture<CustomWebApplicationFactory>
+[Collection(ApiTestGroup.Name)]
+public class HealthCheckTests : IAsyncLifetime
 {
     private readonly HttpClient _client;
 
@@ -11,6 +12,10 @@ public class HealthCheckTests : IClassFixture<CustomWebApplicationFactory>
     {
         _client = factory.CreateClient();
     }
+
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact(DisplayName = "Health check endpoint returns OK")]
     public async Task HealthCheck_EndpointCalled_ReturnsOk()
