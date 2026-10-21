@@ -258,6 +258,8 @@ The production deployment uses a single Docker container with multiple services:
 4. Health check waits for Next.js on port 3000 (up to 60 seconds)
 5. nginx starts in foreground after all services are healthy
 
+**Non-root (#280):** the image ends with `USER clercqit` (uid 10001), so nginx, the API and Next.js all run unprivileged and no process has uid 0. nginx still listens on port 80, which Terraform sets as the container port, because its binary carries the `cap_net_bind_service` file capability. Its pid file is `/tmp/nginx.pid`, and `/var/cache/nginx`, `/var/log/api.log` and `/var/log/frontend.log` belong to `clercqit`. If a runtime ever ignores file capabilities, nginx fails to bind port 80 and the verify stage stops the deploy; the fix then is to listen on 8080 and change `port` on both containers in Terraform.
+
 **Key Features:**
 - **No Bad Gateway errors**: nginx only starts after backend services are ready
 - **Process monitoring**: Startup script detects if services crash during initialization

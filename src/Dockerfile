@@ -90,20 +90,29 @@ COPY --from=node:23-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
-# Create non-root users for running services (simple approach)
-RUN useradd --uid 1001 nextjs 2>/dev/null || true \
-    && useradd --uid 1002 dotnetuser 2>/dev/null || true
+# Everything runs as one unprivileged user (issue #280). nginx keeps listening
+# on port 80 through the CAP_NET_BIND_SERVICE file capability, so the
+# container port in Terraform stays the same. nginx writes its pid and temp
+# files to paths that user owns; the service logs are pre-created for it.
+RUN apt-get update && apt-get install -y --no-install-recommends libcap2-bin \
+    && setcap cap_net_bind_service=+ep /usr/sbin/nginx \
+    && apt-get purge -y libcap2-bin && apt-get autoremove -y && rm -rf /var/lib/apt/lists/* \
+    && useradd --uid 10001 --user-group --no-create-home --shell /usr/sbin/nologin clercqit \
+    && sed -i -e '/^user /d' -e 's#^pid .*#pid /tmp/nginx.pid;#' /etc/nginx/nginx.conf \
+    && chown -R clercqit:clercqit /var/cache/nginx \
+    && touch /var/log/api.log /var/log/frontend.log \
+    && chown clercqit:clercqit /var/log/api.log /var/log/frontend.log
 
 # Copy nginx configuration
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy .NET API
-COPY --from=dotnet-build --chown=1002:1002 /app/publish /app/api
+COPY --from=dotnet-build --chown=10001:10001 /app/publish /app/api
 
 # Copy Next.js application (version.json is already included in public directory from build stage)
-COPY --from=node-builder --chown=1001:1001 /app/public /app/frontend/public
-COPY --from=node-builder --chown=1001:1001 /app/.next/standalone /app/frontend/
-COPY --from=node-builder --chown=1001:1001 /app/.next/static /app/frontend/.next/static
+COPY --from=node-builder --chown=10001:10001 /app/public /app/frontend/public
+COPY --from=node-builder --chown=10001:10001 /app/.next/standalone /app/frontend/
+COPY --from=node-builder --chown=10001:10001 /app/.next/static /app/frontend/.next/static
 
 # Create startup script that starts all services
 RUN echo '#!/bin/sh' > /app/start.sh && \
@@ -113,14 +122,14 @@ RUN echo '#!/bin/sh' > /app/start.sh && \
     echo '# Start .NET API in background' >> /app/start.sh && \
     echo 'echo "Starting .NET API..."' >> /app/start.sh && \
     echo 'cd /app/api' >> /app/start.sh && \
-    echo 'su dotnetuser -c "/usr/share/dotnet/dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000" > /var/log/api.log 2>&1 &' >> /app/start.sh && \
+    echo '/usr/share/dotnet/dotnet ClercqIt.Api.dll --urls=http://0.0.0.0:5000 > /var/log/api.log 2>&1 &' >> /app/start.sh && \
     echo 'API_PID=$!' >> /app/start.sh && \
     echo 'echo "Started .NET API with PID $API_PID"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
     echo '# Start Next.js frontend in background' >> /app/start.sh && \
     echo 'echo "Starting Next.js frontend..."' >> /app/start.sh && \
     echo 'cd /app/frontend' >> /app/start.sh && \
-    echo 'su nextjs -c "PORT=3000 HOSTNAME=0.0.0.0 node server.js" > /var/log/frontend.log 2>&1 &' >> /app/start.sh && \
+    echo 'PORT=3000 HOSTNAME=0.0.0.0 node server.js > /var/log/frontend.log 2>&1 &' >> /app/start.sh && \
     echo 'FRONTEND_PID=$!' >> /app/start.sh && \
     echo 'echo "Started Next.js frontend with PID $FRONTEND_PID"' >> /app/start.sh && \
     echo '' >> /app/start.sh && \
@@ -185,11 +194,9 @@ ENV ASPNETCORE_ENVIRONMENT=Production
 ENV DOTNET_ROOT=/usr/share/dotnet
 ENV DOTNET_RUNNING_IN_CONTAINER=true
 
+USER clercqit
+
 # Override nginx's default entrypoint to prevent auto-start
 # This ensures nginx only starts when our script explicitly launches it
-# The image still runs as root (nginx binds port 80 and start.sh supervises
-# three processes); moving to a non-root user is issue #280.
-# nosemgrep: dockerfile.security.missing-user-entrypoint.missing-user-entrypoint, dockerfile.security.missing-user-entrypoint
 ENTRYPOINT []
-# nosemgrep: dockerfile.security.missing-user.missing-user, dockerfile.security.missing-user
 CMD ["/app/start.sh"]
