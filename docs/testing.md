@@ -71,7 +71,7 @@ Ratchet rule: when a PR raises coverage, raise the matching number in the same P
 
 ## Frontend unit and component tests
 
-The frontend tests live next to the code in `src/ClercqIt.Web` (issue #246). The separate `tests/ClercqIt.Web.Tests` Jest package is gone.
+The frontend tests live next to the code in `src/ClercqIt.Web` (issue #246). The separate Jest test package that used to sit under `tests/` is gone.
 
 | Concern | Choice |
 | --- | --- |
