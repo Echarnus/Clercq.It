@@ -21,6 +21,10 @@ Everything goes issue → branch → PR → green checks → auto-merge → prod
 - **Docs are updated in the same PR.** Any change to behaviour, config, infra, pipelines or this workflow updates the matching page under `docs/` (index: `docs/README.md`). `docs-check.yml` enforces this. Use the `docs:not-needed` label only when nothing documented changed, and say why in the PR body.
 - No secrets in code or config. Secrets come from Scaleway Secret Manager (see issue #226) or GitHub secrets.
 
+## Quality gates
+
+Rules in `.claude/rules/` load the conventions for the files you touch; hooks in `.claude/hooks/` format and check files as you edit (registered by the owner, #304). Before opening or updating a PR, run the `quality-check` skill (`.claude/skills/quality-check/quality-check.sh`) and open the PR only when a full run passes; `fix-quality` applies the auto-fixers. Details: [docs/development.md#quality-gates](docs/development.md#quality-gates).
+
 ## Commands
 
 Run before opening a PR (from the repo root):
