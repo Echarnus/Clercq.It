@@ -8,6 +8,21 @@ Because Cloud IAM is standard Keycloak, local development (the Aspire Keycloak c
 
 The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`.
 
+## Current Deployment
+
+| Setting | Value |
+|---|---|
+| Base URL (`keycloak-base-url` secret) | `https://lemur-16.cloud-iam.com/auth` |
+| Realm | `clercqit` |
+| Admin console | `https://lemur-16.cloud-iam.com/auth/admin/clercqit/console/` |
+| Plan | Free (Freemium): 100 users, 1 realm, shared instance, no SLA |
+| Location | Scaleway `nl-ams`, Keycloak 26.8 |
+| Created | 22 October 2026 (issue #343). The previous deployment on `lemur-6` no longer exists. |
+
+On the free plan the deployment name is also the realm name, and Cloud IAM creates it with one realm admin user (`admin`). Its first-login password arrives in the "deployment has been completed" email. Once a personal account with the `realm-management` → `realm-admin` role has signed in, disable `admin` under **Users**.
+
+To get the free plan in **Create deployment**, move the user slider to **100**: the support level, instance type and price switch to Freemium, Mutualized and 0 €.
+
 ## Cloud IAM Setup Guide
 
 ### 1. Create Account and Deploy Keycloak
@@ -27,7 +42,7 @@ Create a new realm named `clercqit` with the following settings (matching the lo
 - **Remember Me**: true
 - **Brute Force Protection**: enabled
 
-Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Partial Import**, then adjust client redirect URIs for production.
+Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Action > Partial import**, then adjust client redirect URIs for production. This is how the current deployment was built: a copy of that file without users and client secrets, with the production and verify redirect URIs, imported as 5 clients and 4 realm roles. Partial import does not cover client scopes, so step 5 is done by hand: a new realm already has a built-in `roles` scope, and its **realm roles** mapper was changed to token claim name `roles` with ID token, access token and userinfo on.
 
 ### 3. Create Clients
 

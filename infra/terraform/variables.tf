@@ -44,7 +44,7 @@ variable "database_password" {
 }
 
 variable "keycloak_base_url" {
-  description = "Seed for the keycloak-base-url secret (e.g. https://lemur-6.cloud-iam.com/auth). Only used when the secret is first created."
+  description = "Seed for the keycloak-base-url secret (e.g. https://lemur-16.cloud-iam.com/auth). Only used when the secret is first created."
   type        = string
   default     = null
 }

@@ -10,7 +10,7 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 | --- | --- | --- |
 | `db-app-password` | RDB admin and `clercqit_user` passwords, web/API container connection string | `TF_VAR_database_password` (GitHub `DATABASE_PASSWORD`), else generated |
 | `db-administration-password` | `admin_app_user` password, administration API connection string | `TF_VAR_administration_database_password`, else generated |
-| `keycloak-base-url` | `Keycloak__BaseUrl` on both containers | `TF_VAR_keycloak_base_url`, else a placeholder |
+| `keycloak-base-url` | `Keycloak__BaseUrl` on both containers (current value: `https://lemur-16.cloud-iam.com/auth`, see [ciam.md](./ciam.md#current-deployment)) | `TF_VAR_keycloak_base_url`, else a placeholder |
 | `keycloak-web-client-secret` | `Keycloak__ClientSecret` on the web/API container | `TF_VAR_keycloak_web_client_secret`, else a placeholder |
 | `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on both containers | `TF_VAR_keycloak_admin_client_secret`, else a placeholder |
 

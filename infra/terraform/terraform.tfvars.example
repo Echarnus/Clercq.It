@@ -11,7 +11,7 @@ scaleway_region          = "fr-par"
 # Secret seeds: only used the first time each Secret Manager secret is
 # created (see docs/secrets.md). Leave unset to generate passwords and get
 # placeholders you replace in the Scaleway console.
-keycloak_base_url            = "https://lemur-6.cloud-iam.com/auth"
+keycloak_base_url            = "https://lemur-16.cloud-iam.com/auth"
 keycloak_realm               = "clercqit"
 keycloak_web_client_secret   = "your-clercqit-web-client-secret"
 keycloak_admin_client_secret = "your-clercqit-admin-client-secret"
