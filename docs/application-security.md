@@ -280,7 +280,7 @@ Moderate advisories are listed but do not block; `sprintf-js` (GHSA-hp3w-g68c-fv
 These are GitHub settings, not code. The owner turns them on once:
 
 1. **Settings → Code security → Secret Protection**: enable it, and enable **Push protection**.
-2. **Settings → Rules → Rulesets** (or branch protection for `main`): add the required checks `Semgrep`, `gitleaks`, `CodeQL gate` and `.NET Security Scan`. Rulesets as code follow in #245.
+2. Apply the rulesets in `.github/rulesets/` as described in [contributing.md](./contributing.md#changing-a-rule). The `main` ruleset requires `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan` and `Trivy Filesystem Scan`.
 
 ## Security Layers Summary
 
