@@ -39,7 +39,10 @@
           { "context": "Semgrep" },
           { "context": "gitleaks" },
           { "context": "CodeQL gate" },
-          { "context": ".NET Security Scan" }
+          { "context": ".NET Security Scan" },
+          { "context": "npm Security Audit" },
+          { "context": "Trivy Container Scan" },
+          { "context": "Trivy Filesystem Scan" }
         ]
       }
     }
