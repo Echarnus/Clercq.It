@@ -375,6 +375,7 @@ public sealed class MyZenGateway(
         }
     }
 
+    /// <summary>Reads MyZen's answer to an MFA code.</summary>
     /// <returns>Where MyZen sends the browser after a good code, or null when the code was refused.</returns>
     private static string? MfaRedirect(string body)
     {

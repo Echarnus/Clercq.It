@@ -27,6 +27,7 @@ public sealed class MyZenSessionCipher(string sessionKey)
         return output;
     }
 
+    /// <summary>Decrypts a payload made by <see cref="Encrypt"/>.</summary>
     /// <returns>The data, or null when it was encrypted with another key or was tampered with.</returns>
     public MyZenSessionData? Decrypt(byte[] payload)
     {

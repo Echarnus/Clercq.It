@@ -25,12 +25,15 @@ public interface IMyZenGateway
     /// <summary>Touches the session so MyZen keeps it; false when it has expired.</summary>
     Task<bool> KeepAliveAsync(CancellationToken cancellationToken);
 
+    /// <summary>Every project in MyZen.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<IReadOnlyList<MyZenProjectDto>> GetProjectsAsync(CancellationToken cancellationToken);
 
+    /// <summary>The time entries from <paramref name="firstDay"/> to <paramref name="lastDay"/>.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<IReadOnlyList<MyZenTimeEntryDto>> GetTimeEntriesAsync(DateOnly firstDay, DateOnly lastDay, CancellationToken cancellationToken);
 
+    /// <summary>One time entry with its project and customer IDs, or null when MyZen has none with this ID.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<MyZenTimeEntryDto?> GetTimeEntryAsync(long id, CancellationToken cancellationToken);
 }

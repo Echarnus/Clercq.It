@@ -121,6 +121,7 @@ public static class MyZenHtml
         return new MyZenTimeEntryListPage(entries, HasPage(document, page + 1));
     }
 
+    /// <summary>Reads one time entry from its edit form.</summary>
     /// <returns>The entry in the edit form, or null when the form has no entry.</returns>
     public static MyZenTimeEntryDto? ParseTimeEntryDetails(string html)
     {

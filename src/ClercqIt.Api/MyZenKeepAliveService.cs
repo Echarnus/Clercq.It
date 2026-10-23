@@ -28,6 +28,7 @@ public sealed class MyZenKeepAliveService(
         }
     }
 
+    /// <summary>One keep-alive tick: touches the session when the MyZen flag is on.</summary>
     /// <returns>Whether a live session was touched.</returns>
     public async Task<bool> RunOnceAsync(CancellationToken cancellationToken)
     {
