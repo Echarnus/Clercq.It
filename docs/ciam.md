@@ -72,8 +72,9 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 | `Blogs.Contributor` | Can create, edit, and delete blog posts |
 | `Projects.Contributor` | Can create, edit, and delete projects |
 | `Certifications.Contributor` | Can create, edit, and delete certifications |
+| `MyZen.Owner` | Can use the owner's MyZen account through `/api/myzen` ([MyZen](./myzen.md)). Give it only to the owner. |
 
-The API enforces these per endpoint (issue #244): creating, updating or deleting blogs and uploading images needs `Blogs.Contributor`, projects need `Projects.Contributor`, certifications need `Certifications.Contributor`. A signed-in user without the role gets 403. Reads are public. The roles must arrive in the access token's `roles` claim (step 5); the API reads claim names as Keycloak sends them (`MapInboundClaims = false`).
+The API enforces these per endpoint (issue #244): creating, updating or deleting blogs and uploading images needs `Blogs.Contributor`, projects need `Projects.Contributor`, certifications need `Certifications.Contributor`, and every `/api/myzen` endpoint needs `MyZen.Owner` (reads too). A signed-in user without the role gets 403. Reads are public. The roles must arrive in the access token's `roles` claim (step 5); the API reads claim names as Keycloak sends them (`MapInboundClaims = false`).
 
 ### 5. Create the `roles` Client Scope
 
@@ -91,7 +92,7 @@ The API enforces these per endpoint (issue #244): creating, updating or deleting
 
 ### 6. Configure Scope Mappings
 
-Under **Client Scopes > roles > Scope**, assign all four realm roles so they appear in tokens.
+Under **Client Scopes > roles > Scope**, assign all five realm roles so they appear in tokens.
 
 ### 7. Create Admin Users
 
@@ -100,7 +101,7 @@ Registration is closed, so every account is created by the owner:
 1. Open the Keycloak admin console (`https://{deployment}.cloud-iam.com/admin`) and pick the `clercqit` realm.
 2. **Users > Add user**: set username and email, tick **Email verified**, and save.
 3. **Credentials > Set password**: set a strong password with **Temporary** off.
-4. **Role mapping > Assign role**: assign `Admin.View`, `Blogs.Contributor`, `Projects.Contributor` and `Certifications.Contributor`.
+4. **Role mapping > Assign role**: assign `Admin.View`, `Blogs.Contributor`, `Projects.Contributor` and `Certifications.Contributor`, and for the owner also `MyZen.Owner`.
 5. Recommended: **Required user actions > Configure OTP**, so the account uses MFA from its first login.
 6. Sign in at `https://www.clercq.it/admin` to check the account.
 

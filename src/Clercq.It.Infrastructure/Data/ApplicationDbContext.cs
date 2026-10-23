@@ -1,4 +1,5 @@
 using Clercq.It.Domain.Entities;
+using Clercq.It.Infrastructure.MyZen;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Data;
@@ -24,6 +25,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Project> Projects => Set<Project>();
     public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<Certification> Certifications => Set<Certification>();
+    public DbSet<MyZenSessionRecord> MyZenSessions => Set<MyZenSessionRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
