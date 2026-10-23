@@ -89,19 +89,21 @@ In CI they are a separate step, `API integration tests`, after `Unit tests` in t
 
 The `Test .NET API` job fails when line coverage is below `tests/coverage-thresholds.json`, per assembly and in total. It prints a table in the job summary and uploads the HTML report as the `coverage-report` artifact. Coverage also still goes to Codecov.
 
-Thresholds (21 October 2026, the measured coverage rounded down; raised when the integration tests in #244 started covering Infrastructure, and again in #247 once compiler-generated code was excluded):
+Thresholds (21 October 2026, the measured coverage rounded down; raised when the integration tests in #244 started covering Infrastructure, again in #247 once compiler-generated code was excluded, and in #359 when coverlet 10 started measuring async methods and tests for object storage, content images and transactions were added):
 
 | Assembly | Minimum line coverage |
 | --- | ---: |
-| Total | 96% |
+| Total | 98% |
 | `Clercq.It.Domain` | 100% |
 | `Clercq.It.Application` | 98% |
 | `ClercqIt.Api` | 98% |
-| `Clercq.It.ContentImport` | 82% |
+| `Clercq.It.ContentImport` | 96% |
 | `Clercq.It.ServiceDefaults` | 97% |
-| `Clercq.It.Infrastructure` | 95% |
+| `Clercq.It.Infrastructure` | 96% |
 
 Domain and Application together are above the 80% target.
+
+`coverlet.collector` 10 counts async method bodies (their compiler-generated state machines hold the code you wrote); 6.0.4 skipped them on .NET 10, so async code looked covered when it was not.
 
 Compiler-generated code is not counted: `tests/coverage.runsettings` (applied to every `dotnet test` through `RunSettingsFilePath` in `Directory.Build.props`) excludes `[GeneratedCode]` and `[CompilerGenerated]` code and the .NET 10 OpenAPI XML-comment generator (`Microsoft.AspNetCore.OpenApi.Generated`), which otherwise adds about 250 uncoverable lines to `ClercqIt.Api`.
 
