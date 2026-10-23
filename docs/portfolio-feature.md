@@ -137,7 +137,7 @@ type Project = z.infer<typeof ProjectSchema>;
 - Sorted by date (newest to oldest)
 - Click to navigate to detail page
 - Featured projects displayed prominently
-- Responsive grid layout
+- Two-column card grid from `lg`, inside the shared page width (see [UX and page layout](./ux.md))
 
 ![Portfolio List Page](screenshots/portfolio-list.png)
 
@@ -147,7 +147,7 @@ type Project = z.infer<typeof ProjectSchema>;
 - SSR data fetching by ID
 - Full project information display
 - Formatted dates
-- Skill badges
+- Skill badges and dates in a details card next to the body
 - Back navigation to portfolio list
 
 ![Portfolio Detail Page](screenshots/portfolio-detail.png)

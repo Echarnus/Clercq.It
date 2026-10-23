@@ -14,6 +14,18 @@ const navItems = [
   { href: "/certifications", label: "Certifications", key: "certifications" },
 ];
 
+/**
+ * The nav item for a path: an exact match, or the section a detail page belongs to
+ * (`/blogs/<id>` highlights Blogs). Home only matches `/` itself.
+ */
+export function getActiveNavKey(pathname: string | null): string | null {
+  if (!pathname) return null;
+  const item = navItems.find(
+    (item) => item.href === pathname || (item.href !== "/" && pathname.startsWith(`${item.href}/`)),
+  );
+  return item?.key ?? null;
+}
+
 export function Navigation() {
   const pathname = usePathname();
   const isHydrated = useIsClient();
@@ -34,13 +46,7 @@ export function Navigation() {
     };
   }, [isMobileMenuOpen]);
 
-  const getCurrentPage = () => {
-    if (!isHydrated) return null;
-    const item = navItems.find((item) => item.href === pathname);
-    return item?.key || null;
-  };
-
-  const currentPage = getCurrentPage();
+  const currentPage = getActiveNavKey(pathname);
 
   const getLinkClasses = (key: string, isMobile: boolean = false) => {
     const isActive = currentPage === key;
@@ -73,7 +79,8 @@ export function Navigation() {
             }`}
             style={{
               backgroundColor: "#0f172a",
-              boxShadow: "-4px 0 20px rgba(0, 0, 0, 0.5)",
+              // Only cast the shadow while open: off-screen, it leaks onto the page's right edge.
+              boxShadow: isMobileMenuOpen ? "-4px 0 20px rgba(0, 0, 0, 0.5)" : "none",
             }}
           >
             <div
@@ -95,6 +102,7 @@ export function Navigation() {
                   key={item.key}
                   href={item.href}
                   className={getLinkClasses(item.key, true)}
+                  aria-current={currentPage === item.key ? "page" : undefined}
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {item.label}
@@ -112,7 +120,12 @@ export function Navigation() {
       {/* Desktop Navigation */}
       <nav className="hidden gap-6 md:flex">
         {navItems.map((item) => (
-          <Link key={item.key} href={item.href} className={getLinkClasses(item.key)}>
+          <Link
+            key={item.key}
+            href={item.href}
+            className={getLinkClasses(item.key)}
+            aria-current={currentPage === item.key ? "page" : undefined}
+          >
             {item.label}
           </Link>
         ))}

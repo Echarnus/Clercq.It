@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,16 +29,13 @@ export default async function HomePage() {
   ];
 
   return (
-    <div
-      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
-      style={{ fontFamily: "Arial, sans-serif" }}
-    >
+    <>
       {/* Hero Section */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-4xl text-center">
-          <h2 className="mb-6 text-5xl font-bold text-slate-900 dark:text-white">
+      <PageContainer as="section" className="py-16">
+        <div className="mx-auto max-w-3xl text-center">
+          <h1 className="mb-6 text-5xl font-bold text-slate-900 dark:text-white">
             Full Stack Developer
-          </h2>
+          </h1>
           <p className="mb-8 text-xl leading-relaxed text-slate-600 dark:text-slate-300">
             Passionate about creating complete digital solutions from A to Z. With expertise in
             modern technologies, I build scalable applications that solve real-world problems.
@@ -68,14 +66,14 @@ export default async function HomePage() {
             </Link>
           </Button>
         </div>
-      </section>
+      </PageContainer>
 
       {/* Skills Section */}
-      <section className="container mx-auto px-4 py-16">
-        <h3 className="mb-12 text-center text-3xl font-bold text-slate-900 dark:text-white">
+      <PageContainer as="section" className="py-16">
+        <h2 className="mb-12 text-center text-3xl font-bold text-slate-900 dark:text-white">
           What I Do
-        </h3>
-        <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-3">
+        </h2>
+        <div className="grid gap-8 md:grid-cols-3">
           {skills.map((skill, index) => (
             <Card
               key={index}
@@ -93,29 +91,29 @@ export default async function HomePage() {
             </Card>
           ))}
         </div>
-      </section>
+      </PageContainer>
 
       {/* Featured Projects */}
-      <section className="container mx-auto px-4 py-16">
+      <PageContainer as="section" className="py-16">
         <div className="mb-12 text-center">
-          <h3 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white">
+          <h2 className="mb-4 text-3xl font-bold text-slate-900 dark:text-white">
             Featured Projects
-          </h3>
+          </h2>
           <p className="mx-auto max-w-2xl text-slate-600 dark:text-slate-300">
             Here are some of the projects I&apos;ve been working on, showcasing my expertise in
             full-stack development and cloud technologies.
           </p>
         </div>
 
-        <div className="mx-auto grid max-w-6xl gap-8 md:grid-cols-3">
+        <div className="grid gap-8 md:grid-cols-3">
           {featuredProjects.length === 0 ? (
-            <div className="col-span-3 text-center text-slate-600 dark:text-slate-400">
+            <div className="text-center text-slate-600 md:col-span-3 dark:text-slate-400">
               No featured projects available.
             </div>
           ) : (
             featuredProjects.slice(0, 3).map((project) => (
               <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
-                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
+                <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <CardHeader className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <Image
@@ -155,9 +153,7 @@ export default async function HomePage() {
             </Link>
           </Button>
         </div>
-      </section>
-
-      {/* Footer */}
-    </div>
+      </PageContainer>
+    </>
   );
 }

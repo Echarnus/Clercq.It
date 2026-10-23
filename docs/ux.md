@@ -1,0 +1,51 @@
+# UX and page layout
+
+How the public site is laid out, and the UX review that set these rules (issue #356).
+
+## Layout rules
+
+- **One content width.** Every public page, the header and the footer wrap their content in `PageContainer` (`src/ClercqIt.Web/components/page-container.tsx`): `max-w-6xl` (1152px) with a `px-4 sm:px-6 lg:px-8` gutter. The logo, the page content and the footer share the same left and right edges on every route.
+- **Do not narrow the container per page.** Narrow the text inside it instead. Intro paragraphs use `max-w-3xl`; centered blocks (the home hero, the 404 page) use `mx-auto max-w-3xl`.
+- **Page shell.** `src/ClercqIt.Web/components/conditional-layout.tsx` renders the header, one `<main>` with the page background, and the footer. Pages render only their sections; they do not set their own background or font.
+- **No layout shift.** `src/ClercqIt.Web/app/globals.css` sets `scrollbar-gutter: stable` on `html`, so short pages (no scrollbar) and long pages (scrollbar) have the same content width.
+- **One font.** The system font stack is the Tailwind `--font-sans` token in `globals.css`. Do not add inline `fontFamily` styles.
+- **List pages.** Portfolio and Certifications show a two-column card grid from `lg`; Blogs shows posts in three columns of a four-column grid with the filters in the fourth.
+- **Detail pages.** Blog and project details use the same four-column grid: the title and body take three columns, a details card (dates, tags, skills) takes the fourth and stays in view while you scroll. On phones the details card sits between the title and the body.
+- **Sticky elements** sit below the sticky header: use `lg:top-28`, not `top-4`.
+- **Headings and titles.** One `<h1>` per page (the page or item title). The logo is a link to the homepage, not a heading. Top-level pages export `metadata.title`; the root layout turns it into `<title> | Clercq.It`.
+- **Navigation.** The nav highlights the section of the current page, including detail pages (`/blogs/<id>` highlights Blogs), and marks it with `aria-current="page"` (`getActiveNavKey` in `src/ClercqIt.Web/components/navigation.tsx`). Top-level pages have no "Back to Home" button; detail pages keep their back link.
+
+Admin pages (`/admin`) are outside these rules: they render without the public header and footer.
+
+## UX review (2026-10-23)
+
+Measured at 1440px wide before the change: the logo started at 96px from the left, while page content started at 272px (Portfolio, Certifications, details, 404), 144px (Blogs) or both 272px and 96px on one page (home). The content edge jumped on every navigation.
+
+Fixed in #356:
+
+| Finding | Fix |
+| --- | --- |
+| Content width switched between `max-w-4xl`, `max-w-6xl` and the header's `container` | One `PageContainer` everywhere |
+| Page shifted sideways between short and long pages | `scrollbar-gutter: stable` |
+| Fonts switched between the header (system font) and pages (inline Arial) | One `--font-sans` stack |
+| Browser title read "Clercqlt", same on every page | "Clercq.It", per-page titles |
+| Logo was an `<h1>` and not a link; detail pages had two `<h1>`s | Logo links home; one `<h1>` per page |
+| No nav item active on detail pages | Section highlight and `aria-current` |
+| No `<main>` landmark | The layout renders one `<main>` |
+| Blogs: filters slid under the sticky header | `lg:top-28` |
+| Blogs: with any filter set, the pager stayed on page 1 | Reset the page in the filter handlers, not during render |
+| Portfolio and Certifications cards had uneven heights and a gap under the image | Cards fill the grid row; the image stretches |
+| Phone: the closed menu's shadow showed on the right edge | Shadow only while the menu is open |
+| "Back to Home" duplicated the nav on top-level pages | Removed there |
+
+Open findings, not fixed yet:
+
+- Blog posts have no title field: the short description is used as the title on cards and detail pages.
+- Detail pages have no per-item browser title (they need `generateMetadata`, which fetches the item a second time).
+- Blog and project bodies render as plain text with `whitespace-pre-line`, so Markdown in content files is not rendered.
+- Blog filters: the month list ignores which months have posts, and the search only matches the short description.
+- The footer's Featured Projects column falls back to "View All Projects" until the client-side fetch returns.
+
+## Checking a layout change
+
+`pnpm build` and `pnpm start` need the API for real content. Without it, pages render their empty states. To check widths, compare the left edge of the logo (`header a`) with the page sections in the browser dev tools at 1440px and 390px; they should match on every route.
