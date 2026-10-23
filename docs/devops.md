@@ -247,6 +247,7 @@ The infrastructure uses Scaleway Object Storage as a Terraform backend for state
 - **Bucket**: `clercq-it-terraform-state`
 - **Region**: `fr-par` (Paris)
 - **State File**: `portfolio/terraform.tfstate`
+- **Terraform CLI**: CI runs Terraform 1.17.0 (`TERRAFORM_VERSION` in `infra.yml`, `terraform_version` in `deploy.yml`; keep them equal). `main.tf` requires at least 1.6.3. The backend uses `endpoints = { s3 = ... }`, `use_path_style` and `skip_s3_checksum`, because Scaleway Object Storage does not accept the checksum headers newer Terraform sends by default (#363).
 
 **Important**: This backend does not support state locking. Avoid concurrent Terraform operations.
 
