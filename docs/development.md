@@ -15,7 +15,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 
 The frontend runs Next.js 16 (Turbopack builds), React 19, Tailwind CSS 4, zod 4 with `@hookform/resolvers` 6, and lucide-react 1 for icons. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. Tailwind 4 has no `tailwind.config.ts`: the theme (colours, radii, animations) lives in `@theme` in `app/globals.css`, PostCSS uses `@tailwindcss/postcss`, and animations come from `tw-animate-css`. Client-only rendering checks use `useIsClient()` (`hooks/use-is-client.ts`, built on `useSyncExternalStore`) instead of a `mounted` flag set in an effect, which the React hooks lint rules reject. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update. Vitest runs on Vite 8 with `@vitejs/plugin-react` 6; `vite` is a direct dev dependency because the plugin needs Vite 8 as a peer.
 
-Held back on purpose (audit of 23 October 2026, #351): ESLint stays on 9 because `eslint-plugin-jsx-a11y` 6.10 does not support ESLint 10; TypeScript stays on 5.9 because `typescript-eslint` 8 supports TypeScript below 6.1; `@types/node` stays on 24 to match the Node 24 runtime (Dependabot ignores newer majors). Lift a hold when the blocking package catches up.
+Linting runs on ESLint 10 and type checks on TypeScript 6 (#378). `eslint-plugin-jsx-a11y`, `eslint-plugin-react` and `eslint-plugin-import` (the last two come with `eslint-config-next`) still declare ESLint 9 as their highest peer, but they load and report under ESLint 10, so `pnpm.peerDependencyRules.allowedVersions` in `package.json` allows `eslint` 10 for them. Drop that rule once the plugins declare ESLint 10. Held back on purpose: TypeScript stays on 6.0 because `typescript-eslint` 8 supports TypeScript below 6.1; `@types/node` stays on 24 to match the Node 24 runtime (Dependabot ignores newer majors). Lift a hold when the blocking package catches up.
 
 `package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
 
@@ -245,7 +245,7 @@ Agents work in a Claude Code cloud container. `.claude/hooks/session-start.sh` (
 | Tool | How it is installed | Why |
 | --- | --- | --- |
 | .NET SDK 10 (`dotnet-sdk-10.0` from Ubuntu) | `apt-get` | Microsoft's .NET download hosts are blocked by the environment's network policy. The projects target `net10.0`, so this is the same SDK CI and Docker use. |
-| Terraform 1.6.6 | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
+| Terraform 1.6.6 or newer (CI uses 1.17.0) | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
 | Scaleway CLI 2.40.0 (pinned) | binary from GitHub releases | Reading secrets from Scaleway Secret Manager |
 | NuGet and pnpm packages | `dotnet restore` (API and test projects, never the Aspire AppHost) and `pnpm install --frozen-lockfile` | Builds and tests run without further setup |
 
