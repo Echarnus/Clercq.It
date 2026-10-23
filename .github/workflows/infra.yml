@@ -92,7 +92,6 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
-          TF_VAR_keycloak_web_client_secret: ${{ secrets.KEYCLOAK_WEB_CLIENT_SECRET }}
           TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
           TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
 
@@ -197,7 +196,6 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
-          TF_VAR_keycloak_web_client_secret: ${{ secrets.KEYCLOAK_WEB_CLIENT_SECRET }}
           TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
           TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
 

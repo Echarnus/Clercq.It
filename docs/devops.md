@@ -334,7 +334,7 @@ merge to main
 
 **Manual deploys** (`workflow_dispatch`) also go through the verify container and its smoke test. As before, they skip migrations and the content import.
 
-**Login on verify** uses separate Keycloak clients, `clercqit-web-verify` and `clercqit-admin-verify`. Sign-in on the verify URL does not work until the owner does three things in Cloud IAM: create those clients, add the verify URL as their redirect URI, and put their secrets in `/clercq-it/verify`. The smoke test does not need sign-in.
+**Login on verify** uses its own public PKCE client, `clercqit-web-verify`, configured like `clercqit-web` (see [Cloud IAM](./ciam.md#3-create-clients)) with the verify URL as redirect URI. It has no secret. The smoke test does not need sign-in.
 
 The verify URL is the `verify_container_url` Terraform output (a Scaleway container domain).
 

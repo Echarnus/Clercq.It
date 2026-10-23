@@ -18,7 +18,8 @@ locals {
     "db-app-password",
     "db-administration-password",
     "keycloak-base-url",
-    "keycloak-web-client-secret",
+    # Only read by the administration-api container; the site itself uses a
+    # public PKCE client and needs no Keycloak secret (#257, #346).
     "keycloak-admin-client-secret",
   ])
 
@@ -28,7 +29,6 @@ locals {
     "db-app-password"              = coalesce(var.database_password, random_password.db_app.result)
     "db-administration-password"   = coalesce(var.administration_database_password, random_password.db_administration.result)
     "keycloak-base-url"            = coalesce(var.keycloak_base_url, "https://replace-me.cloud-iam.com/auth")
-    "keycloak-web-client-secret"   = coalesce(var.keycloak_web_client_secret, "replace-me")
     "keycloak-admin-client-secret" = coalesce(var.keycloak_admin_client_secret, "replace-me")
   }
 

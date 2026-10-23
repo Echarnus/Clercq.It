@@ -55,13 +55,6 @@ variable "keycloak_realm" {
   default     = "clercqit"
 }
 
-variable "keycloak_web_client_secret" {
-  description = "Seed for the keycloak-web-client-secret secret. Only used when the secret is first created."
-  type        = string
-  default     = null
-  sensitive   = true
-}
-
 variable "keycloak_admin_client_secret" {
   description = "Seed for the keycloak-admin-client-secret secret. Only used when the secret is first created."
   type        = string

@@ -64,12 +64,6 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
 
-#### `clercqit-admin` (Service Account)
-- **Client ID**: `clercqit-admin`
-- **Client Authentication**: On
-- **Direct Access Grants**: Enabled
-- **Service Accounts**: Enabled
-
 ### 4. Create Realm Roles
 
 | Role | Description |
@@ -118,12 +112,9 @@ Set the following environment variables for the API container:
 Keycloak__BaseUrl=https://{deployment}.cloud-iam.com
 Keycloak__Realm=clercqit
 Keycloak__ClientId=clercqit-web
-Keycloak__ClientSecret={production-secret}
-Keycloak__AdminClientId=clercqit-admin
-Keycloak__AdminClientSecret={production-admin-secret}
 ```
 
-When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` are no longer read since the password grant was removed (#257); they can be dropped from the container configuration and Secret Manager later.
+When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client stays for now, because the separate `administration-api` container in `infra/terraform/main.tf` is still configured with it.
 
 ### Scaleway Container Deployment
 
@@ -135,12 +126,6 @@ resource "scaleway_container" "app" {
     "Keycloak__BaseUrl" = "https://{deployment}.cloud-iam.com"
     "Keycloak__Realm"   = "clercqit"
     "Keycloak__ClientId" = "clercqit-web"
-    "Keycloak__AdminClientId" = "clercqit-admin"
-  }
-
-  secret_environment_variables = {
-    "Keycloak__ClientSecret"      = var.keycloak_client_secret
-    "Keycloak__AdminClientSecret" = var.keycloak_admin_client_secret
   }
 }
 ```
@@ -178,9 +163,8 @@ The API needs `Keycloak:BaseUrl` (and optionally `Keycloak:Realm`, default `cler
 
 ## Security Notes
 
-- Use separate client secrets for production - never reuse local development secrets
+- Production clients are public PKCE clients without secrets; never import the local realm's `clercqit-api` secret or `clercqit-tests` client into production
 - HTTPS is enforced for external Keycloak (`RequireHttpsMetadata = true` when `isLocalKeycloak = false`)
-- Rotate client secrets periodically
 - Cloud IAM provides ISO 27001 and SOC 2 Type 2 compliance
 - Configure admin allow lists to restrict Keycloak admin console access by IP
 - Enable MFA for admin accounts
