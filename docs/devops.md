@@ -257,6 +257,7 @@ The infrastructure uses Scaleway Object Storage as a Terraform backend for state
 - **Bucket**: `clercq-it-terraform-state`
 - **Region**: `fr-par` (Paris)
 - **State File**: `portfolio/terraform.tfstate`
+- **Terraform CLI**: CI runs Terraform 1.17.0 (`TERRAFORM_VERSION` in `infra.yml`, `terraform_version` in `deploy.yml`; keep them equal). `main.tf` requires at least 1.6.3. The backend uses `endpoints = { s3 = ... }`, `use_path_style` and `skip_s3_checksum`, because Scaleway Object Storage does not accept the checksum headers newer Terraform sends by default (#363).
 
 **Important**: This backend does not support state locking. Avoid concurrent Terraform operations.
 
@@ -563,6 +564,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 - **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
 - **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
+- **Action majors**: Dependabot proposes GitHub Actions majors as separate PRs too. The audit of 23 October 2026 (#353) moved every workflow to the latest major (`actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/setup-dotnet@v6`, `github/codeql-action@v4`, `hashicorp/setup-terraform@v4`, the Docker actions, `codecov/codecov-action@v7`, `actions/github-script@v9`, `actions/attest-build-provenance@v4`, `gittools/actions@v4`, which needs GitVersion 6.2 or newer, so `versionSpec` is `6.8.x`; 6.8 and 6.0 compute the same version for this repo). These run on Node 24. In `actions/github-script` v9 scripts can no longer `require('@actions/github')`; use the injected `github` client.
 - **Security updates**: grouping applies to version updates only; Dependabot security updates still arrive as one PR per dependency.
 - **Ignored versions**: `FluentAssertions` `>= 8` is ignored for NuGet, because version 8 has a commercial licence and the tests stay on 7.x (#290). Patch and minor 7.x updates still arrive in the grouped PR. For npm, `@types/node` `>= 25` is ignored so the types match the Node 24 runtime; raise it together with the Node major in the Dockerfile and CI. To add or drop an ignore rule, edit the `ignore` list of that ecosystem in `.github/dependabot.yml` and this line together.
 
