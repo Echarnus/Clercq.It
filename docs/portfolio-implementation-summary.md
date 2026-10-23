@@ -128,7 +128,7 @@ type Project = z.infer<typeof ProjectSchema>;
 NEXT_PUBLIC_API_URL=http://localhost:5035
 ```
 
-**Production**: The application uses relative URLs in production (same Docker container). The `NEXT_PUBLIC_API_URL` environment variable is only needed for local development.
+**Production**: in the browser the app uses relative `/api` URLs (nginx in the same container proxies them). Server-rendered pages call the API directly at `API_INTERNAL_URL`, which `src/start.sh` sets to `http://localhost:5000`; without it they fall back to `NEXT_PUBLIC_API_URL`, then `http://localhost:5000` in production or `http://localhost:5001` in development. `NEXT_PUBLIC_API_URL` is inlined at build time, so do not rely on it in the container (#348).
 
 ## Screenshots
 

@@ -34,14 +34,39 @@ describe("API URLs", () => {
     expect(getApiUrl()).toBe("");
   });
 
-  it("always uses a full URL on the server", () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubGlobal("window", undefined);
-    try {
+  describe("on the server", () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("uses API_INTERNAL_URL first", () => {
+      vi.stubGlobal("window", undefined);
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("API_INTERNAL_URL", "http://localhost:5000");
+      vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.example.com");
+      expect(getApiUrl()).toBe("http://localhost:5000");
+    });
+
+    it("falls back to NEXT_PUBLIC_API_URL", () => {
+      vi.stubGlobal("window", undefined);
+      vi.stubEnv("API_INTERNAL_URL", "");
+      vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.example.com");
+      expect(getApiUrl()).toBe("https://api.example.com");
+    });
+
+    it("uses the container API port in production when nothing is configured", () => {
+      vi.stubGlobal("window", undefined);
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("API_INTERNAL_URL", "");
+      vi.stubEnv("NEXT_PUBLIC_API_URL", "");
+      expect(getApiUrl()).toBe("http://localhost:5000");
+    });
+
+    it("uses the Aspire API port in development when nothing is configured", () => {
+      vi.stubGlobal("window", undefined);
+      vi.stubEnv("NODE_ENV", "development");
+      vi.stubEnv("API_INTERNAL_URL", "");
+      vi.stubEnv("NEXT_PUBLIC_API_URL", "");
       expect(getApiUrl()).toBe(API);
-    } finally {
-      vi.unstubAllGlobals();
-    }
+    });
   });
 });
 

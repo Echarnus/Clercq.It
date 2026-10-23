@@ -16,7 +16,8 @@ echo "Started .NET API with PID $API_PID"
 # Start Next.js frontend in background
 echo "Starting Next.js frontend..."
 cd /app/frontend
-PORT=3000 HOSTNAME=0.0.0.0 node server.js > /var/log/frontend.log 2>&1 &
+# Server-side fetches go straight to the API (issue #348).
+API_INTERNAL_URL=http://localhost:5000 PORT=3000 HOSTNAME=0.0.0.0 node server.js > /var/log/frontend.log 2>&1 &
 FRONTEND_PID=$!
 echo "Started Next.js frontend with PID $FRONTEND_PID"
 
