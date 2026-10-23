@@ -51,6 +51,7 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
                 StableId.For("blog", file.Slug),
                 created,
                 file.OptionalDate("publishDate") ?? created,
+                file.RequiredString("title"),
                 file.RequiredString("shortDescription"),
                 BodyOr(file, file.RequiredString("shortDescription")),
                 image,
@@ -170,10 +171,10 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
     private static bool Copy(Blog from, Blog to)
     {
         var changed = false;
-        if (from.ShortDescription != to.ShortDescription || from.LongDescription != to.LongDescription
-            || !from.Tags.Values.SequenceEqual(to.Tags.Values))
+        if (from.Title != to.Title || from.ShortDescription != to.ShortDescription
+            || from.LongDescription != to.LongDescription || !from.Tags.Values.SequenceEqual(to.Tags.Values))
         {
-            to.Update(from.ShortDescription, from.LongDescription, from.Tags);
+            to.Update(from.Title, from.ShortDescription, from.LongDescription, from.Tags);
             changed = true;
         }
         if (from.CreatedDate != to.CreatedDate || from.PublishDate != to.PublishDate)

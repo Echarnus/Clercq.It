@@ -18,6 +18,7 @@ The Blog Management feature allows administrators to create, manage, and publish
 - `POST /api/blogs` - Create a new blog post with image (authenticated)
 
 ### Validation Rules
+- Title: Required, max 200 characters
 - Short description: Required, max 500 characters
 - Long description: Required, max 50,000 characters, supports full markdown
 - Image: Required, supports JPG, JPEG, PNG, GIF, WebP formats

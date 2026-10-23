@@ -106,6 +106,7 @@ export function BlogList() {
   };
 
   const handleFormSubmit = async (data: {
+    title: string;
     shortDescription: string;
     longDescription: string;
     tags: string[];
@@ -115,6 +116,7 @@ export function BlogList() {
     try {
       if (selectedBlog) {
         await updateBlog(selectedBlog.id, {
+          title: data.title,
           shortDescription: data.shortDescription,
           longDescription: data.longDescription,
           tags: data.tags,
@@ -129,6 +131,7 @@ export function BlogList() {
           throw new Error("Image is required");
         }
         await createBlog({
+          title: data.title,
           shortDescription: data.shortDescription,
           longDescription: data.longDescription,
           tags: data.tags,
@@ -197,7 +200,7 @@ export function BlogList() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-[80px]">Image</TableHead>
-                <TableHead>Description</TableHead>
+                <TableHead>Title</TableHead>
                 <TableHead>Tags</TableHead>
                 <TableHead>Published</TableHead>
                 <TableHead className="w-[100px]">Actions</TableHead>
@@ -223,7 +226,10 @@ export function BlogList() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <p className="line-clamp-2 text-sm">{blog.shortDescription}</p>
+                    <p className="line-clamp-1 text-sm font-medium">{blog.title}</p>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {blog.shortDescription}
+                    </p>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">

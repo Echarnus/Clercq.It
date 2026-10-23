@@ -85,7 +85,10 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
             />
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
-              <p className="mb-4 text-lg">{project.shortDescription}</p>
+              {/* Content files default the body to the summary; do not show it twice. */}
+              {project.longDescription.trim() !== project.shortDescription.trim() && (
+                <p className="mb-4 text-lg">{project.shortDescription}</p>
+              )}
               <Markdown>{project.longDescription}</Markdown>
             </div>
             <div className="clear-both" />

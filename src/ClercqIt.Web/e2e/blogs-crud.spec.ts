@@ -74,6 +74,7 @@ test.describe("Blogs CRUD Operations", () => {
     await expect(page.locator('[role="dialog"]')).toBeVisible();
 
     // Fill in blog details
+    await page.fill('[role="dialog"] input[placeholder="Blog post title"]', "E2E test blog");
     await page.fill(
       '[role="dialog"] textarea:first-of-type',
       "Test blog short description for E2E testing",

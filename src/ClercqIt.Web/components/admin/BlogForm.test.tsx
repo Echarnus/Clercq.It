@@ -11,7 +11,8 @@ describe("BlogForm", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Create Blog" }));
 
-    expect(await screen.findByText("Short description is required")).toBeInTheDocument();
+    expect(await screen.findByText("Title is required")).toBeInTheDocument();
+    expect(screen.getByText("Short description is required")).toBeInTheDocument();
     expect(screen.getByText("Long description is required")).toBeInTheDocument();
     expect(screen.getByText("At least one tag is required")).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
@@ -22,6 +23,7 @@ describe("BlogForm", () => {
     const onSubmit = vi.fn();
     render(<BlogForm onSubmit={onSubmit} onCancel={vi.fn()} />);
 
+    await user.type(screen.getByPlaceholderText("Blog post title"), "Title");
     await user.type(screen.getByPlaceholderText(/brief summary/), "Short");
     await user.type(screen.getByPlaceholderText(/full blog post/), "Long");
     await user.type(screen.getByPlaceholderText("Add a tag..."), "tag{Enter}");
@@ -39,6 +41,7 @@ describe("BlogForm", () => {
 
     await waitFor(() =>
       expect(onSubmit).toHaveBeenCalledWith({
+        title: blog.title,
         shortDescription: blog.shortDescription,
         longDescription: blog.longDescription,
         tags: blog.tags,

@@ -20,7 +20,8 @@ public class EndpointValidationTests(CustomWebApplicationFactory factory) : IAsy
     public async Task CreateBlog_EmptyShortDescription_ReturnsValidationProblem()
     {
         var client = await factory.CreateClientForUserAsync("blogger");
-        using var form = Form(("shortDescription", ""), ("longDescription", "Body"), ("tags", "dotnet"));
+        using var form = Form(
+            ("title", "Title"), ("shortDescription", ""), ("longDescription", "Body"), ("tags", "dotnet"));
         form.Add(Png(), "image", "header.png");
 
         var response = await client.PostAsync("/api/blogs", form);
@@ -30,11 +31,26 @@ public class EndpointValidationTests(CustomWebApplicationFactory factory) : IAsy
         (await client.GetStringAsync("/api/blogs")).Should().Be("[]");
     }
 
+    [Fact(DisplayName = "POST /api/blogs without a title returns 400 with the field error")]
+    public async Task CreateBlog_EmptyTitle_ReturnsValidationProblem()
+    {
+        var client = await factory.CreateClientForUserAsync("blogger");
+        using var form = Form(
+            ("title", ""), ("shortDescription", "Short"), ("longDescription", "Body"), ("tags", "dotnet"));
+        form.Add(Png(), "image", "header.png");
+
+        var response = await client.PostAsync("/api/blogs", form);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await ErrorsAsync(response)).Should().ContainKey("Title");
+    }
+
     [Fact(DisplayName = "POST /api/blogs without an image returns 400")]
     public async Task CreateBlog_NoImage_ReturnsBadRequest()
     {
         var client = await factory.CreateClientForUserAsync("blogger");
-        using var form = Form(("shortDescription", "Short"), ("longDescription", "Body"), ("tags", "dotnet"));
+        using var form = Form(
+            ("title", "Title"), ("shortDescription", "Short"), ("longDescription", "Body"), ("tags", "dotnet"));
 
         var response = await client.PostAsync("/api/blogs", form);
 

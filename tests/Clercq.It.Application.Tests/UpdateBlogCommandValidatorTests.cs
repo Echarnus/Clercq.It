@@ -17,6 +17,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Valid short description",
             "# Valid Long Description\n\nThis is markdown content.",
             new MemoryStream(),
@@ -39,6 +40,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Valid short description",
             "Valid long description",
             null,
@@ -61,6 +63,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.Empty,
+            "Blog title",
             "Short description",
             "Long description",
             null,
@@ -77,12 +80,62 @@ public class UpdateBlogCommandValidatorTests
         result.Errors.Should().Contain(e => e.PropertyName == "Id");
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Validate_ShouldFail_WhenTitleIsEmpty(string? title)
+    {
+        // Arrange
+        var command = new UpdateBlogCommand(
+            Guid.NewGuid(),
+            title!,
+            "Short description",
+            "Long description",
+            null,
+            null,
+            null,
+            new[] { "Tag1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Title");
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenTitleExceeds200Characters()
+    {
+        // Arrange
+        var title = new string('a', 201);
+        var command = new UpdateBlogCommand(
+            Guid.NewGuid(),
+            title,
+            "Short description",
+            "Long description",
+            null,
+            null,
+            null,
+            new[] { "Tag1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Title");
+    }
+
     [Fact]
     public void Validate_ShouldFail_WhenShortDescriptionIsEmpty()
     {
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "",
             "Long description",
             null,
@@ -106,6 +159,7 @@ public class UpdateBlogCommandValidatorTests
         var longDescription = new string('a', 501);
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             longDescription,
             "Long description",
             null,
@@ -130,6 +184,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Short description",
             "",
             null,
@@ -152,6 +207,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Short description",
             "Long description",
             null,
@@ -177,6 +233,7 @@ public class UpdateBlogCommandValidatorTests
         var tags = Enumerable.Range(1, 11).Select(i => $"Tag{i}").ToArray();
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Short description",
             "Long description",
             null,
@@ -206,6 +263,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -233,6 +291,7 @@ public class UpdateBlogCommandValidatorTests
         // Arrange
         var command = new UpdateBlogCommand(
             Guid.NewGuid(),
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),

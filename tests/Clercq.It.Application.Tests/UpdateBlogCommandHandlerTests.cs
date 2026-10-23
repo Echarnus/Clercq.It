@@ -56,6 +56,7 @@ public class UpdateBlogCommandHandlerTests
 
         var command = new UpdateBlogCommand(
             blogId,
+            "Blog title",
             "New short description",
             "New long description",
             imageStream,
@@ -95,6 +96,7 @@ public class UpdateBlogCommandHandlerTests
 
         var command = new UpdateBlogCommand(
             blogId,
+            "Blog title",
             "Short description",
             "Long description",
             null,
@@ -146,6 +148,7 @@ public class UpdateBlogCommandHandlerTests
 
         var command = new UpdateBlogCommand(
             blogId,
+            "Blog title",
             "Short description",
             "Long description",
             imageStream,
@@ -188,6 +191,7 @@ public class UpdateBlogCommandHandlerTests
 
         var command = new UpdateBlogCommand(
             blogId,
+            "Blog title",
             "New short description",
             "New long description",
             null,
@@ -230,6 +234,7 @@ public class UpdateBlogCommandHandlerTests
         var newTags = new[] { "C#", "Testing", "DDD" };
         var command = new UpdateBlogCommand(
             blogId,
+            "Blog title",
             "Short description",
             "Long description",
             null,

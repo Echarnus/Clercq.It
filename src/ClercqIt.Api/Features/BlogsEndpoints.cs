@@ -37,6 +37,7 @@ public static class BlogsEndpoints
             // Read multipart form data
             var form = await request.ReadFormAsync();
 
+            var title = form["title"].ToString();
             var shortDescription = form["shortDescription"].ToString();
             var longDescription = form["longDescription"].ToString();
             var tagsString = form["tags"].ToString();
@@ -52,6 +53,7 @@ public static class BlogsEndpoints
 
             using var imageStream = imageFile.OpenReadStream();
             var command = new CreateBlogCommand(
+                title,
                 shortDescription,
                 longDescription,
                 imageStream,
@@ -73,6 +75,7 @@ public static class BlogsEndpoints
         {
             var form = await request.ReadFormAsync();
 
+            var title = form["title"].ToString();
             var shortDescription = form["shortDescription"].ToString();
             var longDescription = form["longDescription"].ToString();
             var tagsString = form["tags"].ToString();
@@ -94,6 +97,7 @@ public static class BlogsEndpoints
 
             var command = new UpdateBlogCommand(
                 id,
+                title,
                 shortDescription,
                 longDescription,
                 imageStream,

@@ -20,6 +20,7 @@ export const blog: Blog = {
   id: "22222222-2222-4222-8222-222222222222",
   createdDate: "2024-02-01T00:00:00Z",
   publishDate: "2024-02-02T00:00:00Z",
+  title: "Hello world",
   shortDescription: "Hello",
   longDescription: "# Hello",
   image: "",

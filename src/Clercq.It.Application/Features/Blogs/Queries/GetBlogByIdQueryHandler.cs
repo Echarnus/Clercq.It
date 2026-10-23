@@ -26,6 +26,7 @@ public class GetBlogByIdQueryHandler : IRequestHandler<GetBlogByIdQuery, BlogDto
             blog.Id,
             blog.CreatedDate,
             blog.PublishDate,
+            blog.Title,
             blog.ShortDescription,
             blog.LongDescription,
             blog.Image,

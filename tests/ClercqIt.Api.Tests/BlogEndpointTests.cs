@@ -44,6 +44,7 @@ public class BlogEndpointTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.Created);
         var content = await response.Content.ReadAsStringAsync();
         var blog = JsonSerializer.Deserialize<JsonElement>(content, JsonOptions);
+        blog.GetProperty("title").GetString().Should().Be("Title: Test Blog Short");
         blog.GetProperty("shortDescription").GetString().Should().Be("Test Blog Short");
         blog.GetProperty("longDescription").GetString().Should().Be("Test Blog Long Description");
         blog.GetProperty("image").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
@@ -127,6 +128,7 @@ public class BlogEndpointTests : IAsyncLifetime
 
         // Update without image
         using var updateContent = new MultipartFormDataContent();
+        updateContent.Add(new StringContent("Updated title"), "title");
         updateContent.Add(new StringContent("Updated No Image"), "shortDescription");
         updateContent.Add(new StringContent("Updated Long No Image"), "longDescription");
         updateContent.Add(new StringContent("newtag"), "tags");
@@ -136,6 +138,7 @@ public class BlogEndpointTests : IAsyncLifetime
         updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
         var updatedBlog = JsonSerializer.Deserialize<JsonElement>(
             await updateResponse.Content.ReadAsStringAsync(), JsonOptions);
+        updatedBlog.GetProperty("title").GetString().Should().Be("Updated title");
         updatedBlog.GetProperty("shortDescription").GetString().Should().Be("Updated No Image");
     }
 
@@ -143,6 +146,7 @@ public class BlogEndpointTests : IAsyncLifetime
     public async Task UpdateBlog_NoAuthToken_ReturnsUnauthorized()
     {
         using var formContent = new MultipartFormDataContent();
+        formContent.Add(new StringContent("Updated title"), "title");
         formContent.Add(new StringContent("Updated"), "shortDescription");
         formContent.Add(new StringContent("Updated Long"), "longDescription");
         formContent.Add(new StringContent("tag"), "tags");
@@ -194,6 +198,7 @@ public class BlogEndpointTests : IAsyncLifetime
         string shortDescription, string longDescription, string tags)
     {
         var formContent = new MultipartFormDataContent();
+        formContent.Add(new StringContent($"Title: {shortDescription}"), "title");
         formContent.Add(new StringContent(shortDescription), "shortDescription");
         formContent.Add(new StringContent(longDescription), "longDescription");
         formContent.Add(new StringContent(tags), "tags");

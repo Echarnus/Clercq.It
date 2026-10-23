@@ -48,7 +48,7 @@ Fixed in #367:
 | Blog search only matched the short description | Search matches the short description and the body |
 | Footer "Featured Projects" swapped its only link for the list once loaded | The list loads above a fixed "View all projects" link |
 
-Open: blog posts have no title field; the short description is used as the title (#368).
+Fixed in #368: blog posts have a `title` (required, max 200). It is the card heading, the detail page `<h1>` and the browser title; the short description is the summary under it. The `AddBlogTitle` migration fills existing posts with their short description.
 
 ## Markdown
 

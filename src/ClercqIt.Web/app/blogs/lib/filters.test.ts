@@ -6,6 +6,7 @@ const blog = (publishDate: string, overrides: Partial<Blog> = {}): Blog => ({
   id: "22222222-2222-4222-8222-222222222222",
   createdDate: publishDate,
   publishDate,
+  title: "Shipping on every merge",
   shortDescription: "Trunk-based delivery",
   longDescription: "How we deploy **every merge** to production.",
   image: "",
@@ -42,7 +43,8 @@ describe("matchesFilters", () => {
     expect(matchesFilters(post, none)).toBe(true);
   });
 
-  it("searches the summary and the body, ignoring case", () => {
+  it("searches the title, the summary and the body, ignoring case", () => {
+    expect(matchesFilters(post, { ...none, search: "shipping" })).toBe(true);
     expect(matchesFilters(post, { ...none, search: "TRUNK" })).toBe(true);
     expect(matchesFilters(post, { ...none, search: "every merge" })).toBe(true);
     expect(matchesFilters(post, { ...none, search: "kubernetes" })).toBe(false);

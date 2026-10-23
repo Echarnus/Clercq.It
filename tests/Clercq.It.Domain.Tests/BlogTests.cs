@@ -8,7 +8,7 @@ public class BlogTests
     private static readonly DateTime Created = new(2024, 3, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private static Blog NewBlog() =>
-        new(Guid.NewGuid(), Created, Created.AddDays(1), "Short", "Long", "https://example.com/a.png", new Tags(["a"]));
+        new(Guid.NewGuid(), Created, Created.AddDays(1), "Title", "Short", "Long", "https://example.com/a.png", new Tags(["a"]));
 
     [Fact]
     public void Constructor_WithValidValues_SetsAllProperties()
@@ -17,13 +17,14 @@ public class BlogTests
         var id = Guid.NewGuid();
 
         // Act
-        var blog = new Blog(id, Created, Created.AddDays(5), "Short", "Long", "https://example.com/a.png",
+        var blog = new Blog(id, Created, Created.AddDays(5), "Title", "Short", "Long", "https://example.com/a.png",
             new Tags(["Development", "C#"]));
 
         // Assert
         blog.Id.Should().Be(id);
         blog.CreatedDate.Should().Be(Created);
         blog.PublishDate.Should().Be(Created.AddDays(5));
+        blog.Title.Should().Be("Title");
         blog.ShortDescription.Should().Be("Short");
         blog.LongDescription.Should().Be("Long");
         blog.Image.Should().Be("https://example.com/a.png");
@@ -34,7 +35,7 @@ public class BlogTests
     public void Create_WithNow_PublishesImmediatelyWithNewId()
     {
         // Act
-        var blog = Blog.Create("Short", "Long", "img", new Tags([]), Created);
+        var blog = Blog.Create("Title", "Short", "Long", "img", new Tags([]), Created);
 
         // Assert
         blog.Id.Should().NotBeEmpty();
@@ -48,7 +49,19 @@ public class BlogTests
     public void Constructor_WithBlankShortDescription_Throws(string shortDescription)
     {
         // Act
-        var act = () => new Blog(Guid.NewGuid(), Created, Created, shortDescription, "Long", "img", new Tags([]));
+        var act = () => new Blog(Guid.NewGuid(), Created, Created, "Title", shortDescription, "Long", "img", new Tags([]));
+
+        // Assert
+        act.Should().Throw<ArgumentException>();
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Constructor_WithBlankTitle_Throws(string title)
+    {
+        // Act
+        var act = () => new Blog(Guid.NewGuid(), Created, Created, title, "Short", "Long", "img", new Tags([]));
 
         // Assert
         act.Should().Throw<ArgumentException>();
@@ -61,9 +74,10 @@ public class BlogTests
         var blog = NewBlog();
 
         // Act
-        blog.Update("New short", "New long", new Tags(["b", "c"]));
+        blog.Update("New title", "New short", "New long", new Tags(["b", "c"]));
 
         // Assert
+        blog.Title.Should().Be("New title");
         blog.ShortDescription.Should().Be("New short");
         blog.LongDescription.Should().Be("New long");
         blog.Tags.Values.Should().Equal("b", "c");
@@ -76,7 +90,7 @@ public class BlogTests
         var blog = NewBlog();
 
         // Act
-        var act = () => blog.Update(" ", "New long", new Tags([]));
+        var act = () => blog.Update("New title", " ", "New long", new Tags([]));
 
         // Assert
         act.Should().Throw<ArgumentException>();

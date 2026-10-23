@@ -40,6 +40,7 @@ public class CreateBlogCommandHandlerTests
             .ReturnsAsync(imageUrl);
 
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "# Long Description\n\nThis is markdown content.",
             imageStream,
@@ -94,6 +95,7 @@ public class CreateBlogCommandHandlerTests
             .ReturnsAsync(imageUrl);
 
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             imageStream,
@@ -141,6 +143,7 @@ public class CreateBlogCommandHandlerTests
             .ReturnsAsync(1);
 
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short",
             "Long",
             imageStream,
@@ -173,6 +176,7 @@ public class CreateBlogCommandHandlerTests
 
         var tags = new[] { "C#", "Testing", "Unit Tests", "Moq", "FluentAssertions" };
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short",
             "Long",
             imageStream,
@@ -206,6 +210,7 @@ public class CreateBlogCommandHandlerTests
             .ThrowsAsync(new InvalidOperationException("Object storage unavailable"));
 
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),

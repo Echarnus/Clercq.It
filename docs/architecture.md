@@ -153,6 +153,7 @@ Exposes HTTP endpoints and handles web concerns.
 
 ### Blogs Table
 - `Id` (GUID, Primary Key)
+- `Title` (varchar(200), required) - added by `AddBlogTitle`, backfilled from `ShortDescription`
 - `ShortDescription` (varchar(500), required)
 - `LongDescription` (text, required) - Markdown content
 - `Image` (text, required) - URL to Scaleway Object Storage

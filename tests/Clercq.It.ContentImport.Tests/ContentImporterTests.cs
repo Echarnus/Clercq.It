@@ -71,7 +71,7 @@ public sealed class ContentImporterTests : IDisposable
     {
         Write("projects/clercqit.md", Project);
         Write("images/clercqit.png", "png-bytes");
-        Write("blogs/hello.md", "---\nshortDescription: Hello\ncreatedDate: 2025-02-01\ntags: [intro]\n---\nBody");
+        Write("blogs/hello.md", "---\ntitle: Hello world\nshortDescription: Hello\ncreatedDate: 2025-02-01\ntags: [intro]\n---\nBody");
         Write("certifications/az-204.md", "---\ntitle: AZ-204\nissuer: Microsoft\nissueDate: 2024-05-01\n---\n");
 
         (await ImportAsync()).Should().Be(new ImportResult(3, 0, 0));
@@ -96,13 +96,13 @@ public sealed class ContentImporterTests : IDisposable
     public async Task Import_ChangedProjectAndBlog_UpdatesRows()
     {
         Write("projects/site.md", "---\ntitle: Site\nshortDescription: v1\nstartDate: 2025-01-01\n---\n");
-        Write("blogs/hello.md", "---\nshortDescription: v1\ncreatedDate: 2025-01-01\ntags: [a]\n---\n");
+        Write("blogs/hello.md", "---\ntitle: Hello\nshortDescription: v1\ncreatedDate: 2025-01-01\ntags: [a]\n---\n");
         await ImportAsync();
 
         Write("projects/site.md",
             "---\ntitle: Site\nshortDescription: v2\nstartDate: 2025-01-01\nendDate: 2025-02-01\nimage: /p.svg\n---\n");
         Write("blogs/hello.md",
-            "---\nshortDescription: v1\ncreatedDate: 2025-01-01\npublishDate: 2025-01-05\ntags: [a, b]\nimage: /b.svg\n---\n");
+            "---\ntitle: Hello again\nshortDescription: v1\ncreatedDate: 2025-01-01\npublishDate: 2025-01-05\ntags: [a, b]\nimage: /b.svg\n---\n");
         var result = await ImportAsync();
 
         result.Should().Be(new ImportResult(0, 2, 0));
@@ -112,6 +112,7 @@ public sealed class ContentImporterTests : IDisposable
         project.EndDate.Should().Be(new DateTime(2025, 2, 1, 0, 0, 0, DateTimeKind.Utc));
         project.Image.Should().Be("/p.svg");
         var blog = await db.Blogs.SingleAsync();
+        blog.Title.Should().Be("Hello again");
         blog.PublishDate.Should().Be(new DateTime(2025, 1, 5, 0, 0, 0, DateTimeKind.Utc));
         blog.Image.Should().Be("/b.svg");
         blog.Tags.Values.Should().Equal("a", "b");

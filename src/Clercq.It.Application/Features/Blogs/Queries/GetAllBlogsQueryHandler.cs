@@ -21,6 +21,7 @@ public class GetAllBlogsQueryHandler : IRequestHandler<GetAllBlogsQuery, IEnumer
             b.Id,
             b.CreatedDate,
             b.PublishDate,
+            b.Title,
             b.ShortDescription,
             b.LongDescription,
             b.Image,

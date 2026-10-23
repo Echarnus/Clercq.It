@@ -42,7 +42,7 @@ public class UpdateBlogCommandHandler : IRequestHandler<UpdateBlogCommand, BlogD
         }
 
         // Update other properties
-        blog.Update(request.ShortDescription, request.LongDescription, new Tags(request.Tags));
+        blog.Update(request.Title, request.ShortDescription, request.LongDescription, new Tags(request.Tags));
 
         await _blogRepository.UpdateAsync(blog, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -51,6 +51,7 @@ public class UpdateBlogCommandHandler : IRequestHandler<UpdateBlogCommand, BlogD
             blog.Id,
             blog.CreatedDate,
             blog.PublishDate,
+            blog.Title,
             blog.ShortDescription,
             blog.LongDescription,
             blog.Image,
