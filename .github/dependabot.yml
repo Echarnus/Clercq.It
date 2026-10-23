@@ -41,6 +41,10 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # @types/node follows the Node runtime major (node:24-slim, CI node-version 24).
+      - dependency-name: "@types/node"
+        versions: [">= 25"]
     labels:
       - "dependencies"
       - "frontend"
