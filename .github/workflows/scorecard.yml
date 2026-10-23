@@ -1,0 +1,48 @@
+---
+name: OpenSSF Scorecard
+
+# Kept apart from security-scan.yml on purpose (#350). With publish_results,
+# scorecard.dev only accepts results from a workflow whose top-level
+# permissions are read-only and whose job uses only allowed actions
+# (checkout, scorecard-action, upload-artifact, codeql upload-sarif).
+# Otherwise the upload is rejected and the README badge shows
+# "invalid repo path". Do not add other jobs, env or defaults here.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run weekly on Monday at 2:30 AM UTC
+    - cron: '30 2 * * 1'
+  branch_protection_rule:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: OpenSSF Scorecard
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      id-token: write
+      contents: read
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Run OpenSSF Scorecard
+        uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload Scorecard results
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: results.sarif

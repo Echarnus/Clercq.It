@@ -1,11 +1,12 @@
 using System.Net;
+using System.Net.Http.Json;
 using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
 
 /// <summary>
-/// Every endpoint that changes data rejects anonymous callers (401) and callers
-/// without the matching contributor role (403), with real Keycloak tokens.
+/// Every endpoint that changes data, and every MyZen endpoint, rejects anonymous
+/// callers (401) and callers without the matching role (403), with real Keycloak tokens.
 /// </summary>
 [Collection(ApiTestGroup.Name)]
 public class EndpointAuthorizationTests(CustomWebApplicationFactory factory)
@@ -25,6 +26,15 @@ public class EndpointAuthorizationTests(CustomWebApplicationFactory factory)
         { "POST", "/api/certifications", "blogger" },
         { "PUT", $"/api/certifications/{AnyId}", "projects" },
         { "DELETE", $"/api/certifications/{AnyId}", "projects" },
+        // MyZen is the owner's own account: only MyZen.Owner, not other admins (docs/myzen.md)
+        { "GET", "/api/myzen/session", "blogger" },
+        { "POST", "/api/myzen/session/start", "projects" },
+        { "POST", "/api/myzen/session/login", "certs" },
+        { "POST", "/api/myzen/session/mfa", "blogger" },
+        { "DELETE", "/api/myzen/session", "projects" },
+        { "GET", "/api/myzen/projects", "certs" },
+        { "GET", "/api/myzen/time-entries?from=2026-09-01&to=2026-09-30", "blogger" },
+        { "GET", "/api/myzen/time-entries/1", "projects" },
     };
 
     [Theory(DisplayName = "Protected endpoint without a token returns 401")]
@@ -71,6 +81,12 @@ public class EndpointAuthorizationTests(CustomWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    // MyZen endpoints take a JSON body; any other content type is rejected with 415 before authorization runs.
     private static HttpRequestMessage Request(string method, string path) =>
-        new(new HttpMethod(method), path) { Content = new MultipartFormDataContent() };
+        new(new HttpMethod(method), path)
+        {
+            Content = path.StartsWith("/api/myzen", StringComparison.Ordinal)
+                ? JsonContent.Create(new { })
+                : new MultipartFormDataContent(),
+        };
 }
