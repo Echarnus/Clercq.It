@@ -31,6 +31,10 @@
       {
         "name": "Certifications.Contributor",
         "description": "Can create, edit, and delete certifications"
+      },
+      {
+        "name": "MyZen.Owner",
+        "description": "Can use the owner's MyZen account through /api/myzen"
       }
     ]
   },
@@ -133,7 +137,8 @@
         "Admin.View",
         "Blogs.Contributor",
         "Projects.Contributor",
-        "Certifications.Contributor"
+        "Certifications.Contributor",
+        "MyZen.Owner"
       ]
     }
   ],
@@ -156,7 +161,8 @@
         "Admin.View",
         "Blogs.Contributor",
         "Projects.Contributor",
-        "Certifications.Contributor"
+        "Certifications.Contributor",
+        "MyZen.Owner"
       ]
     },
     {

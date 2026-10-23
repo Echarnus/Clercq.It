@@ -127,6 +127,9 @@ resource "scaleway_container" "portfolio_app" {
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${local.secrets["db-app-password"]}"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
+    "MyZen__Email"                         = local.myzen_login.username
+    "MyZen__Password"                      = local.myzen_login.password
+    "MyZen__SessionKey"                    = local.secrets["myzen-session-key"]
   }
 
   tags = [
