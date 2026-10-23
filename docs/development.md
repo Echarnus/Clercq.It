@@ -13,7 +13,9 @@ This guide covers local development setup and workflows for the Clercq.It projec
 
 ### Frontend versions
 
-The frontend runs Next.js 16 (Turbopack builds), React 19, Tailwind CSS 4, zod 4 with `@hookform/resolvers` 5, and lucide-react 1 for icons. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. Tailwind 4 has no `tailwind.config.ts`: the theme (colours, radii, animations) lives in `@theme` in `app/globals.css`, PostCSS uses `@tailwindcss/postcss`, and animations come from `tw-animate-css`. Client-only rendering checks use `useIsClient()` (`hooks/use-is-client.ts`, built on `useSyncExternalStore`) instead of a `mounted` flag set in an effect, which the React hooks lint rules reject. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update.
+The frontend runs Next.js 16 (Turbopack builds), React 19, Tailwind CSS 4, zod 4 with `@hookform/resolvers` 6, and lucide-react 1 for icons. API ids are validated with `z.guid()`, not `z.uuid()`, because zod 4's `uuid()` rejects ids that are valid .NET Guids but not RFC 9562 UUIDs. Tailwind 4 has no `tailwind.config.ts`: the theme (colours, radii, animations) lives in `@theme` in `app/globals.css`, PostCSS uses `@tailwindcss/postcss`, and animations come from `tw-animate-css`. Client-only rendering checks use `useIsClient()` (`hooks/use-is-client.ts`, built on `useSyncExternalStore`) instead of a `mounted` flag set in an effect, which the React hooks lint rules reject. Avoid `latest` as a version range in `package.json`: a new major then lands with any routine update. Vitest runs on Vite 8 with `@vitejs/plugin-react` 6; `vite` is a direct dev dependency because the plugin needs Vite 8 as a peer.
+
+Held back on purpose (audit of 23 October 2026, #351): ESLint stays on 9 because `eslint-plugin-jsx-a11y` 6.10 does not support ESLint 10; TypeScript stays on 5.9 because `typescript-eslint` 8 supports TypeScript below 6.1; `@types/node` stays on 24 to match the Node 24 runtime (Dependabot ignores newer majors). Lift a hold when the blocking package catches up.
 
 `package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
 
@@ -254,7 +256,7 @@ What the owner configures on the cloud environment (Project settings → Cloud e
 - Network secrets `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID` for a read-only Secret Manager key (see issue #226).
 - Network access to `clercq.it` and the Scaleway APIs, for smoke tests and secret reads.
 
-`global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`setup-dotnet` `10.0.x`) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`).
+`global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`setup-dotnet` `10.0.x`) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`). The backend stays on .NET 10 (LTS) and EF Core 10 until a later LTS is worth the move: .NET 11 is a short-term support release and was still a release candidate at the audit of 23 October 2026 (#352). The tests run xunit v2 on `Microsoft.NET.Test.Sdk` 18 and `xunit.runner.visualstudio` 4; FluentAssertions stays on 7.x (licence, see [Testing](./testing.md)). `coverlet.collector` stays on 6.0.4 for now: version 10 also measures async methods that 6.0.4 skipped on .NET 10, which drops measured Infrastructure and ContentImport coverage below the gate. The bump comes with the tests that close that gap (#359).
 
 Commands agents run before opening a PR:
 
