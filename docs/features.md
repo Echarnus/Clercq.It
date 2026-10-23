@@ -114,3 +114,7 @@ The admin dashboard provides role-based tab visibility:
 
 ### Protected Routes
 All blog and project creation/modification endpoints require valid JWT tokens with appropriate roles.
+
+## MyZen time registration
+
+The owner can connect his own MyZen (TrustTeam / Billit) account from the admin dashboard and see his MyZen projects and time entries on clercq.it. He types MyZen's CAPTCHA and MFA code himself; the site keeps the session and shows **Reconnect MyZen** when MyZen ends it. Owner only (`MyZen.Owner`), behind the `MyZen` feature flag. Details: [MyZen](./myzen.md).
