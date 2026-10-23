@@ -41,7 +41,7 @@ This action takes GitVersion outputs and calculates a clean semantic version usi
 - name: Install GitVersion
   uses: gittools/actions/gitversion/setup@v4
   with:
-    versionSpec: '6.0.x'
+    versionSpec: '6.8.x'
 
 - name: Determine Version
   uses: gittools/actions/gitversion/execute@v4
