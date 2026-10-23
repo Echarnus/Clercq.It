@@ -262,7 +262,7 @@ The production deployment uses a single Docker container with multiple services:
 
 **Startup Sequence** (`src/start.sh`, PID 1 in the container):
 1. .NET API starts in background and writes logs to `/var/log/api.log`
-2. Next.js frontend starts in background and writes logs to `/var/log/frontend.log`
+2. Next.js frontend starts in background and writes logs to `/var/log/frontend.log`. It gets `API_INTERNAL_URL=http://localhost:5000`, so server-rendered pages (homepage, portfolio, certifications) call the API directly; the browser uses relative `/api` URLs through nginx (#348)
 3. Health check waits for API `/health` endpoint (up to 60 seconds)
 4. Health check waits for Next.js on port 3000 (up to 60 seconds)
 5. nginx starts after all services are healthy

@@ -171,7 +171,7 @@ type Project = z.infer<typeof ProjectSchema>;
 NEXT_PUBLIC_API_URL=http://localhost:5035
 ```
 
-**Note**: In production, the application uses relative URLs (same Docker container) and does not require `NEXT_PUBLIC_API_URL`. The environment variable is only used for local development to point to the API server running on a different port.
+**Production**: in the browser the app uses relative `/api` URLs (nginx in the same container proxies them). Server-rendered pages call the API directly at `API_INTERNAL_URL`, which `src/start.sh` sets to `http://localhost:5000`; without it they fall back to `NEXT_PUBLIC_API_URL`, then `http://localhost:5000` in production or `http://localhost:5001` in development. `NEXT_PUBLIC_API_URL` is inlined at build time, so do not rely on it in the container (#348).
 
 ### Redux Store Setup
 

@@ -1,17 +1,21 @@
 import { z } from "zod";
 
 // Base API client configuration
-// In production, use relative URLs. In development, use the full API URL.
-// Default port 5000 matches the Aspire AppHost configuration
+// In the browser in production, use relative URLs (nginx proxies /api to the API).
+// On the server, call the API directly. API_INTERNAL_URL is read at runtime (src/start.sh
+// sets it in the container); NEXT_PUBLIC_API_URL is inlined at build time, so it is only a
+// local development fallback. Port 5000 is the API inside the container, 5001 under Aspire.
 const getBaseApiUrl = () => {
   if (typeof window !== "undefined") {
-    // Client-side: use relative URL in production
     return process.env.NODE_ENV === "production"
       ? ""
       : process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
   }
-  // Server-side: always use full URL for SSR
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001";
+  return (
+    process.env.API_INTERNAL_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "production" ? "http://localhost:5000" : "http://localhost:5001")
+  );
 };
 
 export const getApiUrl = () => getBaseApiUrl();
