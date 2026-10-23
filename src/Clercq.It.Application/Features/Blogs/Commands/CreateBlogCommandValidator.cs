@@ -6,6 +6,10 @@ public class CreateBlogCommandValidator : AbstractValidator<CreateBlogCommand>
 {
     public CreateBlogCommandValidator()
     {
+        RuleFor(x => x.Title)
+            .NotEmpty().WithMessage("Title is required")
+            .MaximumLength(200).WithMessage("Title must not exceed 200 characters");
+
         RuleFor(x => x.ShortDescription)
             .NotEmpty().WithMessage("Short description is required")
             .MaximumLength(500).WithMessage("Short description must not exceed 500 characters");

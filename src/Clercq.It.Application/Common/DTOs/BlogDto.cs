@@ -4,6 +4,7 @@ public record BlogDto(
     Guid Id,
     DateTime CreatedDate,
     DateTime PublishDate,
+    string Title,
     string ShortDescription,
     string LongDescription,
     string Image,

@@ -104,13 +104,32 @@ describe("writes with a token", () => {
   it("create, update and delete blogs as multipart with a bearer token", async () => {
     const calls = captureWrites("/api/blogs", blog);
     await expect(
-      createBlog({ shortDescription: "s", longDescription: "l", image, tags: ["a", "b"] }),
+      createBlog({
+        title: "t",
+        shortDescription: "s",
+        longDescription: "l",
+        image,
+        tags: ["a", "b"],
+      }),
     ).resolves.toEqual(blog);
-    await updateBlog(blog.id, { shortDescription: "s2", longDescription: "l2", tags: ["c"] });
-    await updateBlog(blog.id, { shortDescription: "s3", longDescription: "l3", image, tags: [] });
+    await updateBlog(blog.id, {
+      title: "t2",
+      shortDescription: "s2",
+      longDescription: "l2",
+      tags: ["c"],
+    });
+    await updateBlog(blog.id, {
+      title: "t3",
+      shortDescription: "s3",
+      longDescription: "l3",
+      image,
+      tags: [],
+    });
 
     expect(calls.map((c) => c.method)).toEqual(["POST", "PUT", "PUT"]);
     expect(calls.every((c) => c.auth === "Bearer token-123")).toBe(true);
+    expect(calls[0].form?.get("title")).toBe("t");
+    expect(calls[1].form?.get("title")).toBe("t2");
     expect(calls[0].form?.get("tags")).toBe("a,b");
     expect((calls[0].form?.get("image") as Blob).type).toBe("image/png");
     expect(calls[1].form?.has("image")).toBe(false);
@@ -195,8 +214,10 @@ describe("writes with a token", () => {
     {
       path: "blogs",
       noun: "blog",
-      create: () => createBlog({ shortDescription: "", longDescription: "", image, tags: [] }),
-      update: () => updateBlog("x", { shortDescription: "", longDescription: "", tags: [] }),
+      create: () =>
+        createBlog({ title: "", shortDescription: "", longDescription: "", image, tags: [] }),
+      update: () =>
+        updateBlog("x", { title: "", shortDescription: "", longDescription: "", tags: [] }),
       remove: () => deleteBlog("x"),
     },
     {

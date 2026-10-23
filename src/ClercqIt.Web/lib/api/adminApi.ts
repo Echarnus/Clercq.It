@@ -90,6 +90,7 @@ export async function fetchBlogById(id: string): Promise<Blog | null> {
 }
 
 export interface CreateBlogData {
+  title: string;
   shortDescription: string;
   longDescription: string;
   image: File;
@@ -98,6 +99,7 @@ export interface CreateBlogData {
 
 export async function createBlog(data: CreateBlogData): Promise<Blog> {
   const formData = new FormData();
+  formData.append("title", data.title);
   formData.append("shortDescription", data.shortDescription);
   formData.append("longDescription", data.longDescription);
   formData.append("image", data.image);
@@ -117,6 +119,7 @@ export async function createBlog(data: CreateBlogData): Promise<Blog> {
 }
 
 export interface UpdateBlogData {
+  title: string;
   shortDescription: string;
   longDescription: string;
   image?: File;
@@ -125,6 +128,7 @@ export interface UpdateBlogData {
 
 export async function updateBlog(id: string, data: UpdateBlogData): Promise<Blog> {
   const formData = new FormData();
+  formData.append("title", data.title);
   formData.append("shortDescription", data.shortDescription);
   formData.append("longDescription", data.longDescription);
   if (data.image) {

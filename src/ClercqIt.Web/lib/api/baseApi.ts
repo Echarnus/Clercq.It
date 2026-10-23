@@ -43,6 +43,7 @@ export const BlogSchema = z.object({
   id: z.guid(),
   createdDate: z.iso.datetime(),
   publishDate: z.iso.datetime(),
+  title: z.string().min(1),
   shortDescription: z.string(),
   longDescription: z.string(),
   image: z.string(), // Can be empty string or URL

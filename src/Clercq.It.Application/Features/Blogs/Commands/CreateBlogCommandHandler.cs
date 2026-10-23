@@ -34,6 +34,7 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, BlogD
 
         // Create blog entity
         var blog = Blog.Create(
+            request.Title,
             request.ShortDescription,
             request.LongDescription,
             imageUrl,
@@ -51,6 +52,7 @@ public class CreateBlogCommandHandler : IRequestHandler<CreateBlogCommand, BlogD
             blog.Id,
             blog.CreatedDate,
             blog.PublishDate,
+            blog.Title,
             blog.ShortDescription,
             blog.LongDescription,
             blog.Image,

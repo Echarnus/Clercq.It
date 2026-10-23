@@ -20,7 +20,7 @@ const getBlog = cache(fetchBlogById);
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
   const { id } = await params;
   const blog = await getBlog(id);
-  return blog ? { title: blog.shortDescription, description: blog.shortDescription } : {};
+  return blog ? { title: blog.title, description: blog.shortDescription } : {};
 }
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
@@ -51,7 +51,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
         {/* Blog Header */}
         <h1 className="text-4xl font-bold text-slate-900 lg:col-span-3 dark:text-white">
-          {blog.shortDescription}
+          {blog.title}
         </h1>
 
         {/* Blog details */}
@@ -76,13 +76,17 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
           <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
             <BlurImage
               src={blog.image || "/placeholder.svg"}
-              alt={blog.shortDescription}
+              alt={blog.title}
               width={250}
               height={250}
               containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
             />
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
+              {/* Content files default the body to the summary; do not show it twice. */}
+              {blog.longDescription.trim() !== blog.shortDescription.trim() && (
+                <p className="mb-4 text-lg">{blog.shortDescription}</p>
+              )}
               <Markdown>{blog.longDescription}</Markdown>
             </div>
             <div className="clear-both" />

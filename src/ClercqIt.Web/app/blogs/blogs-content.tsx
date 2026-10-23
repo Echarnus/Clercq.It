@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { Input } from "@/components/ui/input";
@@ -121,7 +121,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                 <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <BlurImage
                     src={blog.image || "/placeholder.svg"}
-                    alt={blog.shortDescription}
+                    alt={blog.title}
                     width={200}
                     height={200}
                     containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
@@ -131,6 +131,10 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                     <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
                       {formatDate(blog.publishDate)}
                     </div>
+
+                    <CardTitle className="mb-2 text-xl text-slate-900 dark:text-white">
+                      {blog.title}
+                    </CardTitle>
 
                     <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
                       {blog.shortDescription}

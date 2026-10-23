@@ -13,6 +13,10 @@ public class BlogConfiguration : IEntityTypeConfiguration<Blog>
         builder.Property(b => b.Id)
             .ValueGeneratedNever();
 
+        builder.Property(b => b.Title)
+            .HasMaxLength(200)
+            .IsRequired();
+
         builder.Property(b => b.ShortDescription)
             .HasMaxLength(500)
             .IsRequired();

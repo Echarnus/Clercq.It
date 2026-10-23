@@ -29,7 +29,7 @@ public class UnitOfWorkTests : IAsyncLifetime
     }
 
     private static Blog NewBlog(DateTime publishDate) =>
-        new(Guid.NewGuid(), publishDate, publishDate, "Short", "Long", "https://img.example.com/a.png", new[] { "tag" });
+        new(Guid.NewGuid(), publishDate, publishDate, "Title", "Short", "Long", "https://img.example.com/a.png", new[] { "tag" });
 
     [Fact]
     public async Task CommitTransactionAsync_AfterBegin_PersistsTheChanges()
@@ -109,7 +109,7 @@ public class UnitOfWorkTests : IAsyncLifetime
         using var scope = _factory.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
         var match = NewBlog(DateTime.UtcNow);
-        match.Update("Match", "Long", new[] { "tag" });
+        match.Update("Title", "Match", "Long", new[] { "tag" });
         db.Blogs.AddRange(match, NewBlog(DateTime.UtcNow));
         await db.SaveChangesAsync();
 

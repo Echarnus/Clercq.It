@@ -45,6 +45,7 @@ The long description, in **Markdown**.
 
 | Field | Required | Notes |
 |-------|----------|-------|
+| `title` | yes | Max 200 characters, shown as the heading |
 | `shortDescription` | yes | Summary |
 | `createdDate` | yes | `yyyy-MM-dd` |
 | `publishDate` | no | `yyyy-MM-dd`, defaults to `createdDate` |

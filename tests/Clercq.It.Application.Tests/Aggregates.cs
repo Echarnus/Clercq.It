@@ -14,12 +14,13 @@ internal static class Aggregates
         Guid? id = null,
         DateTime? createdDate = null,
         DateTime? publishDate = null,
+        string title = "Blog title",
         string shortDescription = "Short description",
         string longDescription = "Long description",
         string image = "https://example.com/blog.jpg",
         Tags? tags = null) =>
         new(id ?? Guid.NewGuid(), createdDate ?? DefaultDate, publishDate ?? createdDate ?? DefaultDate,
-            shortDescription, longDescription, image, tags ?? new Tags([]));
+            title, shortDescription, longDescription, image, tags ?? new Tags([]));
 
     public static Project Project(
         Guid? id = null,

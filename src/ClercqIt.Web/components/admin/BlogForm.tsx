@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Form,
@@ -19,6 +20,7 @@ import { Loader2 } from "lucide-react";
 import type { Blog } from "@/lib/api/baseApi";
 
 const blogFormSchema = z.object({
+  title: z.string().min(1, "Title is required").max(200, "Title must not exceed 200 characters"),
   shortDescription: z
     .string()
     .min(1, "Short description is required")
@@ -49,6 +51,7 @@ export function BlogForm({ blog, onSubmit, onCancel, isSubmitting = false }: Blo
   const form = useForm<BlogFormValues>({
     resolver: zodResolver(blogFormSchema),
     defaultValues: {
+      title: blog?.title || "",
       shortDescription: blog?.shortDescription || "",
       longDescription: blog?.longDescription || "",
       tags: blog?.tags || [],
@@ -67,6 +70,20 @@ export function BlogForm({ blog, onSubmit, onCancel, isSubmitting = false }: Blo
   return (
     <Form {...form}>
       <form onSubmit={(e) => void form.handleSubmit(handleSubmit)(e)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="title"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Title</FormLabel>
+              <FormControl>
+                <Input placeholder="Blog post title" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="shortDescription"

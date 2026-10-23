@@ -16,6 +16,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Valid short description",
             "# Valid Long Description\n\nThis is markdown content.",
             new MemoryStream(),
@@ -32,11 +33,59 @@ public class CreateBlogCommandValidatorTests
         result.Errors.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData(null)]
+    public void Validate_ShouldFail_WhenTitleIsEmpty(string? title)
+    {
+        // Arrange
+        var command = new CreateBlogCommand(
+            title!,
+            "Short description",
+            "Long description",
+            new MemoryStream(),
+            "test.jpg",
+            "image/jpeg",
+            new[] { "Tag1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Title");
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenTitleExceeds200Characters()
+    {
+        // Arrange
+        var title = new string('a', 201);
+        var command = new CreateBlogCommand(
+            title,
+            "Short description",
+            "Long description",
+            new MemoryStream(),
+            "test.jpg",
+            "image/jpeg",
+            new[] { "Tag1" }
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.PropertyName == "Title");
+    }
+
     [Fact]
     public void Validate_ShouldFail_WhenShortDescriptionIsEmpty()
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "",
             "Long description",
             new MemoryStream(),
@@ -59,6 +108,7 @@ public class CreateBlogCommandValidatorTests
         // Arrange
         var longDescription = new string('a', 501);
         var command = new CreateBlogCommand(
+            "Blog title",
             longDescription,
             "Long description",
             new MemoryStream(),
@@ -82,6 +132,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "",
             new MemoryStream(),
@@ -103,6 +154,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             null!,
@@ -124,6 +176,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -152,6 +205,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -177,6 +231,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -204,6 +259,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -228,6 +284,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -249,6 +306,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -270,6 +328,7 @@ public class CreateBlogCommandValidatorTests
     {
         // Arrange
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -294,6 +353,7 @@ public class CreateBlogCommandValidatorTests
         // Arrange
         var tags = Enumerable.Range(1, 11).Select(i => $"Tag{i}").ToArray();
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),
@@ -318,6 +378,7 @@ public class CreateBlogCommandValidatorTests
         // Arrange
         var tags = Enumerable.Range(1, 10).Select(i => $"Tag{i}").ToArray();
         var command = new CreateBlogCommand(
+            "Blog title",
             "Short description",
             "Long description",
             new MemoryStream(),

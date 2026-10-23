@@ -49,6 +49,7 @@ export function matchesFilters(blog: Blog, filters: BlogFilters): boolean {
   const search = filters.search.trim().toLowerCase();
   if (
     search &&
+    !blog.title.toLowerCase().includes(search) &&
     !blog.shortDescription.toLowerCase().includes(search) &&
     !blog.longDescription.toLowerCase().includes(search)
   ) {
