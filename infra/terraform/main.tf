@@ -1,7 +1,7 @@
 # Scaleway Infrastructure Configuration for Clercq.It Portfolio
 
 terraform {
-  required_version = ">= 1.6.1"
+  required_version = ">= 1.6.3"
   required_providers {
     scaleway = {
       source  = "scaleway/scaleway"
@@ -22,12 +22,13 @@ terraform {
     bucket                      = "clercq-it-terraform-state"
     key                         = "portfolio/terraform.tfstate"
     region                      = "fr-par"
-    endpoint                    = "https://s3.fr-par.scw.cloud"
+    endpoints                   = { s3 = "https://s3.fr-par.scw.cloud" }
     skip_credentials_validation = true
     skip_region_validation      = true
     skip_metadata_api_check     = true
     skip_requesting_account_id  = true
-    force_path_style            = true
+    skip_s3_checksum            = true
+    use_path_style              = true
   }
 }
 
