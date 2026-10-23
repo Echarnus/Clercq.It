@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { getApiUrl } from "@/lib/api/baseApi";
+import { PageContainer } from "@/components/page-container";
 
 interface VersionInfo {
   version: string;
@@ -50,8 +51,8 @@ export function Footer() {
 
   return (
     <footer className="bg-slate-900 py-12 text-white dark:bg-slate-950">
-      <div className="container mx-auto px-4">
-        <div className="mx-auto grid max-w-4xl gap-8 md:grid-cols-3">
+      <PageContainer>
+        <div className="grid gap-8 md:grid-cols-3">
           <div>
             <h4 className="mb-4 font-semibold">Featured Projects</h4>
             <ul className="space-y-2 text-slate-300 dark:text-slate-400">
@@ -154,7 +155,7 @@ export function Footer() {
             </p>
           )}
         </div>
-      </div>
+      </PageContainer>
     </footer>
   );
 }

@@ -6,7 +6,10 @@ import { ConditionalLayout } from "@/components/conditional-layout";
 import { StoreProvider } from "@/lib/store/StoreProvider";
 
 export const metadata: Metadata = {
-  title: "Clercqlt - Continuous Development",
+  title: {
+    default: "Clercq.It - Continuous Development",
+    template: "%s | Clercq.It",
+  },
   description:
     "Full Stack Developer specializing in .NET, TypeScript, React, Angular, and Cloud Technologies",
 };
@@ -14,13 +17,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className="font-sans"
-        style={{
-          fontFamily:
-            "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
-        }}
-      >
+      <body className="font-sans">
         <StoreProvider>
           <ThemeProvider
             attribute="class"

@@ -1,42 +1,34 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/page-container";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
-import { ArrowLeft } from "lucide-react";
 import { fetchAllProjects } from "./lib/api";
+
+export const metadata: Metadata = { title: "Portfolio" };
 
 export default async function PortfolioPage() {
   const projects = await fetchAllProjects();
 
   return (
-    <div
-      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
-      style={{ fontFamily: "Arial, sans-serif" }}
-    >
+    <>
       {/* Portfolio Header */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-4xl">
-          <Button asChild variant="ghost" className="mb-8">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
-
-          <h2 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">My Portfolio</h2>
+      <PageContainer as="section" className="py-16">
+        <div className="max-w-3xl">
+          <h1 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">My Portfolio</h1>
           <p className="text-xl leading-relaxed text-slate-600 dark:text-slate-300">
             A collection of projects showcasing my expertise in full-stack development, cloud
             technologies, and modern software architecture. Each project demonstrates different
             aspects of my technical skills and problem-solving approach.
           </p>
         </div>
-      </section>
+      </PageContainer>
 
       {/* Projects Grid */}
-      <section className="container mx-auto px-4 pb-16">
-        <div className="mx-auto max-w-4xl">
-          <div className="grid gap-6">
+      <PageContainer as="section" className="pb-16">
+        <div>
+          <div className="grid gap-6 lg:grid-cols-2">
             {projects.length === 0 ? (
               <div className="py-12 text-center text-slate-600 dark:text-slate-400">
                 No projects found. Check back soon for new portfolio items!
@@ -44,13 +36,13 @@ export default async function PortfolioPage() {
             ) : (
               projects.map((project) => (
                 <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
-                  <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
+                  <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                     <BlurImage
                       src={project.image || "/placeholder.svg"}
                       alt={project.title}
                       width={200}
                       height={200}
-                      containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                      containerClassName="w-full md:w-48 h-48 md:h-auto md:min-h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                     />
 
                     <CardContent className="flex flex-col justify-center p-6 md:flex-1">
@@ -76,7 +68,7 @@ export default async function PortfolioPage() {
             )}
           </div>
         </div>
-      </section>
-    </div>
+      </PageContainer>
+    </>
   );
 }

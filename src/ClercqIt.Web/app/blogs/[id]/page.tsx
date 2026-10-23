@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
@@ -27,33 +28,38 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   };
 
   return (
-    <div
-      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
-      style={{ fontFamily: "Arial, sans-serif" }}
-    >
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-4xl">
-          <Button asChild variant="ghost" className="mb-8">
-            <Link href="/blogs">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Blogs
-            </Link>
-          </Button>
+    <PageContainer as="section" className="py-16">
+      <Button asChild variant="ghost" className="mb-8">
+        <Link href="/blogs">
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Back to Blogs
+        </Link>
+      </Button>
 
-          {/* Blog Header */}
-          <div className="mb-8">
-            <h1 className="mb-4 text-4xl font-bold text-slate-900 dark:text-white">
-              {blog.shortDescription}
-            </h1>
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+        {/* Blog Header */}
+        <h1 className="text-4xl font-bold text-slate-900 lg:col-span-3 dark:text-white">
+          {blog.shortDescription}
+        </h1>
 
-            <div className="flex items-center gap-4 text-slate-600 dark:text-slate-400">
-              <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
-                <span>{formatDate(blog.publishDate)}</span>
-              </div>
+        {/* Blog details */}
+        <aside className="lg:col-start-4 lg:row-span-2 lg:row-start-1">
+          <div className="space-y-4 rounded-lg bg-white/80 p-6 shadow-lg backdrop-blur-xs lg:sticky lg:top-28 dark:bg-slate-800/80">
+            <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
+              <Calendar className="h-4 w-4 shrink-0" />
+              <span>{formatDate(blog.publishDate)}</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {blog.tags.map((tag) => (
+                <Badge key={tag} variant="secondary">
+                  {tag}
+                </Badge>
+              ))}
             </div>
           </div>
+        </aside>
 
+        <article className="lg:col-span-3 lg:row-start-2">
           {/* Blog Content with Image */}
           <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
             <BlurImage
@@ -69,19 +75,10 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
                 <p className="whitespace-pre-line">{blog.longDescription}</p>
               </div>
             </div>
-
-            <div className="clear-both pt-6">
-              <div className="flex flex-wrap gap-2">
-                {blog.tags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
+            <div className="clear-both" />
           </div>
-        </div>
-      </section>
-    </div>
+        </article>
+      </div>
+    </PageContainer>
   );
 }

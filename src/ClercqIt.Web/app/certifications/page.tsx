@@ -1,10 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
+import { PageContainer } from "@/components/page-container";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
-import { ArrowLeft, ExternalLink, Calendar, Building2 } from "lucide-react";
+import { ExternalLink, Calendar, Building2 } from "lucide-react";
 import { fetchAllCertifications } from "./lib/api";
+
+export const metadata: Metadata = { title: "Certifications" };
 
 export default async function CertificationsPage() {
   const certifications = await fetchAllCertifications();
@@ -17,32 +20,22 @@ export default async function CertificationsPage() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
-      style={{ fontFamily: "Arial, sans-serif" }}
-    >
+    <>
       {/* Certifications Header */}
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-4xl">
-          <Button asChild variant="ghost" className="mb-8">
-            <Link href="/">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Home
-            </Link>
-          </Button>
-
-          <h2 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">Certifications</h2>
+      <PageContainer as="section" className="py-16">
+        <div className="max-w-3xl">
+          <h1 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">Certifications</h1>
           <p className="text-xl leading-relaxed text-slate-600 dark:text-slate-300">
             Professional certifications demonstrating expertise in cloud technologies, software
             development, and modern engineering practices.
           </p>
         </div>
-      </section>
+      </PageContainer>
 
       {/* Certifications Grid */}
-      <section className="container mx-auto px-4 pb-16">
-        <div className="mx-auto max-w-4xl">
-          <div className="grid gap-6">
+      <PageContainer as="section" className="pb-16">
+        <div>
+          <div className="grid gap-6 lg:grid-cols-2">
             {certifications.length === 0 ? (
               <div className="py-12 text-center text-slate-600 dark:text-slate-400">
                 No certifications found. Check back soon!
@@ -51,7 +44,7 @@ export default async function CertificationsPage() {
               certifications.map((cert) => (
                 <Card
                   key={cert.id}
-                  className="group border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20"
+                  className="group h-full border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20"
                 >
                   {cert.image ? (
                     <BlurImage
@@ -59,10 +52,10 @@ export default async function CertificationsPage() {
                       alt={cert.title}
                       width={200}
                       height={200}
-                      containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                      containerClassName="w-full md:w-48 h-48 md:h-auto md:min-h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                     />
                   ) : (
-                    <div className="flex h-48 w-full shrink-0 items-center justify-center rounded-t-lg bg-slate-100 md:w-48 md:rounded-l-lg md:rounded-tr-none dark:bg-slate-700/50">
+                    <div className="flex h-48 w-full shrink-0 items-center justify-center rounded-t-lg bg-slate-100 md:h-auto md:min-h-48 md:w-48 md:rounded-l-lg md:rounded-tr-none dark:bg-slate-700/50">
                       <Building2 className="h-12 w-12 text-slate-400" />
                     </div>
                   )}
@@ -115,7 +108,7 @@ export default async function CertificationsPage() {
             )}
           </div>
         </div>
-      </section>
-    </div>
+      </PageContainer>
+    </>
   );
 }

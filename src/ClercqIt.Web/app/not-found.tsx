@@ -1,14 +1,12 @@
 import Link from "next/link";
+import { PageContainer } from "@/components/page-container";
 import { FileQuestion } from "lucide-react";
 
 export default function NotFound() {
   return (
-    <div
-      className="min-h-screen bg-linear-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800"
-      style={{ fontFamily: "Arial, sans-serif" }}
-    >
-      <section className="container mx-auto px-4 py-16">
-        <div className="mx-auto max-w-4xl text-center">
+    <>
+      <PageContainer as="section" className="py-16">
+        <div className="mx-auto max-w-3xl text-center">
           {/* Animated 404 Illustration */}
           <div className="relative mb-8">
             <div className="relative">
@@ -60,7 +58,7 @@ export default function NotFound() {
             </p>
           </div>
         </div>
-      </section>
-    </div>
+      </PageContainer>
+    </>
   );
 }

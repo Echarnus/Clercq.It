@@ -79,15 +79,25 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const paginatedBlogs = filteredBlogs.slice(startIndex, endIndex);
 
-  // Reset to page 1 when filters change
-  if (titleFilter || selectedTags.length > 0 || dateFilter) {
-    if (currentPage !== 1) {
-      setCurrentPage(1);
-    }
-  }
+  // A filter change starts again on page 1. This happens in the handlers, not during render:
+  // resetting during render pinned the list to page 1 while any filter was set.
+  const updateTitleFilter = (value: string) => {
+    setTitleFilter(value);
+    setCurrentPage(1);
+  };
+
+  const updateDateFilter = (value: string) => {
+    setDateFilter(value);
+    setCurrentPage(1);
+  };
+
+  const updateSelectedTags = (update: (prev: string[]) => string[]) => {
+    setSelectedTags(update);
+    setCurrentPage(1);
+  };
 
   const handleTagToggle = (tag: string) => {
-    setSelectedTags((prev) =>
+    updateSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
@@ -188,7 +198,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
 
       {/* Sidebar Filters */}
       <div className="lg:col-span-1">
-        <div className="sticky top-4 space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-28">
           <Card className="bg-white/80 p-6 backdrop-blur-xs dark:bg-slate-800/80">
             <h3 className="mb-4 text-lg font-semibold text-slate-900 dark:text-white">Filters</h3>
 
@@ -202,7 +212,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                 type="text"
                 placeholder="Search blogs..."
                 value={titleFilter}
-                onChange={(e) => setTitleFilter(e.target.value)}
+                onChange={(e) => updateTitleFilter(e.target.value)}
                 className="mt-2"
               />
             </div>
@@ -216,9 +226,9 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                   onValueChange={(year) => {
                     if (year) {
                       const month = dateFilter ? dateFilter.split("-")[1] : "01";
-                      setDateFilter(`${year}-${month}`);
+                      updateDateFilter(`${year}-${month}`);
                     } else {
-                      setDateFilter("");
+                      updateDateFilter("");
                     }
                   }}
                 >
@@ -241,7 +251,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
                   onValueChange={(month) => {
                     if (month && dateFilter) {
                       const year = dateFilter.split("-")[0];
-                      setDateFilter(`${year}-${month}`);
+                      updateDateFilter(`${year}-${month}`);
                     }
                   }}
                   disabled={!dateFilter}
@@ -273,7 +283,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               </div>
               {dateFilter && (
                 <button
-                  onClick={() => setDateFilter("")}
+                  onClick={() => updateDateFilter("")}
                   className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   Clear date filter
@@ -304,7 +314,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               </div>
               {selectedTags.length > 0 && (
                 <button
-                  onClick={() => setSelectedTags([])}
+                  onClick={() => updateSelectedTags(() => [])}
                   className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 >
                   Clear tags
