@@ -19,6 +19,7 @@ The project uses six main workflows:
 7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
 8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
 9. **SAST** (`sast.yml`) - Semgrep and gitleaks on every PR and on `main`, blocking (see [Application security](./application-security.md#static-analysis-sast))
+10. **OpenSSF Scorecard** (`scorecard.yml`) - Scores repository security practices and publishes the result behind the README badge
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md). The rules GitHub enforces on `main` and on release tags, and the weekly audit that checks them, are in [Enforced rules](./contributing.md#enforced-rules).
 
@@ -147,12 +148,6 @@ gh workflow run build.yml
 
 Secret scanning moved to gitleaks in `sast.yml` (see [Application security](./application-security.md#static-analysis-sast)).
 
-#### security-scorecard
-- Runs OpenSSF Scorecard evaluation on pushes to `main` and the daily schedule (not on PRs), with `ossf/scorecard-action` v2.4.4 pinned by commit SHA. Versions before 2.4.2 pull their image from `gcr.io`, which no longer serves it, so the job failed on every run (#286).
-- Assesses security best practices
-- Publishes results to GitHub Security
-- Provides security posture visibility
-
 ### Example
 
 ```bash
@@ -160,6 +155,21 @@ Secret scanning moved to gitleaks in `sast.yml` (see [Application security](./ap
 # Or manually trigger with
 gh workflow run security-scan.yml
 ```
+
+## OpenSSF Scorecard (`scorecard.yml`)
+
+### Triggers
+- Push to `main`, weekly on Monday at 02:30 UTC, branch protection rule changes, and by hand (`gh workflow run scorecard.yml`). Not on PRs.
+
+### What it does
+- Runs `ossf/scorecard-action` v2.5.0, pinned by commit SHA. Versions before 2.4.2 pull their image from `gcr.io`, which no longer serves it (#286).
+- Uploads the SARIF to GitHub code scanning.
+- Publishes the result to scorecard.dev (`publish_results: true`), which feeds the badge in `README.md` and the [viewer](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It).
+
+### Keep this workflow on its own
+scorecard.dev verifies the workflow before it accepts results. The top-level permissions must be read-only (`permissions: read-all`), there must be no top-level `env` or `defaults`, and the Scorecard job may only use `actions/checkout`, `ossf/scorecard-action`, `actions/upload-artifact` and `github/codeql-action/upload-sarif`. Write permissions go on the job only.
+
+Until #350 the job lived in `security-scan.yml`, whose top-level permissions include `security-events: write`. Every upload was rejected with `workflow verification failed: global perm is set to write`, only as a warning, so the job stayed green while the badge showed **invalid repo path**. If the badge breaks again, look for that warning in the "Run OpenSSF Scorecard" step log.
 
 ## CodeQL Analysis Pipeline (`codeql.yml`)
 

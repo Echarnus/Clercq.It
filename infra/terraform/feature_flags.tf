@@ -4,5 +4,8 @@
 variable "feature_flags" {
   description = "Feature flags for the website container. Each becomes the env var FeatureFlags__<Name>."
   type        = map(bool)
-  default     = {}
+  default = {
+    # The owner's MyZen account (docs/myzen.md); also needs the MyZen.Owner role in Cloud IAM.
+    MyZen = true
+  }
 }

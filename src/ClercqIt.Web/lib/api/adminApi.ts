@@ -19,7 +19,7 @@ export type Certification = z.infer<typeof CertificationSchema>;
 
 // Authenticated fetch wrapper: the access token comes from the in-memory
 // sign-in session (lib/auth.ts), never from localStorage.
-async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
+export async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const token = await getAccessToken();
   if (!token) {
     throw new Error("Not authenticated");

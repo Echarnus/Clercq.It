@@ -116,6 +116,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
     options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
     options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
+    // MyZen reaches the owner's own MyZen account, so it has its own role (docs/myzen.md)
+    options.AddPolicy(MyZenEndpoints.OwnerPolicy, policy => policy.RequireRole("MyZen.Owner"));
 });
 
 // Add Clean Architecture layers
@@ -124,6 +126,7 @@ builder.Services.AddFeatureFlags();
 
 // Validation failures from the MediatR pipeline become 400 responses
 builder.Services.AddExceptionHandler<ValidationExceptionHandler>();
+builder.Services.AddExceptionHandler<MyZenExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 // Check if we're running under Aspire (connection string is set by Aspire orchestration)
@@ -140,6 +143,8 @@ else
     // Fallback to traditional connection string
     builder.Services.AddInfrastructure(builder.Configuration, useAspirePostgreSQL: false);
 }
+
+builder.Services.AddHostedService<MyZenKeepAliveService>();
 
 var app = builder.Build();
 
@@ -206,6 +211,7 @@ app.MapImagesEndpoints();
 app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 app.MapCertificationsEndpoints();
+app.MapMyZenEndpoints();
 app.MapFeatureFlagEndpoints();
 
 app.Run();
