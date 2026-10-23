@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Json;
 using FluentAssertions;
 
 namespace ClercqIt.Api.Tests;
@@ -80,6 +81,12 @@ public class EndpointAuthorizationTests(CustomWebApplicationFactory factory)
         response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
+    // MyZen endpoints take a JSON body; any other content type is rejected with 415 before authorization runs.
     private static HttpRequestMessage Request(string method, string path) =>
-        new(new HttpMethod(method), path) { Content = new MultipartFormDataContent() };
+        new(new HttpMethod(method), path)
+        {
+            Content = path.StartsWith("/api/myzen", StringComparison.Ordinal)
+                ? JsonContent.Create(new { })
+                : new MultipartFormDataContent(),
+        };
 }
