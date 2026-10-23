@@ -65,6 +65,10 @@ The long description, in **Markdown**.
 | `image` | no | See [Images](#images) |
 | body | no | Markdown description |
 
+## How bodies render
+
+The site renders bodies as GitHub Flavored Markdown: headings, emphasis, lists, links, code blocks and tables. Raw HTML is shown as text, not rendered. Links to other sites open in a new tab. See [UX and page layout](./ux.md#markdown).
+
 ## Images
 
 `image` can be:

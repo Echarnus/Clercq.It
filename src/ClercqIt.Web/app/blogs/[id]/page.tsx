@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
@@ -5,15 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { fetchBlogById } from "../lib/api";
+import { Markdown } from "@/components/markdown";
 import { notFound } from "next/navigation";
 
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+// The page and its metadata need the same item; cache() fetches it once per request.
+const getBlog = cache(fetchBlogById);
+
+export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const blog = await getBlog(id);
+  return blog ? { title: blog.shortDescription, description: blog.shortDescription } : {};
+}
+
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   const { id } = await params;
-  const blog = await fetchBlogById(id);
+  const blog = await getBlog(id);
 
   if (!blog) {
     notFound();
@@ -71,9 +83,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             />
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
-              <div className="prose dark:prose-invert max-w-none">
-                <p className="whitespace-pre-line">{blog.longDescription}</p>
-              </div>
+              <Markdown>{blog.longDescription}</Markdown>
             </div>
             <div className="clear-both" />
           </div>
