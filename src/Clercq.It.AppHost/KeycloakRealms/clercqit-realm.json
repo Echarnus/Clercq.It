@@ -124,23 +124,6 @@
         "offline_access",
         "microprofile-jwt"
       ]
-    },
-    {
-      "clientId": "clercqit-admin",
-      "name": "Clercq.It Admin Client",
-      "description": "Admin client for direct access grants and token exchange",
-      "enabled": true,
-      "clientAuthenticatorType": "client-secret",
-      "secret": "clercqit-admin-secret-local",
-      "publicClient": false,
-      "bearerOnly": false,
-      "standardFlowEnabled": false,
-      "implicitFlowEnabled": false,
-      "directAccessGrantsEnabled": true,
-      "serviceAccountsEnabled": true,
-      "authorizationServicesEnabled": false,
-      "protocol": "openid-connect",
-      "fullScopeAllowed": true
     }
   ],
   "scopeMappings": [

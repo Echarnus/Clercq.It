@@ -117,7 +117,6 @@ resource "scaleway_container" "portfolio_app" {
     "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web"
-    "Keycloak__AdminClientId"     = "clercqit-admin"
   }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
 
   # Secret values come from Scaleway Secret Manager (secrets.tf) and the
@@ -127,8 +126,6 @@ resource "scaleway_container" "portfolio_app" {
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${local.secrets["db-app-password"]}"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
-    "Keycloak__ClientSecret"               = local.secrets["keycloak-web-client-secret"]
-    "Keycloak__AdminClientSecret"          = local.secrets["keycloak-admin-client-secret"]
   }
 
   tags = [

@@ -11,19 +11,11 @@
 locals {
   verify_secret_path = "/clercq-it/verify"
 
+  # Terraform owns db-password end to end (scaleway_secret_version.verify_db_password).
+  # Admin sign-in uses a public PKCE client, so verify needs no Keycloak secret.
   verify_secret_names = toset([
     "db-password",
-    "keycloak-web-client-secret",
-    "keycloak-admin-client-secret",
   ])
-
-  # Keycloak client secrets for the verify clients cannot be generated here;
-  # the owner replaces the placeholders in the console (docs/devops.md#verify-stage).
-  # db-password is not seeded: Terraform owns it (scaleway_secret_version.verify_db_password).
-  verify_secret_seeds = {
-    "keycloak-web-client-secret"   = "replace-me"
-    "keycloak-admin-client-secret" = "replace-me"
-  }
 
   verify_secrets = { for name, version in data.scaleway_secret_version.verify : name => base64decode(version.data) }
 
@@ -54,19 +46,6 @@ resource "scaleway_secret" "verify" {
   tags        = ["clercq-it", "terraform", "verify"]
 }
 
-resource "scaleway_secret_version" "verify_seed" {
-  for_each = local.verify_secret_seeds
-
-  secret_id   = scaleway_secret.verify[each.key].id
-  region      = var.scaleway_region
-  description = "Initial value seeded by Terraform"
-  data        = local.verify_secret_seeds[each.key]
-
-  lifecycle {
-    ignore_changes = [data, description]
-  }
-}
-
 # Terraform owns the verify database password end to end, so a new
 # random_password writes a new secret version (no ignore_changes here).
 resource "scaleway_secret_version" "verify_db_password" {
@@ -83,7 +62,7 @@ data "scaleway_secret_version" "verify" {
   region    = var.scaleway_region
   revision  = "latest_enabled"
 
-  depends_on = [scaleway_secret_version.verify_seed, scaleway_secret_version.verify_db_password]
+  depends_on = [scaleway_secret_version.verify_db_password]
 }
 
 # Separate database and user on the production instance
@@ -189,7 +168,6 @@ resource "scaleway_container" "verify_app" {
     "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web-verify"
-    "Keycloak__AdminClientId"     = "clercqit-admin-verify"
   }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
 
   secret_environment_variables = {
@@ -197,8 +175,6 @@ resource "scaleway_container" "verify_app" {
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.verify_storage.secret_key
     "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=${scaleway_rdb_database.verify.name};Username=${local.verify_db_user};Password=${local.verify_secrets["db-password"]}"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.verify_logs_token.secret_key}"
-    "Keycloak__ClientSecret"               = local.verify_secrets["keycloak-web-client-secret"]
-    "Keycloak__AdminClientSecret"          = local.verify_secrets["keycloak-admin-client-secret"]
   }
 
   tags = [

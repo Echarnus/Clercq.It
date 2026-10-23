@@ -13,7 +13,6 @@ scaleway_region          = "fr-par"
 # placeholders you replace in the Scaleway console.
 keycloak_base_url            = "https://lemur-16.cloud-iam.com/auth"
 keycloak_realm               = "clercqit"
-keycloak_web_client_secret   = "your-clercqit-web-client-secret"
 keycloak_admin_client_secret = "your-clercqit-admin-client-secret"
 
 # Application Configuration

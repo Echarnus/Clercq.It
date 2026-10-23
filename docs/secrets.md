@@ -11,8 +11,9 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 | `db-app-password` | RDB admin and `clercqit_user` passwords, web/API container connection string | `TF_VAR_database_password` (GitHub `DATABASE_PASSWORD`), else generated |
 | `db-administration-password` | `admin_app_user` password, administration API connection string | `TF_VAR_administration_database_password`, else generated |
 | `keycloak-base-url` | `Keycloak__BaseUrl` on both containers (current value: `https://lemur-16.cloud-iam.com/auth`, see [ciam.md](./ciam.md#current-deployment)) | `TF_VAR_keycloak_base_url`, else a placeholder |
-| `keycloak-web-client-secret` | `Keycloak__ClientSecret` on the web/API container | `TF_VAR_keycloak_web_client_secret`, else a placeholder |
-| `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on both containers | `TF_VAR_keycloak_admin_client_secret`, else a placeholder |
+| `keycloak-admin-client-secret` | `Keycloak__ClientSecret` and `Keycloak__AdminClientSecret` on the `administration-api` container only | `TF_VAR_keycloak_admin_client_secret`, else a placeholder |
+
+The site signs admins in with the public PKCE client `clercqit-web`, so the web/API container gets no Keycloak secret. The old `keycloak-web-client-secret` was removed (#346); the GitHub secret `KEYCLOAK_WEB_CLIENT_SECRET` is no longer read and can be deleted.
 
 ### Verify environment (path `/clercq-it/verify`)
 
@@ -21,10 +22,8 @@ The verify stage (see [DevOps](./devops.md#verify-stage)) has its own secrets, c
 | Name (path `/clercq-it/verify`) | Used by | First value comes from |
 | --- | --- | --- |
 | `db-password` | `clercqit_verify_user` password, verify connection string, verify migrations in `deploy.yml` | generated |
-| `keycloak-web-client-secret` | `Keycloak__ClientSecret` on `clercq-it-verify` (client `clercqit-web-verify`) | placeholder, owner replaces it |
-| `keycloak-admin-client-secret` | `Keycloak__AdminClientSecret` on `clercq-it-verify` (client `clercqit-admin-verify`) | placeholder, owner replaces it |
 
-`db-password` is fully Terraform-owned: `random_password.db_verify` writes it as a secret version without `ignore_changes`, so do not edit it in the console (the next apply overwrites it). Scaleway RDB requires at least one digit, uppercase, lowercase and special character; the special characters are limited to `!#%*-_+.` so the value stays safe unquoted in an Npgsql connection string and in `PGPASSWORD`. The Keycloak secrets are only seeded once and then ignored by Terraform.
+`db-password` is fully Terraform-owned: `random_password.db_verify` writes it as a secret version without `ignore_changes`, so do not edit it in the console (the next apply overwrites it). Scaleway RDB requires at least one digit, uppercase, lowercase and special character; the special characters are limited to `!#%*-_+.` so the value stays safe unquoted in an Npgsql connection string and in `PGPASSWORD`. Verify has no Keycloak secret: its client `clercqit-web-verify` is public, like `clercqit-web`.
 
 The verify container also has its own object storage key (IAM application `clercq-it-verify-storage`) and Cockpit token (`verify-container-logs`).
 
