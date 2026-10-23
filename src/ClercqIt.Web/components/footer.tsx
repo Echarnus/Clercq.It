@@ -56,24 +56,21 @@ export function Footer() {
           <div>
             <h4 className="mb-4 font-semibold">Featured Projects</h4>
             <ul className="space-y-2 text-slate-300 dark:text-slate-400">
-              {featuredProjects.length > 0 ? (
-                featuredProjects.map((project) => (
-                  <li key={project.id}>
-                    <Link
-                      href={`/portfolio/${project.id}`}
-                      className="transition-colors hover:text-white"
-                    >
-                      {project.title}
-                    </Link>
-                  </li>
-                ))
-              ) : (
-                <li>
-                  <Link href="/portfolio" className="transition-colors hover:text-white">
-                    View All Projects
+              {featuredProjects.map((project) => (
+                <li key={project.id}>
+                  <Link
+                    href={`/portfolio/${project.id}`}
+                    className="transition-colors hover:text-white"
+                  >
+                    {project.title}
                   </Link>
                 </li>
-              )}
+              ))}
+              <li>
+                <Link href="/portfolio" className="transition-colors hover:text-white">
+                  View all projects
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

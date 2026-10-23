@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import { cache } from "react";
 import Link from "next/link";
 import { PageContainer } from "@/components/page-container";
 import { Button } from "@/components/ui/button";
@@ -5,15 +7,25 @@ import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { fetchProjectById } from "../lib/api";
+import { Markdown } from "@/components/markdown";
 import { notFound } from "next/navigation";
 
 interface PortfolioDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
+// The page and its metadata need the same item; cache() fetches it once per request.
+const getProject = cache(fetchProjectById);
+
+export async function generateMetadata({ params }: PortfolioDetailPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const project = await getProject(id);
+  return project ? { title: project.title, description: project.shortDescription } : {};
+}
+
 export default async function PortfolioDetailPage({ params }: PortfolioDetailPageProps) {
   const { id } = await params;
-  const project = await fetchProjectById(id);
+  const project = await getProject(id);
 
   if (!project) {
     notFound();
@@ -74,9 +86,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               <p className="mb-4 text-lg">{project.shortDescription}</p>
-              <div className="prose dark:prose-invert max-w-none">
-                <p className="whitespace-pre-line">{project.longDescription}</p>
-              </div>
+              <Markdown>{project.longDescription}</Markdown>
             </div>
             <div className="clear-both" />
           </div>

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageContainer } from "@/components/page-container";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Markdown } from "@/components/markdown";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ExternalLink, Calendar, Building2 } from "lucide-react";
@@ -79,9 +80,9 @@ export default async function CertificationsPage() {
                     </div>
 
                     {cert.description && (
-                      <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
+                      <Markdown className="prose-sm mb-4 text-slate-600 dark:text-slate-400">
                         {cert.description}
-                      </CardDescription>
+                      </Markdown>
                     )}
 
                     <div className="flex flex-wrap items-center gap-3">

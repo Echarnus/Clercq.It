@@ -23,6 +23,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 import type { Blog } from "./lib/api";
+import { getArchive, matchesFilters, MONTH_NAMES } from "./lib/filters";
 
 interface BlogsContentProps {
   blogs: Blog[];
@@ -34,7 +35,8 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [titleFilter, setTitleFilter] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [dateFilter, setDateFilter] = useState("");
+  const [yearFilter, setYearFilter] = useState("");
+  const [monthFilter, setMonthFilter] = useState("");
 
   // Get all unique tags from blogs
   const allTags = useMemo(() => {
@@ -43,35 +45,22 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
     return Array.from(tags).sort();
   }, [blogs]);
 
-  // Filter blogs
-  const filteredBlogs = useMemo(() => {
-    return blogs.filter((blog) => {
-      // Filter by title
-      if (titleFilter && !blog.shortDescription.toLowerCase().includes(titleFilter.toLowerCase())) {
-        return false;
-      }
+  // Only offer the years and months that have posts.
+  const archive = useMemo(() => getArchive(blogs), [blogs]);
+  const monthsOfYear = archive.find((entry) => entry.year === yearFilter)?.months ?? [];
 
-      // Filter by tags
-      if (selectedTags.length > 0) {
-        const hasTag = selectedTags.some((tag) => blog.tags.includes(tag));
-        if (!hasTag) return false;
-      }
-
-      // Filter by date (year/month)
-      if (dateFilter) {
-        const blogDate = new Date(blog.publishDate);
-        const filterDate = new Date(dateFilter);
-        if (
-          blogDate.getFullYear() !== filterDate.getFullYear() ||
-          blogDate.getMonth() !== filterDate.getMonth()
-        ) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [blogs, titleFilter, selectedTags, dateFilter]);
+  const filteredBlogs = useMemo(
+    () =>
+      blogs.filter((blog) =>
+        matchesFilters(blog, {
+          search: titleFilter,
+          tags: selectedTags,
+          year: yearFilter,
+          month: monthFilter,
+        }),
+      ),
+    [blogs, titleFilter, selectedTags, yearFilter, monthFilter],
+  );
 
   // Paginate blogs
   const totalPages = Math.ceil(filteredBlogs.length / ITEMS_PER_PAGE);
@@ -86,8 +75,15 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
     setCurrentPage(1);
   };
 
-  const updateDateFilter = (value: string) => {
-    setDateFilter(value);
+  // A new year clears the month: that month may have no posts in the new year.
+  const updateYearFilter = (year: string) => {
+    setYearFilter(year);
+    setMonthFilter("");
+    setCurrentPage(1);
+  };
+
+  const updateMonthFilter = (month: string) => {
+    setMonthFilter(month);
     setCurrentPage(1);
   };
 
@@ -210,7 +206,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               <Input
                 id="title-filter"
                 type="text"
-                placeholder="Search blogs..."
+                placeholder="Search posts..."
                 value={titleFilter}
                 onChange={(e) => updateTitleFilter(e.target.value)}
                 className="mt-2"
@@ -218,78 +214,49 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
             </div>
 
             {/* Date Filter */}
-            <div className="mb-6">
-              <Label className="text-slate-700 dark:text-slate-300">Filter by Month</Label>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                <Select
-                  value={dateFilter ? dateFilter.split("-")[0] : ""}
-                  onValueChange={(year) => {
-                    if (year) {
-                      const month = dateFilter ? dateFilter.split("-")[1] : "01";
-                      updateDateFilter(`${year}-${month}`);
-                    } else {
-                      updateDateFilter("");
-                    }
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Year" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from({ length: 10 }, (_, i) => {
-                      const year = new Date().getFullYear() - i;
-                      return (
-                        <SelectItem key={year} value={year.toString()}>
+            {archive.length > 0 && (
+              <div className="mb-6">
+                <Label className="text-slate-700 dark:text-slate-300">Filter by date</Label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Select value={yearFilter} onValueChange={updateYearFilter}>
+                    <SelectTrigger aria-label="Year">
+                      <SelectValue placeholder="Year" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {archive.map(({ year }) => (
+                        <SelectItem key={year} value={year}>
                           {year}
                         </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={dateFilter ? dateFilter.split("-")[1] : ""}
-                  onValueChange={(month) => {
-                    if (month && dateFilter) {
-                      const year = dateFilter.split("-")[0];
-                      updateDateFilter(`${year}-${month}`);
-                    }
-                  }}
-                  disabled={!dateFilter}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Month" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      "Jan",
-                      "Feb",
-                      "Mar",
-                      "Apr",
-                      "May",
-                      "Jun",
-                      "Jul",
-                      "Aug",
-                      "Sep",
-                      "Oct",
-                      "Nov",
-                      "Dec",
-                    ].map((month, i) => (
-                      <SelectItem key={month} value={String(i + 1).padStart(2, "0")}>
-                        {month}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={monthFilter}
+                    onValueChange={updateMonthFilter}
+                    disabled={!yearFilter}
+                  >
+                    <SelectTrigger aria-label="Month">
+                      <SelectValue placeholder="Any month" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {monthsOfYear.map((month) => (
+                        <SelectItem key={month} value={month}>
+                          {MONTH_NAMES[Number(month) - 1]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                {yearFilter && (
+                  <button
+                    onClick={() => updateYearFilter("")}
+                    className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+                  >
+                    Clear date filter
+                  </button>
+                )}
               </div>
-              {dateFilter && (
-                <button
-                  onClick={() => updateDateFilter("")}
-                  className="mt-2 text-sm text-slate-600 underline hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
-                >
-                  Clear date filter
-                </button>
-              )}
-            </div>
+            )}
 
             {/* Tags Filter */}
             <div>

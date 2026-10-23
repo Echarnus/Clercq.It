@@ -38,13 +38,21 @@ Fixed in #356:
 | Phone: the closed menu's shadow showed on the right edge | Shadow only while the menu is open |
 | "Back to Home" duplicated the nav on top-level pages | Removed there |
 
-Open findings, not fixed yet:
+Fixed in #367:
 
-- Blog posts have no title field: the short description is used as the title on cards and detail pages.
-- Detail pages have no per-item browser title (they need `generateMetadata`, which fetches the item a second time).
-- Blog and project bodies render as plain text with `whitespace-pre-line`, so Markdown in content files is not rendered.
-- Blog filters: the month list ignores which months have posts, and the search only matches the short description.
-- The footer's Featured Projects column falls back to "View All Projects" until the client-side fetch returns.
+| Finding | Fix |
+| --- | --- |
+| Markdown bodies showed as plain text (`**bold**`, raw links); `prose` classes had no plugin | `Markdown` component (`react-markdown` + `remark-gfm`) and `@tailwindcss/typography` |
+| Detail pages had no browser title of their own | `generateMetadata` on blog and project pages, sharing the fetch through React `cache` |
+| Blog date filter offered ten years and twelve months, with or without posts; picking a year alone filtered to January | Years and months come from the posts; the month is optional |
+| Blog search only matched the short description | Search matches the short description and the body |
+| Footer "Featured Projects" swapped its only link for the list once loaded | The list loads above a fixed "View all projects" link |
+
+Open: blog posts have no title field; the short description is used as the title (#368).
+
+## Markdown
+
+Bodies of projects, blog posts and certifications render through `src/ClercqIt.Web/components/markdown.tsx`: GitHub Flavored Markdown (tables, task lists, strikethrough), styled with the Tailwind typography plugin. Raw HTML in a body is shown as text, never rendered. Links to other sites open in a new tab.
 
 ## Checking a layout change
 
