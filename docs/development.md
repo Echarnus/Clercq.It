@@ -245,7 +245,7 @@ Agents work in a Claude Code cloud container. `.claude/hooks/session-start.sh` (
 | Tool | How it is installed | Why |
 | --- | --- | --- |
 | .NET SDK 10 (`dotnet-sdk-10.0` from Ubuntu) | `apt-get` | Microsoft's .NET download hosts are blocked by the environment's network policy. The projects target `net10.0`, so this is the same SDK CI and Docker use. |
-| Terraform 1.6.6 | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
+| Terraform 1.6.6 or newer (CI uses 1.17.0) | zip from releases.hashicorp.com | `terraform fmt` / `validate` on infra changes |
 | Scaleway CLI 2.40.0 (pinned) | binary from GitHub releases | Reading secrets from Scaleway Secret Manager |
 | NuGet and pnpm packages | `dotnet restore` (API and test projects, never the Aspire AppHost) and `pnpm install --frozen-lockfile` | Builds and tests run without further setup |
 
