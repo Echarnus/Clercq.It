@@ -113,7 +113,7 @@ The realm includes the following test users for local development:
 
 | Username   | Password   | Email                | Roles                                                                      |
 |------------|------------|----------------------|----------------------------------------------------------------------------|
-| `admin`    | `admin`    | admin@clercq.it      | Admin.View, Blogs.Contributor, Projects.Contributor, Certifications.Contributor |
+| `admin`    | `admin`    | admin@clercq.it      | Admin.View, Blogs.Contributor, Projects.Contributor, Certifications.Contributor, MyZen.Owner |
 | `blogger`  | `blogger`  | blogger@clercq.it    | Admin.View, Blogs.Contributor                                              |
 | `projects` | `projects` | projects@clercq.it   | Admin.View, Projects.Contributor                                           |
 | `certs`    | `certs`    | certs@clercq.it      | Admin.View, Certifications.Contributor                                     |

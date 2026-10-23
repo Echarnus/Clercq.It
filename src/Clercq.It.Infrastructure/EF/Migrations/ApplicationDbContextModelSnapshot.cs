@@ -17,7 +17,7 @@ namespace Clercq.It.Infrastructure.EF.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.9")
+                .HasAnnotation("ProductVersion", "10.0.13")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -131,6 +131,33 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Projects", (string)null);
+                });
+
+            modelBuilder.Entity("Clercq.It.Infrastructure.MyZen.MyZenSessionRecord", b =>
+                {
+                    b.Property<int>("Id")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("ConnectedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("LastSeenAlive")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<byte[]>("Payload")
+                        .HasColumnType("bytea");
+
+                    b.Property<string>("State")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MyZenSessions", (string)null);
                 });
 
             modelBuilder.Entity("Clercq.It.Domain.Entities.Blog", b =>

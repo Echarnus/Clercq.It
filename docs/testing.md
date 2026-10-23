@@ -69,13 +69,13 @@ Open `coverage/report/index.html` for line-by-line coverage.
 
 | User | Roles | Use it for |
 | --- | --- | --- |
-| `admin` | all | |
+| `admin` | all, including `MyZen.Owner` | MyZen endpoints (`MyZenEndpointTests` mocks the MyZen gateway) |
 | `blogger` | `Admin.View`, `Blogs.Contributor` | blogs and images |
 | `projects` | `Admin.View`, `Projects.Contributor` | projects |
 | `certs` | `Admin.View`, `Certifications.Contributor` | certifications |
 | `test` | none | 403 tests |
 
-Only object storage is faked (a Moq `IObjectStorageService` that returns `CustomWebApplicationFactory.FakeImageUrl`). Each request gets its own client IP, so the per-IP rate limits don't trip in a run; rate limiting itself is not tested here.
+Only object storage is faked (a Moq `IObjectStorageService` that returns `CustomWebApplicationFactory.FakeImageUrl`). MyZen itself is never called: its client is tested without Docker against a scripted MyZen (`tests/ClercqIt.Api.Tests/MyZen/MyZenGatewayTests.cs`). Each request gets its own client IP, so the per-IP rate limits don't trip in a run; rate limiting itself is not tested here.
 
 Running them needs Docker:
 
@@ -139,11 +139,11 @@ pnpm test:coverage      # with the coverage gate CI uses; HTML report in coverag
 
 The `Test Next.js Frontend` job runs `pnpm test:coverage` and fails below the thresholds in `vitest.config.mts`. It uploads the report as the `frontend-coverage` artifact.
 
-Starting thresholds (21 October 2026, measured coverage rounded down) over `lib/`, `hooks/` and `components/` (without `components/ui/`):
+Thresholds over `lib/`, `hooks/` and `components/` (without `components/ui/`), measured coverage rounded down. Started 21 October 2026; raised 23 October 2026 with the MyZen tab (#345):
 
 | Scope | Lines | Branches | Functions | Statements |
 | --- | ---: | ---: | ---: | ---: |
 | `lib/api/**` | 100% | 95% | 100% | 99% |
-| Total | 56% | 47% | 43% | 56% |
+| Total | 63% | 56% | 52% | 63% |
 
 The same ratchet rule as the backend applies: raise the numbers when coverage rises, and never lower one without a reason in the PR body.

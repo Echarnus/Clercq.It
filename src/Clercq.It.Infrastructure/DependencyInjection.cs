@@ -1,13 +1,16 @@
 using Amazon.Runtime;
 using Amazon.S3;
+using Clercq.It.Application.Features.MyZen;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Infrastructure.Configuration;
 using Clercq.It.Infrastructure.Data;
+using Clercq.It.Infrastructure.MyZen;
 using Clercq.It.Infrastructure.Repositories;
 using Clercq.It.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Clercq.It.Infrastructure;
 
@@ -65,6 +68,15 @@ public static class DependencyInjection
 
         // Always register the service (even if credentials are missing for tests)
         services.AddScoped<IObjectStorageService, ObjectStorageService>();
+
+        // MyZen: the owner's own MyZen account (issue #345, docs/myzen.md)
+        var myZenSection = configuration.GetSection(MyZenOptions.SectionName);
+        services.Configure<MyZenOptions>(opts => myZenSection.Bind(opts));
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<MyZenSessionLock>();
+        services.AddSingleton<IMyZenHttpHandlerFactory, MyZenHttpHandlerFactory>();
+        services.AddScoped<IMyZenSessionStore, EfMyZenSessionStore>();
+        services.AddScoped<IMyZenGateway, MyZenGateway>();
 
         return services;
     }
