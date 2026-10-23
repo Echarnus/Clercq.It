@@ -142,7 +142,7 @@ The build workflow generates an idempotent migration SQL script:
     dotnet ef migrations script --idempotent --output ../../migration.sql --startup-project ../ClercqIt.Api
 
 - name: Upload migration script as artifact
-  uses: actions/upload-artifact@v4
+  uses: actions/upload-artifact@v7
   with:
     name: migration-script
     path: migration.sql
@@ -159,7 +159,7 @@ The deploy workflow executes the migration script on the production database. Mi
   if: >-
     github.event_name == 'workflow_run' &&
     github.event.workflow_run.name == 'build'
-  uses: actions/download-artifact@v4
+  uses: actions/download-artifact@v8
   with:
     name: migration-script
     github-token: ${{ secrets.GITHUB_TOKEN }}
