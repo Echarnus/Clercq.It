@@ -78,8 +78,9 @@ ARG BUILD_DATE=unknown
 
 # Take the Debian security updates released since the base image was built
 # (Trivy blocks on fixable HIGH/CRITICAL findings, issue #281), and install
-# curl for health checks.
-RUN apt-get update && apt-get upgrade -y && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# curl for health checks and ICU for .NET globalization. The .NET API fails
+# fast at startup without ICU; bookworm happened to ship it, trixie does not (#383).
+RUN apt-get update && apt-get upgrade -y && apt-get install -y curl libicu76 && rm -rf /var/lib/apt/lists/*
 
 # Copy .NET runtime from Microsoft's runtime image
 COPY --from=mcr.microsoft.com/dotnet/aspnet:10.0 /usr/share/dotnet /usr/share/dotnet
