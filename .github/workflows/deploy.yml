@@ -51,7 +51,7 @@ jobs:
 
       - name: Download version artifact
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: version
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -144,7 +144,7 @@ jobs:
         if: >-
           github.event_name == 'workflow_run' &&
           github.event.workflow_run.name == 'build'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: migration-script
           github-token: ${{ secrets.GITHUB_TOKEN }}
