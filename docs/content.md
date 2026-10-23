@@ -74,6 +74,14 @@ The long description, in **Markdown**.
 
 Paths outside `content/` are rejected.
 
+## What is in `content/` now
+
+- `content/projects/`: the ClercqIt site itself, plus past assignments taken from Kenneth's LinkedIn profile (issue #360): Certia, Project Pica, the dotNET lab assignments at Fluvius, Elia and Gosselin Group, Aucxis, ORIS, ALSIC and the BNP Paribas Fortis internship. Certia, Project Pica, Fluvius and ClercqIt are `featured`.
+- `content/certifications/`: AZ-204 (Microsoft Certified: Azure Developer Associate) and two U2U courses.
+- `content/images/logos/`: one SVG tile per project and certification (initials, name and a colour). They are made for this site, not copies of the companies' official logos. To use a real logo, add the file under `content/images/` and point the item's `image` field at it.
+
+Ongoing assignments have no "present" value yet: their `endDate` is the date they were last updated. Bump it when you edit the file.
+
 ## How the import runs
 
 - Code: `src/Clercq.It.ContentImport` (a console app), tests in `tests/Clercq.It.ContentImport.Tests`.

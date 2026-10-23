@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400" viewBox="0 0 400 400" role="img" aria-label="Gosselin Group">
+  <rect width="400" height="400" rx="48" fill="#b91c1c"/>
+  <circle cx="200" cy="170" r="110" fill="#ffffff" fill-opacity="0.12"/>
+  <g font-family="Inter, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="700">
+  <text x="200" y="170" dy="0.35em" font-size="150" fill="#ffffff" text-anchor="middle">G</text>
+  <text x="200" y="300" font-size="30" fill="#ffffff" text-anchor="middle">Gosselin Group</text>
+  <text x="200" y="330" font-size="20" fill="#ffffff" fill-opacity="0.8" text-anchor="middle">via dotNET lab</text>
+  </g>
+</svg>
