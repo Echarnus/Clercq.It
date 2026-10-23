@@ -12,8 +12,15 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 | `db-administration-password` | `admin_app_user` password, administration API connection string | `TF_VAR_administration_database_password`, else generated |
 | `keycloak-base-url` | `Keycloak__BaseUrl` on both containers (current value: `https://lemur-16.cloud-iam.com/auth`, see [ciam.md](./ciam.md#current-deployment)) | `TF_VAR_keycloak_base_url`, else a placeholder |
 | `keycloak-admin-client-secret` | `Keycloak__ClientSecret` and `Keycloak__AdminClientSecret` on the `administration-api` container only | `TF_VAR_keycloak_admin_client_secret`, else a placeholder |
+| `myzen-session-key` | `MyZen__SessionKey` on the web/API container; encrypts the stored MyZen session ([MyZen](./myzen.md)) | generated |
 
 The site signs admins in with the public PKCE client `clercqit-web`, so the web/API container gets no Keycloak secret. The old `keycloak-web-client-secret` was removed (#346); the GitHub secret `KEYCLOAK_WEB_CLIENT_SECRET` is no longer read and can be deleted.
+
+One secret is created by the owner, not Terraform, and only read by it:
+
+| Name | Used by | Value |
+| --- | --- | --- |
+| `myzen-login` (type Username/password) | `MyZen__Email` and `MyZen__Password` on the web/API container ([MyZen](./myzen.md)) | The owner's MyZen login, set in the console. Terraform reads the latest enabled version; to change it, add a new version and run **Deploy Infra**. |
 
 ### Verify environment (path `/clercq-it/verify`)
 

@@ -71,7 +71,7 @@ internal static class KeycloakUserSeeder
         var users = new[]
         {
             new TestUser("admin", "admin", "admin@clercq.it", "Admin", "User",
-                ["Admin.View", "Blogs.Contributor", "Projects.Contributor", "Certifications.Contributor"]),
+                ["Admin.View", "Blogs.Contributor", "Projects.Contributor", "Certifications.Contributor", "MyZen.Owner"]),
             new TestUser("blogger", "blogger", "blogger@clercq.it", "Blog", "Contributor",
                 ["Admin.View", "Blogs.Contributor"]),
             new TestUser("projects", "projects", "projects@clercq.it", "Project", "Contributor",

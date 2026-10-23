@@ -21,6 +21,7 @@ locals {
     # Only read by the administration-api container; the site itself uses a
     # public PKCE client and needs no Keycloak secret (#257, #346).
     "keycloak-admin-client-secret",
+    "myzen-session-key",
   ])
 
   # Seed values used only when a secret is created. Values that cannot be
@@ -30,6 +31,7 @@ locals {
     "db-administration-password"   = coalesce(var.administration_database_password, random_password.db_administration.result)
     "keycloak-base-url"            = coalesce(var.keycloak_base_url, "https://replace-me.cloud-iam.com/auth")
     "keycloak-admin-client-secret" = coalesce(var.keycloak_admin_client_secret, "replace-me")
+    "myzen-session-key"            = random_password.myzen_session_key.result
   }
 
   # Values read back from Secret Manager (latest enabled version).
@@ -43,6 +45,13 @@ resource "random_password" "db_app" {
 
 resource "random_password" "db_administration" {
   length  = 32
+  special = false
+}
+
+# Encrypts the stored MyZen session cookies (docs/myzen.md). Rotating it only
+# forces the owner to reconnect MyZen.
+resource "random_password" "myzen_session_key" {
+  length  = 48
   special = false
 }
 
@@ -79,4 +88,23 @@ data "scaleway_secret_version" "app" {
   revision  = "latest_enabled"
 
   depends_on = [scaleway_secret_version.seed]
+}
+
+# The owner's MyZen login (docs/myzen.md). The owner created this Username/password
+# secret by hand, so Terraform only reads it: its value is JSON with "username"
+# and "password". To change the login, add a new version in the console.
+data "scaleway_secret" "myzen_login" {
+  name       = "myzen-login"
+  region     = var.scaleway_region
+  project_id = var.scaleway_project_id
+}
+
+data "scaleway_secret_version" "myzen_login" {
+  secret_id = data.scaleway_secret.myzen_login.id
+  region    = var.scaleway_region
+  revision  = "latest_enabled"
+}
+
+locals {
+  myzen_login = jsondecode(base64decode(data.scaleway_secret_version.myzen_login.data))
 }

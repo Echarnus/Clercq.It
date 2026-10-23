@@ -5,18 +5,21 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, FileText, FolderKanban, Settings, BarChart3, Award } from "lucide-react";
+import { LogOut, FileText, FolderKanban, Settings, BarChart3, Award, Clock } from "lucide-react";
 import { BlogList } from "@/components/admin/BlogList";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { CertificationList } from "@/components/admin/CertificationList";
+import { MyZenPanel } from "@/components/admin/MyZenPanel";
 import { fetchAllBlogs, fetchAllProjects, fetchAllCertifications } from "@/lib/api/adminApi";
 import { claimsOf, getUser, signIn, signOut } from "@/lib/auth";
+import { isEnabled } from "@/lib/featureFlags";
 
 interface UserRoles {
   hasAdminView: boolean;
   hasBlogsContributor: boolean;
   hasProjectsContributor: boolean;
   hasCertificationsContributor: boolean;
+  hasMyZenOwner: boolean;
 }
 
 export default function AdminDashboard() {
@@ -27,7 +30,9 @@ export default function AdminDashboard() {
     hasBlogsContributor: false,
     hasProjectsContributor: false,
     hasCertificationsContributor: false,
+    hasMyZenOwner: false,
   });
+  const [myZenEnabled, setMyZenEnabled] = useState(false);
   const [username, setUsername] = useState<string>("");
   const [stats, setStats] = useState({ blogs: 0, projects: 0, certifications: 0 });
 
@@ -50,6 +55,7 @@ export default function AdminDashboard() {
       }
     };
     void loadStats();
+    void isEnabled("MyZen").then(setMyZenEnabled);
   }, []);
 
   useEffect(() => {
@@ -70,6 +76,7 @@ export default function AdminDashboard() {
         hasBlogsContributor: roles.includes("Blogs.Contributor"),
         hasProjectsContributor: roles.includes("Projects.Contributor"),
         hasCertificationsContributor: roles.includes("Certifications.Contributor"),
+        hasMyZenOwner: roles.includes("MyZen.Owner"),
       });
       setIsAuthenticated(true);
     };
@@ -81,6 +88,8 @@ export default function AdminDashboard() {
       cancelled = true;
     };
   }, [router]);
+
+  const showMyZen = myZenEnabled && userRoles.hasMyZenOwner;
 
   const handleLogout = () => {
     void signOut();
@@ -152,7 +161,7 @@ export default function AdminDashboard() {
           <TabsList
             className="grid w-full lg:w-auto"
             style={{
-              gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasCertificationsContributor, userRoles.hasAdminView].filter(Boolean).length}, 1fr)`,
+              gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasCertificationsContributor, showMyZen, userRoles.hasAdminView].filter(Boolean).length}, 1fr)`,
             }}
           >
             {userRoles.hasAdminView && (
@@ -177,6 +186,12 @@ export default function AdminDashboard() {
               <TabsTrigger value="certifications">
                 <Award className="mr-2 h-4 w-4" />
                 Certifications
+              </TabsTrigger>
+            )}
+            {showMyZen && (
+              <TabsTrigger value="myzen">
+                <Clock className="mr-2 h-4 w-4" />
+                MyZen
               </TabsTrigger>
             )}
             {userRoles.hasAdminView && (
@@ -311,6 +326,23 @@ export default function AdminDashboard() {
             </TabsContent>
           )}
 
+          {/* MyZen Tab: the owner's own MyZen account (docs/myzen.md) */}
+          {showMyZen && (
+            <TabsContent value="myzen" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>MyZen</CardTitle>
+                  <CardDescription>
+                    Connect your MyZen account and see this month&apos;s time entries
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <MyZenPanel />
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
           {/* Settings Tab */}
           {userRoles.hasAdminView && (
             <TabsContent value="settings" className="space-y-6">
@@ -333,6 +365,7 @@ export default function AdminDashboard() {
                       {userRoles.hasBlogsContributor && "Blogs.Contributor "}
                       {userRoles.hasProjectsContributor && "Projects.Contributor "}
                       {userRoles.hasCertificationsContributor && "Certifications.Contributor "}
+                      {userRoles.hasMyZenOwner && "MyZen.Owner "}
                     </p>
                   </div>
                   <div className="space-y-2">
