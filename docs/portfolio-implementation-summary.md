@@ -34,7 +34,7 @@ This implementation adds a complete portfolio feature to the Clercq.It applicati
 - Click on any project to navigate to detail page
 - Responsive grid layout
 
-#### Portfolio Detail Page (`/portfolio/[id]`)
+#### Portfolio Detail Page (`/portfolio/[slug]`)
 - Server-side rendered project details
 - Full project information including:
   - Title and description
@@ -43,7 +43,7 @@ This implementation adds a complete portfolio feature to the Clercq.It applicati
   - Project image
   - Long description
 - Back navigation to portfolio list
-- Returns 404 for invalid project IDs
+- Returns 404 for unknown projects; old GUID URLs redirect permanently ([SEO](./seo.md))
 
 #### Home Page Featured Projects
 - Server-side rendered featured projects
@@ -61,7 +61,7 @@ lib/api/
 
 app/portfolio/
 ├── page.tsx              # Portfolio list (SSR)
-├── [id]/
+├── [slug]/
 │   └── page.tsx          # Portfolio detail (SSR)
 └── lib/
     └── api.ts            # SSR-specific wrappers
@@ -152,7 +152,7 @@ NEXT_PUBLIC_API_URL=http://localhost:5035
 - `src/ClercqIt.Web/app/layout.tsx` - Added Redux provider
 - `src/ClercqIt.Web/app/home/page.tsx` - Fetch featured projects from API
 - `src/ClercqIt.Web/app/portfolio/page.tsx` - Fetch all projects from API
-- `src/ClercqIt.Web/app/portfolio/[id]/page.tsx` - New detail page
+- `src/ClercqIt.Web/app/portfolio/[slug]/page.tsx` - Detail page (readable URL, see [SEO](./seo.md))
 - `src/ClercqIt.Web/app/portfolio/lib/api.ts` - Server-side fetch utilities
 - `src/ClercqIt.Web/lib/api/projectsApi.ts` - RTK Query API client
 - `src/ClercqIt.Web/lib/store/index.ts` - Redux store config

@@ -6,29 +6,54 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
-import { fetchProjectById } from "../lib/api";
+import { fetchProjectBySegment } from "../lib/api";
 import { Markdown } from "@/components/markdown";
-import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
+import { notFound, permanentRedirect } from "next/navigation";
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  metaDescription,
+  pageMetadata,
+  personJsonLd,
+  projectPath,
+} from "@/lib/seo";
 
 interface PortfolioDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // The page and its metadata need the same item; cache() fetches it once per request.
-const getProject = cache(fetchProjectById);
+const getProject = cache(fetchProjectBySegment);
 
 export async function generateMetadata({ params }: PortfolioDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const project = await getProject(id);
-  return project ? { title: project.title, description: project.shortDescription } : {};
+  const { slug } = await params;
+  const project = await getProject(slug);
+  if (!project) return {};
+
+  const description = metaDescription(project.shortDescription || project.longDescription);
+  const path = projectPath(project);
+  return pageMetadata({
+    title: project.title,
+    description,
+    path,
+    type: "article",
+    image: project.image || undefined,
+  });
 }
 
 export default async function PortfolioDetailPage({ params }: PortfolioDetailPageProps) {
-  const { id } = await params;
-  const project = await getProject(id);
+  const { slug } = await params;
+  const project = await getProject(slug);
 
   if (!project) {
     notFound();
+  }
+
+  // Old GUID links and stale slugs move permanently to the canonical URL.
+  const path = projectPath(project);
+  if (`/portfolio/${slug}` !== path) {
+    permanentRedirect(path);
   }
 
   const formatDate = (dateString: string) => {
@@ -40,6 +65,27 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
   return (
     <PageContainer as="section" className="py-16">
+      <JsonLd
+        data={[
+          {
+            "@type": "CreativeWork",
+            "@id": absoluteUrl(path),
+            url: absoluteUrl(path),
+            name: project.title,
+            headline: project.title,
+            description: metaDescription(project.shortDescription || project.longDescription),
+            dateCreated: project.startDate,
+            ...(project.image ? { image: absoluteUrl(project.image) } : {}),
+            keywords: project.skills.join(", "),
+            author: personJsonLd(),
+          },
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Portfolio", path: "/portfolio" },
+            { name: project.title, path },
+          ]),
+        ]}
+      />
       <Button asChild variant="ghost" className="mb-8">
         <Link href="/portfolio">
           <ArrowLeft className="mr-2 h-4 w-4" />
