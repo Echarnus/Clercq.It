@@ -17,9 +17,12 @@ We take the security of Clercq.It seriously. If you believe you have found a sec
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via:
-- **Email**: Send details to the repository owner
-- **GitHub Security Advisories**: Use the [Security tab](https://github.com/Echarnus/Clercq.It/security/advisories) to privately report vulnerabilities
+Instead, report them privately through GitHub private vulnerability reporting:
+
+- **Report a vulnerability**: https://github.com/Echarnus/Clercq.It/security/advisories/new
+- How it works: [Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability)
+
+Only the maintainer sees the report until an advisory is published.
 
 ### What to Include
 
@@ -221,8 +224,8 @@ Current security posture: [![OpenSSF Scorecard](https://api.securityscorecards.d
 
 ## Contact
 
-For security concerns, please contact the repository maintainers through GitHub Security Advisories or via the repository owner's contact information.
+For security concerns, open a private report at https://github.com/Echarnus/Clercq.It/security/advisories/new. Published advisories are listed at https://github.com/Echarnus/Clercq.It/security/advisories.
 
 ---
 
-**Last Updated**: 2024-01-08
+**Last Updated**: 2026-10-24

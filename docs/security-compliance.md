@@ -12,7 +12,18 @@ The project is continuously evaluated using the OpenSSF Scorecard, which provide
 
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Echarnus/Clercq.It/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It)
 
-**Target Score**: 8.0+ (High Security)
+**Target Score**: 8.0+ (High Security). Work to reach it is tracked in issue #396.
+
+The workflow is `.github/workflows/scorecard.yml`. Its SARIF results show up under the repository's Security tab, and the job log prints the full JSON result.
+
+To check the file-based checks before pushing (no GitHub token needed), install the CLI and run it against the working tree:
+
+```bash
+go install github.com/ossf/scorecard/v5@v5.6.0
+~/go/bin/scorecard --local . --checks Security-Policy,Pinned-Dependencies,Token-Permissions,Fuzzing --show-details
+```
+
+Security policy: Scorecard reads the first file named `security.md` (any case) it finds, so no other file in the repo may use that name. Vulnerability reports go through GitHub private vulnerability reporting, linked from `SECURITY.md`.
 
 The scorecard evaluates:
 - Branch protection
