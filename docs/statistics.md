@@ -31,7 +31,7 @@ we want, and needs nothing from the Scaleway console.
    a trailing slash. The validator accepts only a plain path of at most 200
    characters (no query string), so a bad request gets a 400.
 3. `EfSiteStatistics` (`src/Clercq.It.Infrastructure/Statistics/EfSiteStatistics.cs`)
-   computes the visitor as `SHA-256(daily salt, IP address, user agent)`. The
+   computes the visitor as the hex `SHA-256(daily salt, IP address, user agent)`. The
    salt is 32 random bytes per UTC day, kept in `StatsSalts`. It then adds one
    view to the row for (day, path, visitor) in `StatsPageVisits`.
 
