@@ -233,10 +233,10 @@ resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
 ```
 
 **Key Points:**
-- The `clercqit_admin` user is the instance admin created during database instance creation
-- The `clercqit_user` is the application user with limited privileges (non-admin)
-- The `scaleway_rdb_privilege` resource grants the application user full permissions (CONNECT, CREATE, etc.) on the `clercqit_portfolio` database
-- This privilege grant is essential for running migrations and accessing the database from the application
+- The `clercqit_admin` user is the instance admin. Nothing uses it; its password is write-only and not stored anywhere.
+- `clercqit_user` is the **migration login**: it owns the schema and runs `migration.sql` in `deploy.yml`. No container has its password.
+- `clercqit_app` is the **runtime login** the site and the content import use: rows only, no DDL. After each migration `deploy.yml` runs `infra/sql/grant-app-user.sql` so it can use new tables.
+- All connections require TLS and pin the instance certificate. See [Secrets](./secrets.md#database-logins).
 
 ### Accessing Production Database
 
@@ -253,9 +253,10 @@ For troubleshooting or manual operations:
    cd infra/terraform
    terraform output database_endpoint
    terraform output database_port
-   
-   # Connect
-   psql -h <endpoint> -p <port> -U clercqit_user -d clercqit_portfolio
+   terraform output -raw database_ca_certificate > rdb-ca.pem
+
+   # Connect (TLS with the pinned certificate; use clercqit_app for read/write only)
+   PGSSLMODE=verify-ca PGSSLROOTCERT=rdb-ca.pem psql -h <endpoint> -p <port> -U clercqit_user -d clercqit_portfolio
    ```
 
 3. **Via Migration Console (Manual):**
@@ -324,7 +325,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 
 **Solution:**
 1. Check Terraform outputs are accessible
-2. Verify database credentials secret (`DATABASE_PASSWORD`)
+2. Check the Terraform outputs `database_migrator_user` and `database_migrator_password` (Secret Manager `db-app-password`)
 3. Review migration SQL for syntax errors
 4. Check database logs in Scaleway console
 
@@ -333,7 +334,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 **Problem:** Migration fails with "User does not have CONNECT privilege" or similar permission errors.
 
 **Solution:**
-1. Ensure the `scaleway_rdb_privilege` resource is defined in Terraform (grants `clercqit_user` permissions on `clercqit_portfolio` database)
+1. Ensure the `scaleway_rdb_privilege` resources are defined in Terraform (`all` for the migration login `clercqit_user`, `readwrite` for the runtime login `clercqit_app`). A runtime "permission denied" on a new table means `infra/sql/grant-app-user.sql` did not run after the migration.
 2. Run the infrastructure workflow to apply the privilege changes
 3. Verify the user has the correct permissions by connecting to the database with an admin user and checking privileges:
    ```sql
@@ -361,7 +362,7 @@ The following secrets must be configured in GitHub repository settings:
 | `SCALEWAY_SECRET_KEY` | Scaleway API secret key | Infrastructure, Deploy |
 | `SCALEWAY_ORGANIZATION_ID` | Scaleway organization ID | Infrastructure, Deploy |
 | `SCALEWAY_PROJECT_ID` | Scaleway project ID | Infrastructure, Deploy |
-| `DATABASE_PASSWORD` | PostgreSQL database password | Infrastructure, Deploy |
+| `DATABASE_PASSWORD` | Seed for the migration login's secret (`db-app-password`) on first creation | Infrastructure |
 
 ## Manual Migration Rollback
 
@@ -374,7 +375,7 @@ cd src/Clercq.It.Infrastructure
 
 # Rollback to specific migration
 dotnet ef database update PreviousMigrationName --startup-project ../ClercqIt.Api \
-  --connection "Host=<prod-host>;Port=<port>;Database=clercqit_portfolio;Username=clercqit_user;Password=<password>"
+  --connection "Host=<prod-host>;Port=<port>;SSL Mode=Require;Database=clercqit_portfolio;Username=clercqit_user;Password=<password>"
 ```
 
 ### Option 2: Via SQL Script
@@ -385,7 +386,7 @@ cd src/Clercq.It.Infrastructure
 dotnet ef migrations script CurrentMigration PreviousMigration --startup-project ../ClercqIt.Api
 
 # Execute manually via psql
-PGPASSWORD="<password>" psql -h <host> -p <port> -U clercqit_user -d clercqit_portfolio -f rollback.sql
+PGSSLMODE=verify-ca PGSSLROOTCERT=rdb-ca.pem PGPASSWORD="<password>" psql -h <host> -p <port> -U clercqit_user -d clercqit_portfolio -f rollback.sql
 ```
 
 ### Option 3: Remove Migration (Development Only)

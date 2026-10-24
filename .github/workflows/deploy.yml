@@ -180,6 +180,10 @@ jobs:
           set_env DB_HOST database_endpoint secret
           set_env DB_PORT database_port
           set_env DB_NAME database_name
+          set_env DB_MIGRATOR_USER database_migrator_user
+          set_env DB_MIGRATOR_PASSWORD database_migrator_password secret
+          set_env DB_APP_USER database_app_user
+          set_env DB_APP_PASSWORD database_app_password secret
           set_env PROD_BUCKET object_storage_bucket_name
           set_env PROD_CONTAINER_ID container_id
           set_env VERIFY_CONTAINER_ID verify_container_id
@@ -187,9 +191,22 @@ jobs:
           set_env VERIFY_DB_NAME verify_database_name
           set_env VERIFY_DB_USER verify_database_user
           set_env VERIFY_DB_PASSWORD verify_database_password secret
+          set_env VERIFY_DB_APP_USER verify_database_app_user
+          set_env VERIFY_DB_APP_PASSWORD verify_database_app_password secret
           set_env VERIFY_BUCKET verify_bucket_name
           set_env VERIFY_STORAGE_ACCESS_KEY verify_storage_access_key secret
           set_env VERIFY_STORAGE_SECRET_KEY verify_storage_secret_key secret
+          # Every database connection uses TLS and pins the instance certificate
+          # (docs/secrets.md#database-logins): psql via PGSSLMODE/PGSSLROOTCERT,
+          # the content import via Database__CaCertificate.
+          DB_CA_FILE="$RUNNER_TEMP/rdb-ca.pem"
+          terraform output -raw database_ca_certificate > "$DB_CA_FILE"
+          if ! grep -q "BEGIN CERTIFICATE" "$DB_CA_FILE"; then
+            echo "❌ Terraform output 'database_ca_certificate' is not a PEM certificate."
+            exit 1
+          fi
+          echo "PGSSLMODE=verify-ca" >> $GITHUB_ENV
+          echo "PGSSLROOTCERT=$DB_CA_FILE" >> $GITHUB_ENV
 
       - name: Setup .NET for content import
         if: >-
@@ -221,6 +238,9 @@ jobs:
           fi
           PGPASSWORD="$VERIFY_DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$VERIFY_DB_USER" -d "$VERIFY_DB_NAME" \
             -f migration.sql -v ON_ERROR_STOP=1
+          # The runtime login gets rows-only access to the new tables (issue #416)
+          PGPASSWORD="$VERIFY_DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$VERIFY_DB_USER" -d "$VERIFY_DB_NAME" \
+            -v app_user="$VERIFY_DB_APP_USER" -f infra/sql/grant-app-user.sql
           echo "✅ Verify database migrated"
 
       - name: "Verify: import content"
@@ -236,7 +256,8 @@ jobs:
           export ObjectStorage__BucketName="$VERIFY_BUCKET"
           export ObjectStorage__AccessKey="$VERIFY_STORAGE_ACCESS_KEY"
           export ObjectStorage__SecretKey="$VERIFY_STORAGE_SECRET_KEY"
-          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;Database=$VERIFY_DB_NAME;Username=$VERIFY_DB_USER;Password=$VERIFY_DB_PASSWORD"
+          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;SSL Mode=Require;Database=$VERIFY_DB_NAME;Username=$VERIFY_DB_APP_USER;Password=$VERIFY_DB_APP_PASSWORD"
+          export Database__CaCertificate="$(cat "$PGSSLROOTCERT")"
           dotnet run --project src/Clercq.It.ContentImport --configuration Release --no-build -- content
 
       - name: "Verify: deploy image"
@@ -283,8 +304,10 @@ jobs:
             exit 0
           fi
           echo "📊 Migration script size: $(wc -l < migration.sql) lines"
-          PGPASSWORD="${{ secrets.DATABASE_PASSWORD }}" psql -h "$DB_HOST" -p "$DB_PORT" -U clercqit_user -d "$DB_NAME" \
+          PGPASSWORD="$DB_MIGRATOR_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_MIGRATOR_USER" -d "$DB_NAME" \
             -f migration.sql -v ON_ERROR_STOP=1
+          PGPASSWORD="$DB_MIGRATOR_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_MIGRATOR_USER" -d "$DB_NAME" \
+            -v app_user="$DB_APP_USER" -f infra/sql/grant-app-user.sql
           echo "✅ Database migrations executed successfully"
 
       - name: Import content
@@ -296,14 +319,14 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
-          DB_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
           ObjectStorage__Endpoint: https://s3.fr-par.scw.cloud
           ObjectStorage__Region: fr-par
           ObjectStorage__AccessKey: ${{ secrets.SCALEWAY_ACCESS_KEY }}
           ObjectStorage__SecretKey: ${{ secrets.SCALEWAY_SECRET_KEY }}
         run: |
           export ObjectStorage__BucketName="$PROD_BUCKET"
-          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;Database=$DB_NAME;Username=clercqit_user;Password=$DB_PASSWORD"
+          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;SSL Mode=Require;Database=$DB_NAME;Username=$DB_APP_USER;Password=$DB_APP_PASSWORD"
+          export Database__CaCertificate="$(cat "$PGSSLROOTCERT")"
           dotnet run --project src/Clercq.It.ContentImport --configuration Release --no-build -- content
 
       - name: Deploy to Scaleway
