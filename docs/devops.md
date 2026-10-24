@@ -260,7 +260,7 @@ gh workflow run codeql.yml
 
 - **Serverless Container**: Auto-scales 0-1 vCPU with 512MB memory
 - **Serverless SQL**: PostgreSQL database with minimal resource allocation
-- **Object Storage**: S3-compatible bucket for blog images with public-read ACL
+- **Object Storage**: S3-compatible bucket for blog images with public-read ACL. Bucket policies (`storage_policies.tf`) keep each storage key to its own bucket and the state bucket to Terraform only ([secrets.md](./secrets.md#who-can-reach-which-bucket))
 - **Organization**: ClercqIt with Portfolio namespace
 - **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
 - **Cost Optimization**: Infrastructure scales to zero when not in use
@@ -420,7 +420,7 @@ Released versions are listed as GitHub Releases (`prod-<version>` tags).
 Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets.md)). GitHub keeps only what the pipelines need to reach Scaleway and Docker Hub, plus seed values that are read once while the secrets are created.
 
 ### Scaleway (GitHub repository secrets)
-- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for the S3 state backend). Needs IAM manager rights, because Terraform creates IAM applications and policies.
+- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for the S3 state backend). Needs IAM manager rights, because Terraform creates IAM applications and policies. `infra.yml` also passes this access key (not the secret key) as `TF_VAR_terraform_access_key`, so the bucket policies allow its owner ([secrets.md](./secrets.md#who-can-reach-which-bucket)).
 - `SCALEWAY_SECRET_KEY`: Scaleway API secret key (also used as AWS_SECRET_ACCESS_KEY)
 - `SCALEWAY_ORGANIZATION_ID`: Scaleway organization ID
 - `SCALEWAY_PROJECT_ID`: Scaleway project ID
