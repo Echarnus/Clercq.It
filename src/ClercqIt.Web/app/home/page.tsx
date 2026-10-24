@@ -13,7 +13,7 @@ export default async function HomePage() {
   const skills = [
     {
       icon: Code,
-      label: "Full Stack Development",
+      label: "Architecture & Development",
       description: ".NET, TypeScript, React, Angular",
     },
     {
@@ -34,11 +34,12 @@ export default async function HomePage() {
       <PageContainer as="section" className="py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mb-6 text-5xl font-bold text-slate-900 dark:text-white">
-            Full Stack Developer
+            Developer & Architect
           </h1>
           <p className="mb-8 text-xl leading-relaxed text-slate-600 dark:text-slate-300">
-            Passionate about creating complete digital solutions from A to Z. With expertise in
-            modern technologies, I build scalable applications that solve real-world problems.
+            Passionate about creating complete digital solutions from A to Z. As a solution
+            architect who still writes code, I design and build scalable applications that solve
+            real-world problems.
           </p>
           <div className="mb-8 flex flex-wrap justify-center gap-2">
             {[
@@ -101,7 +102,7 @@ export default async function HomePage() {
           </h2>
           <p className="mx-auto max-w-2xl text-slate-600 dark:text-slate-300">
             Here are some of the projects I&apos;ve been working on, showcasing my expertise in
-            full-stack development and cloud technologies.
+            software architecture, development and cloud technologies.
           </p>
         </div>
 

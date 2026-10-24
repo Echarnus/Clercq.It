@@ -11,7 +11,7 @@ export const metadata: Metadata = {
     template: "%s | Clercq.It",
   },
   description:
-    "Full Stack Developer specializing in .NET, TypeScript, React, Angular, and Cloud Technologies",
+    "Developer and Solution Architect specializing in .NET, TypeScript, React, Angular, and Cloud Technologies",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
