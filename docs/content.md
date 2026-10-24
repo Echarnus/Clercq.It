@@ -1,6 +1,6 @@
 # Content in the repository
 
-Projects, blog posts and certifications can be added with a pull request instead of the admin UI. Each item is a Markdown file under `content/`. After the PR merges, the deploy pipeline imports it into the database and it shows on the site.
+Projects, blog posts and certifications are managed in the admin UI or through the [content MCP server](./mcp.md); that is the preferred route. They can also be added with a pull request. Each item is a Markdown file under `content/`. After the PR merges, the deploy pipeline imports it into the database and it shows on the site.
 
 ```
 content/

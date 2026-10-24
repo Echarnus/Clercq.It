@@ -64,6 +64,25 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
 
+#### MCP clients
+
+The content MCP server (`/api/mcp`, see [MCP](./mcp.md)) accepts any realm token with a contributor role. Two clients give Claude such a token. They are not in the deployment yet; the owner creates them in the Cloud IAM console.
+
+`clercqit-mcp` (public, standard flow) is for the Claude custom connector: you sign in once in the browser and Claude acts as you.
+- **Client ID**: `clercqit-mcp`
+- **Client Authentication**: Off (public client)
+- **Standard Flow**: Enabled; **Direct Access Grants**: Disabled
+- **Advanced > Proof Key for Code Exchange Code Challenge Method**: `S256`
+- **Valid Redirect URIs**: `https://claude.ai/api/mcp/auth_callback`, `https://claude.com/api/mcp/auth_callback`
+- **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
+
+`clercqit-mcp-agent` (confidential, service account) is optional, for agents that run without a browser (client credentials grant). Only create it if the owner decides agents may write content unattended.
+- **Client ID**: `clercqit-mcp-agent`
+- **Client Authentication**: On; **Service Accounts**: Enabled; **Standard Flow** and **Direct Access Grants**: Disabled
+- **Service account roles**: `Projects.Contributor`, `Certifications.Contributor`, `Blogs.Contributor`
+- **Default Client Scopes**: `roles` (so the token carries the `roles` claim)
+- Its client secret goes in Scaleway Secret Manager, never in an issue or chat.
+
 ### 4. Create Realm Roles
 
 | Role | Description |

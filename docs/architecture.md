@@ -192,6 +192,9 @@ Exposes HTTP endpoints and handles web concerns.
 
 All endpoints return JSON and include OpenAPI documentation.
 
+### MCP
+- `/api/mcp` - Content MCP server for Claude, with tools for projects, certifications and blog posts. It sends the same MediatR commands as the endpoints above. See [MCP](./mcp.md).
+
 ## Authentication
 
 The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
