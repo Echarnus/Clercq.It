@@ -10,6 +10,18 @@ content/
 └── images/          images referenced by the files above
 ```
 
+## Page copy that lives in code
+
+Some text is not content in the database. It is part of the frontend and changes with a pull request:
+
+| Text | File |
+|------|------|
+| Home hero title ("Developer & Architect"), intro, skill cards | `src/ClercqIt.Web/app/home/page.tsx` |
+| Site description (search results and link previews) | `src/ClercqIt.Web/app/layout.tsx` |
+| Portfolio intro | `src/ClercqIt.Web/app/portfolio/page.tsx` |
+
+`src/ClercqIt.Web/app/home/page.test.tsx` checks the hero title and the site description.
+
 ## File format
 
 A file is YAML front matter between `---` lines, then a Markdown body. The file name without `.md` is the **slug**: it identifies the item, so renaming a file creates a new item.
