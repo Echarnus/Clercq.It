@@ -398,13 +398,15 @@ With no human review, agents are the only thing between a change and production,
 
 **Rules** (`.claude/rules/*.md`) load into Claude's context. A rule with `paths:` front matter loads only when Claude works on matching files; one without loads always.
 
+Do not name a rule `security.md`: OpenSSF Scorecard reads the first file with that name anywhere in the repo as the security policy, so it would shadow the root `SECURITY.md` (#400).
+
 | Rule | Loads for | Covers |
 | --- | --- | --- |
 | `backend.md` | `src/**/*.cs`, `tests/**/*.cs`, project files | layering, analyzer policy, format/build/test commands |
 | `frontend.md` | `src/ClercqIt.Web/**` | ESLint, Prettier and TypeScript policy |
 | `testing.md` | `src/**`, `tests/**` | test conventions and coverage ratchet |
 | `infra.md` | `infra/**` | `terraform fmt`/`validate`, secrets in Terraform |
-| `security.md` | always | no secrets, SAST, suppressions need a reason |
+| `secure-coding.md` | always | no secrets, SAST, suppressions need a reason |
 | `docs.md` | always | the docs rule and the docs check |
 
 **Skills** (`.claude/skills/<name>/SKILL.md`) are commands Claude runs on request or by itself:
