@@ -197,6 +197,120 @@ jobs:
             GIT_SHA=${{ github.sha }}
           cache-from: type=gha
 
+  container-test:
+    name: Container smoke test
+    runs-on: ubuntu-latest
+    # On pull requests only: runs the production image the way Scaleway does,
+    # against a throwaway Postgres, so a container that crashes at startup
+    # fails the PR (issue #439; the libicu crash in 1.0.247-1.0.252 only
+    # showed after merge). ZAP (#239) and e2e (#246) run against the same
+    # container, after the smoke test step.
+    if: github.event_name == 'pull_request'
+    env:
+      IMAGE: clercq-it:ci
+      VERSION: 0.0.0-ci
+      DB_CONNECTION: Host=localhost;Port=5432;Database=clercqit_ci;Username=clercqit_user;Password=ci-only-password
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: clercqit_ci
+          POSTGRES_USER: clercqit_user
+          POSTGRES_PASSWORD: ci-only-password # throwaway CI database, not a secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U clercqit_user -d clercqit_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ./src
+          file: ./src/Dockerfile
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: ${{ env.IMAGE }}
+          build-args: |
+            VERSION=${{ env.VERSION }}
+            GIT_SHA=${{ github.sha }}
+          cache-from: type=gha
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: '10.0.x'
+
+      # Same steps as deploy.yml: the idempotent migration script through psql,
+      # then the content import (content/**/*.md has no images, so no bucket).
+      - name: Migrate database
+        run: |
+          dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj --locked-mode
+          dotnet tool install --global dotnet-ef --version 10.0.13
+          cd src/Clercq.It.Infrastructure
+          dotnet ef migrations script --idempotent --output ../../migration.sql --startup-project ../ClercqIt.Api
+          cd ../..
+          PGPASSWORD=ci-only-password psql -h localhost -U clercqit_user -d clercqit_ci \
+            -f migration.sql -v ON_ERROR_STOP=1 -q
+
+      - name: Import content
+        env:
+          ConnectionStrings__DefaultConnection: ${{ env.DB_CONNECTION }}
+        run: dotnet run --project src/Clercq.It.ContentImport --configuration Release -- content
+
+      - name: Start container
+        # Host networking: the container reaches the Postgres service on
+        # localhost, nginx's [::]:80 listener has IPv6, and the site is on
+        # http://localhost. Keycloak only needs a URL to start; the smoke test
+        # does not sign in.
+        run: |
+          docker run -d --name clercq-it --network host \
+            -e ConnectionStrings__DefaultConnection="$DB_CONNECTION" \
+            -e Keycloak__BaseUrl=https://keycloak.invalid \
+            -e Keycloak__Realm=clercqit \
+            -e Keycloak__ClientId=clercqit-web \
+            "$IMAGE"
+          # Fail fast when start.sh exits (a crashing API or frontend), else
+          # wait until nginx serves the home page.
+          for i in $(seq 1 60); do
+            if [ "$(docker inspect -f '{{.State.Running}}' clercq-it)" != "true" ]; then
+              echo "::error::The container stopped during startup"
+              exit 1
+            fi
+            if curl -fs -o /dev/null --max-time 5 http://localhost/; then
+              echo "Container is serving after $((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "::error::The container did not serve http://localhost/ within 120s"
+          exit 1
+
+      - name: Smoke test
+        env:
+          SMOKE_ATTEMPTS: 6
+          SMOKE_DELAY: 5
+        run: .github/scripts/smoke-test.sh http://localhost "$VERSION"
+
+      # ZAP baseline scan (#239) and Playwright e2e (#246) go here, against http://localhost.
+
+      - name: Container logs
+        if: failure()
+        run: |
+          docker ps -a
+          docker logs clercq-it || true
+          echo "--- /var/log/api.log"; docker exec clercq-it cat /var/log/api.log || true
+          echo "--- /var/log/frontend.log"; docker exec clercq-it cat /var/log/frontend.log || true
+
   deploy-scripts:
     name: Test deploy scripts
     runs-on: ubuntu-latest
