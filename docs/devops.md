@@ -331,6 +331,7 @@ gh workflow run infra.yml
 #### release
 - Runs only after an automatic deploy (not for manual deploys)
 - Creates tag `prod-<version>` on the deployed commit and a GitHub Release with generated notes
+- Attaches the image's signed build provenance to the release (`.intoto.jsonl` and `.sigstore.json`; see [Versioning](./versioning.md#production-releases))
 - Uses the `prod-` prefix so GitVersion ignores the tag (see [Versioning](./versioning.md#production-releases))
 
 **Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
