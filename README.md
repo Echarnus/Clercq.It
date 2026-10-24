@@ -23,8 +23,9 @@ The badges above show the live state of each pipeline. Pipelines, triggers and r
 - **Entity Framework Core** - ORM with PostgreSQL
 - **MediatR** - CQRS pattern implementation
 - **FluentValidation** - Request validation
-- **JWT Authentication** - Secure token-based authentication
-- **OpenAPI/Swagger** - API documentation and testing
+- **Keycloak (Cloud IAM)** - JWT bearer tokens and role-based access, admin sign-in with PKCE
+- **OpenAPI and Scalar** - API documentation (Development only)
+- **MCP server** - Content and MyZen tools for Claude at `/api/mcp`
 
 ### Frontend  
 - **Next.js 16** - React framework with App Router
@@ -60,58 +61,46 @@ Built with Clean Architecture principles and Domain-Driven Design:
 └─────────────────────────────────┘
 ```
 
-## 🚀 Tech Stack
-
-- **.NET 10** - Modern C# with minimal APIs
-- **PostgreSQL** - Primary database with EF Core
-- **MediatR** - CQRS and mediator pattern implementation  
-- **FluentValidation** - Request validation
-- **Next.js 16** - React framework with TypeScript
-- **Docker** - Containerization with multi-stage builds
-- **Aspire** - Local development orchestration and tooling
-
 ## 📚 Documentation
 
 Comprehensive technical documentation is available in the [`/docs`](./docs) folder:
 
 - **[Docs index](./docs/README.md)** - All documentation pages
 - **[Contributing](./docs/contributing.md)** - How work flows from issue to production via agents
-- **[Architecture](./docs/architecture.md)** - Architecture overview, design patterns, and layer structure
-- **[Development](./docs/development.md)** - Local development setup with Aspire orchestration, and the [code style and analyzer policy](./docs/development.md#code-style)
-- **[Versioning](./docs/versioning.md)** - GitVersion configuration and branching strategy
-- **[DevOps](./docs/devops.md)** - CI/CD pipelines, testing, and deployment workflows
+- **[Architecture](./docs/architecture.md)** - Layers, endpoints, authentication and the production container
+- **[Development](./docs/development.md)** - Local setup with Aspire, and the [code style and analyzer policy](./docs/development.md#code-style)
+- **[Testing](./docs/testing.md)** - Test stack, integration tests and coverage gates
+- **[DevOps](./docs/devops.md)** - CI/CD pipelines and deployment
+- **[Versioning](./docs/versioning.md)** - GitVersion, trunk-based branching and production releases
 
 ## 🚀 Quick Start
 
-1. **Prerequisites**: .NET 10, Docker, Node.js 23+
-2. **Clone**: `git clone https://github.com/Echarnus/Clercq.It.git`
-3. **Database**: `docker run -d --name clercq-postgres -e POSTGRES_DB=ClercqItDb -e POSTGRES_USER=clercq_user -e POSTGRES_PASSWORD=clercq_pass -p 5432:5432 postgres:16`
-4. **Migrate**: `cd src/Clercq.It.Infrastructure && dotnet ef database update --startup-project ../ClercqIt.Api`
-5. **Run API**: `cd src/ClercqIt.Api && dotnet run`
-6. **Run Web**: `cd src/ClercqIt.Web && pnpm install && pnpm dev`
+1. **Prerequisites**: .NET 10 SDK, Node.js 24 with Corepack (`corepack enable`), Docker
+2. **Clone**: `git clone https://github.com/Echarnus/Clercq.It.git && cd Clercq.It`
+3. **Run everything**: `dotnet run --project src/Clercq.It.AppHost`
 
-API available at `https://localhost:7000/swagger` • Web at `http://localhost:3000`
+Aspire starts PostgreSQL, Keycloak (with test users), the migrations, the API (`http://localhost:5001`) and the web app (`http://localhost:3000`). Running the parts by hand is described in [Development](./docs/development.md#option-b-manual-setup).
 
 ## 🧪 Testing
 
 ```bash
-# Run all tests
-dotnet test
+# Backend: format, build (warnings are errors), unit, architecture and integration tests
+dotnet format Clercq.It.CI.slnf --verify-no-changes
+dotnet build Clercq.It.CI.slnf -c Release
+dotnet test Clercq.It.CI.slnf -c Release --no-build   # integration tests need Docker
 
-# With coverage
-dotnet test --collect:"XPlat Code Coverage"
+# Frontend
+cd src/ClercqIt.Web
+pnpm install --frozen-lockfile
+pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
 ```
 
-#### 🏗️ Infra Pipeline (`infra.yml`)
-- Triggered on infrastructure changes or manual dispatch
-- **Infrastructure as Code**: Terraform-based Scaleway provisioning
-- **Serverless Architecture**: Auto-scaling database and container
-- **Cost Optimized**: Scales to zero when not in use
+Coverage gates and thresholds: [Testing](./docs/testing.md#coverage).
 
 ### Version Management
-- **GitVersion** automatically calculates semantic versions
-- **Branch-based Versioning**: Different strategies per branch type
-- **Docker Tags**: Multiple tags for flexible deployment options
+- **GitVersion** calculates `{Major}.{Minor}.{commits}` on `main`
+- Every production deploy is tagged `prod-<version>` with a GitHub Release
+- **Docker Tags**: `<version>`, short SHA and `latest`
 
 ## 🐳 Docker
 
@@ -123,6 +112,8 @@ docker build -t clercq-it ./src
 docker run -p 80:80 clercq-it
 ```
 
+The API needs a database connection string and `Keycloak__BaseUrl` to start; see [Development](./docs/development.md#docker-development).
+
 ### Container Architecture
 - **Included**: API, frontend (Next.js), nginx reverse proxy, runtime dependencies
 - **Excluded**: Aspire AppHost, development orchestration, unnecessary workloads  
@@ -130,72 +121,21 @@ docker run -p 80:80 clercq-it
 
 > **Note**: Aspire components (`Clercq.It.AppHost`) are excluded from Docker builds as they're only needed for local development orchestration.
 
-## 🛠️ Development
-
-### Prerequisites
-- .NET 10 SDK
-- Node.js 23+  
-- pnpm 10.12.4+
-- Docker
-
-### Local Development Setup
-
-```bash
-# Clone the repository
-git clone https://github.com/Echarnus/Clercq.It.git
-cd Clercq.It
-
-# Backend Development
-cd src/ClercqIt.Api
-dotnet restore
-dotnet run
-
-# Frontend Development (new terminal)
-cd src/ClercqIt.Web  
-pnpm install
-pnpm dev
-```
-
-### Running Tests
-
-```bash
-# .NET Tests
-dotnet test
-
-# Frontend Tests  
-cd src/ClercqIt.Web
-pnpm test
-
-# All Tests via GitHub Actions locally
-act -j test
-```
-
-### Code Quality
-
-```bash
-# .NET Code Analysis
-dotnet build --verbosity normal
-
-# Frontend lint, format and type checks
-cd src/ClercqIt.Web
-pnpm lint && pnpm format:check && pnpm typecheck
-```
-
 ## 🏗️ Infrastructure
 
 The application uses a **serverless-first architecture** on Scaleway with automatic scaling and cost optimization:
 
 ### Scaleway Infrastructure
-- **Serverless Container**: Auto-scales 0-1 vCPU with 128MB memory
-- **Serverless SQL**: PostgreSQL database with minimal resource allocation
-- **Organization**: ClercqIt with Portfolio namespace
-- **Cost Optimization**: Infrastructure scales to zero when not in use
+- **Serverless Container** `clercq-it-app`: 0 to 1 instances, 500 mVCPU, 512 MB, scales to zero
+- **Managed PostgreSQL**: Scaleway RDB `DB-DEV-S`, PostgreSQL 16 (always on)
+- **Object Storage**: public-read bucket for images
+- **Secret Manager**: application secrets ([Secrets](./docs/secrets.md))
+- **Verify environment**: a second container, database and bucket that test every image before production
 
 ### Infrastructure Management
-- **Terraform**: Infrastructure as Code in `/infra/terraform/`
-- **GitHub Actions**: Automated provisioning via `infra.yml` workflow
-- **Environment Protection**: Production deployments require approval
-- **State Management**: Terraform state with proper gitignore patterns
+- **Terraform**: Infrastructure as Code in `infra/terraform/`
+- **GitHub Actions**: `infra.yml` plans on PRs and applies after infra changes and after every deploy
+- **State**: S3 backend in Scaleway Object Storage (`clercq-it-terraform-state`)
 
 ### Quick Infrastructure Setup
 
@@ -205,7 +145,7 @@ cd infra/terraform
 
 # Copy and configure variables
 cp terraform.tfvars.example terraform.tfvars
-# Edit terraform.tfvars with your Scaleway credentials
+# Edit terraform.tfvars; credentials come from SCW_* and AWS_* environment variables
 
 # Initialize and deploy
 terraform init
@@ -247,7 +187,8 @@ See [Security Compliance Guide](./docs/security-compliance.md) for detailed fram
 - **Trivy Container Scanning**: Vulnerability scanning of Docker images and filesystems
 - **CodeQL Analysis**: Advanced semantic code analysis for C# and JavaScript/TypeScript
 - **Dependabot**: Automated dependency updates across all ecosystems (NuGet, npm, Docker, Terraform, GitHub Actions)
-- **Secret Scanning**: TruffleHog detects accidentally committed secrets
+- **Secret Scanning**: gitleaks blocks PRs that contain secrets
+- **SAST**: Semgrep on every PR
 - **OpenSSF Scorecard**: Continuous evaluation of security best practices
 
 ### Dependency Security
@@ -257,20 +198,21 @@ See [Security Compliance Guide](./docs/security-compliance.md) for detailed fram
 - **Transitive dependency scanning**: Includes indirect dependencies
 
 ### Build & Container Security
-- **Container Security**: Non-root execution, minimal attack surface with Alpine/Debian slim images
+- **Container Security**: Non-root execution, minimal attack surface with Debian slim images
 - **Build Attestation**: Signed build provenance for supply chain security
-- **Multi-platform builds**: Secure builds for AMD64 and ARM64
-- **Vulnerability scanning**: Every build scanned with Trivy before deployment
+- **Single platform**: `linux/amd64`, what Scaleway serverless containers run
+- **Vulnerability scanning**: Trivy scans the image on every PR (blocking) and after every build
+- **Pinned dependencies**: actions by commit SHA, base images by digest, NuGet and pnpm by lock file
 
 ### Application Security
-- **Multi-Factor Authentication (MFA)**: Enhanced security for admin access
-- **JWT Authentication**: Secure token-based authentication with expiration
+- **Multi-Factor Authentication (MFA)**: TOTP on the Keycloak login page
+- **JWT Authentication**: Keycloak-issued tokens, sign-in with authorization code and PKCE
 - **Role-Based Access Control (RBAC)**: Granular permission management
 - **Input Validation**: FluentValidation on all API requests
 - **Parameterized Queries**: Entity Framework prevents SQL injection
 - **HTTPS Enforcement**: TLS 1.2+ with HSTS headers
 - **Encryption**: AES-256 for data at rest, TLS for data in transit
-- **Secret Management**: GitHub Secrets and secure environment variables
+- **Secret Management**: Scaleway Secret Manager for app secrets, GitHub Secrets for pipelines
 - **CORS Configuration**: Proper cross-origin resource sharing
 - **Security Headers**: CSP, X-Frame-Options, X-Content-Type-Options
 
@@ -295,28 +237,22 @@ For detailed security information, see:
 
 ## 🚀 Deployment
 
-The application is automatically deployed to **Scaleway** on every push to the `main` branch. The deployment process:
+Every merge to `main` deploys to **Scaleway**:
 
-1. **Version Calculation**: GitVersion determines the release version
-2. **Image Build**: Multi-platform Docker image built and pushed to Docker Hub
-3. **Health Validation**: Ensures the new version is healthy before deployment
-4. **Automatic Rollout**: Zero-downtime deployment with health monitoring
+1. **Build**: tests, GitVersion, image pushed to Docker Hub with signed provenance, migration script
+2. **Verify**: the image runs against the verify database and container and must pass a smoke test
+3. **Production**: migrations, content import, new image, smoke test; a failed smoke test rolls back automatically
+4. **Release**: tag `prod-<version>` and a GitHub Release
 
-### Manual Deployment
+### Manual Deployment (rollback)
 
 ```bash
-# Deploy specific version
-gh workflow run deploy.yml -f version=1.0.0
->>>>>>> main
+gh workflow run deploy.yml -f version=1.0.189
 ```
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Work runs through GitHub issues, done by agents: issue → branch `<type>/<issue>-<slug>` → pull request → required checks → auto-merge → production. See [Contributing](./docs/contributing.md).
 
 ## 📄 License
 

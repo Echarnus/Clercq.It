@@ -152,36 +152,14 @@ The build workflow generates an idempotent migration SQL script:
 
 ### Deploy Workflow (`deploy.yml`)
 
-The deploy workflow executes the migration script on the production database. Migration steps only run when the deploy workflow is triggered by the `build` workflow (not when triggered by the `Deploy Infra` workflow):
+The deploy workflow downloads `migration.sql` from the `build` run that triggered it and runs it twice with `psql -v ON_ERROR_STOP=1`:
 
-```yaml
-- name: Download migration script
-  if: >-
-    github.event_name == 'workflow_run' &&
-    github.event.workflow_run.name == 'build'
-  uses: actions/download-artifact@v8
-  with:
-    name: migration-script
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    run-id: ${{ github.event.workflow_run.id }}
+1. **Verify** (`Verify: migrate database`): against `clercqit_verify` as `clercqit_verify_user`, with the password from the Terraform output `verify_database_password`. A failure stops the run before production is touched ([Verify stage](./devops.md#verify-stage)).
+2. **Production** (`Execute database migrations`): against `clercqit_portfolio` as `clercqit_user`, with the GitHub secret `DATABASE_PASSWORD`.
 
-- name: Execute database migrations
-  if: >-
-    github.event_name == 'workflow_run' &&
-    github.event.workflow_run.name == 'build'
-  run: |
-    # Get database credentials from Terraform outputs
-    terraform init
-    DB_HOST=$(terraform output -raw database_endpoint)
-    DB_PORT=$(terraform output -raw database_port)
-    DB_NAME=$(terraform output -raw database_name)
-    
-    # Execute migration script
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
-      -U "$DB_USER" -d "$DB_NAME" -f migration.sql
-```
+The host, port and database names come from the Terraform outputs (`database_endpoint`, `database_port`, `database_name`, `verify_database_name`), read once in the `Read infrastructure outputs` step. Sensitive values are masked in the log.
 
-**Note:** Migrations are only executed when the deploy workflow is triggered by the `build` workflow. When triggered by the `Deploy Infra` workflow or manually, migrations are skipped.
+**Note:** Migrations run only when `deploy.yml` is triggered by the `build` workflow. A manual deploy (`workflow_dispatch`) skips them, and the content import too.
 
 ### Database Connection (Production)
 
@@ -209,7 +187,8 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   is_ha_cluster  = false
   disable_backup = false
   user_name      = "clercqit_admin"
-  password       = var.database_password
+  password       = local.secrets["db-app-password"]
+  load_balancer {}
 }
 
 resource "scaleway_rdb_database" "portfolio_app_db" {
@@ -220,7 +199,7 @@ resource "scaleway_rdb_database" "portfolio_app_db" {
 resource "scaleway_rdb_user" "portfolio_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
-  password    = var.database_password
+  password    = local.secrets["db-app-password"]
   is_admin    = false
 }
 
@@ -233,6 +212,7 @@ resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
 ```
 
 **Key Points:**
+- Both passwords come from the `db-app-password` secret in Scaleway Secret Manager ([Secrets](./secrets.md)); `DATABASE_PASSWORD` only seeded it
 - The `clercqit_admin` user is the instance admin created during database instance creation
 - The `clercqit_user` is the application user with limited privileges (non-admin)
 - The `scaleway_rdb_privilege` resource grants the application user full permissions (CONNECT, CREATE, etc.) on the `clercqit_portfolio` database
@@ -285,7 +265,7 @@ For troubleshooting or manual operations:
 **Problem:** "Could not connect to database" errors.
 
 **Solution:**
-1. Check Aspire is running: `http://localhost:15888`
+1. Check Aspire is running: the dashboard at `https://localhost:17266`
 2. Verify PostgreSQL service is healthy in dashboard
 3. Check connection string in migration console logs
 
@@ -316,7 +296,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 2. Verify "Generate migration SQL script" step succeeded
 3. Ensure artifact was uploaded (check workflow logs)
 4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
-5. Ensure the deploy workflow was triggered by the `build` workflow, not the `Deploy Infra` workflow (migrations are only downloaded when triggered by build)
+5. Ensure the deploy workflow was triggered by the `build` workflow, not by hand (a manual deploy skips migrations)
 
 #### Migration Execution Failed
 
@@ -453,17 +433,16 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 │  deploy.yml (triggered by build.yml completion)                   │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ 1. Download migration script artifact (from build)        │  │
-│  │ 2. Get DB credentials from Terraform outputs             │  │
-│  │ 3. Execute migration script on Scaleway PostgreSQL       │  │
-│  │ 4. Deploy container to Scaleway                          │  │
-│  │ 5. Run health checks                                     │  │
+│  │ 2. Read DB host and names from Terraform outputs          │  │
+│  │ 3. Migrate the verify database, deploy and smoke-test     │  │
+│  │ 4. Migrate the production database                        │  │
+│  │ 5. Deploy container to Scaleway, smoke test               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  deploy.yml (triggered by Deploy Infra completion)               │
+│  deploy.yml (manual workflow_dispatch)                            │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Deploy container to Scaleway                          │  │
-│  │ 2. Run health checks                                     │  │
-│  │    (migrations skipped - no artifact available)           │  │
+│  │ 1. Deploy the chosen version (verify, then production)    │  │
+│  │    (migrations and content import skipped)                │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘

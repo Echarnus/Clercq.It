@@ -183,5 +183,5 @@ The implementation is complete and ready for use. When the backend API is runnin
 - All portfolio pages are server-rendered on demand (dynamic mode)
 - No static generation used to ensure fresh data from API
 - Redux infrastructure ready for future client-side features
-- Follows Next.js 15 and React 19 best practices
+- Follows Next.js 16 and React 19 best practices
 - Compatible with the existing Clean Architecture backend

@@ -57,7 +57,7 @@ This application implements controls aligned with the **NIST Cybersecurity Frame
   - Automated dependency scanning
 
 - ✅ **ID.AM-3**: Organizational communication flows are mapped
-  - API documentation via OpenAPI/Swagger
+  - API documentation via OpenAPI and the Scalar UI (Development only)
   - Architecture diagrams in documentation
   - Data flow documented in architecture guide
 
