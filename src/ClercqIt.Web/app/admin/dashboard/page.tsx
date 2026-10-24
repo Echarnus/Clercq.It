@@ -5,11 +5,21 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LogOut, FileText, FolderKanban, Settings, BarChart3, Award, Clock } from "lucide-react";
+import {
+  LogOut,
+  FileText,
+  FolderKanban,
+  Settings,
+  BarChart3,
+  Award,
+  Clock,
+  LineChart,
+} from "lucide-react";
 import { BlogList } from "@/components/admin/BlogList";
 import { ProjectList } from "@/components/admin/ProjectList";
 import { CertificationList } from "@/components/admin/CertificationList";
 import { MyZenPanel } from "@/components/admin/MyZenPanel";
+import { StatisticsPanel } from "@/components/admin/StatisticsPanel";
 import { fetchAllBlogs, fetchAllProjects, fetchAllCertifications } from "@/lib/api/adminApi";
 import { claimsOf, getUser, signIn, signOut } from "@/lib/auth";
 import { isEnabled } from "@/lib/featureFlags";
@@ -161,13 +171,19 @@ export default function AdminDashboard() {
           <TabsList
             className="grid w-full lg:w-auto"
             style={{
-              gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasCertificationsContributor, showMyZen, userRoles.hasAdminView].filter(Boolean).length}, 1fr)`,
+              gridTemplateColumns: `repeat(${[userRoles.hasAdminView, userRoles.hasAdminView, userRoles.hasBlogsContributor, userRoles.hasProjectsContributor, userRoles.hasCertificationsContributor, showMyZen, userRoles.hasAdminView].filter(Boolean).length}, 1fr)`,
             }}
           >
             {userRoles.hasAdminView && (
               <TabsTrigger value="overview">
                 <BarChart3 className="mr-2 h-4 w-4" />
                 Overview
+              </TabsTrigger>
+            )}
+            {userRoles.hasAdminView && (
+              <TabsTrigger value="statistics">
+                <LineChart className="mr-2 h-4 w-4" />
+                Statistics
               </TabsTrigger>
             )}
             {userRoles.hasBlogsContributor && (
@@ -264,6 +280,9 @@ export default function AdminDashboard() {
                   </p>
                   <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
                     <li>
+                      <strong>Statistics:</strong> See page views and unique visitors
+                    </li>
+                    <li>
                       <strong>Blogs:</strong> Create, edit, and manage blog posts
                     </li>
                     <li>
@@ -276,6 +295,23 @@ export default function AdminDashboard() {
                       <strong>Settings:</strong> Configure system settings and preferences
                     </li>
                   </ul>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Statistics Tab: first-party visitor statistics (docs/statistics.md) */}
+          {userRoles.hasAdminView && (
+            <TabsContent value="statistics" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Visitor statistics</CardTitle>
+                  <CardDescription>
+                    Page views and unique visitors on the public site
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <StatisticsPanel />
                 </CardContent>
               </Card>
             </TabsContent>
