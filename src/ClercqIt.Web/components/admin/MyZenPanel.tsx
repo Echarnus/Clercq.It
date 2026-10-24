@@ -1,7 +1,26 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Loader2, LogIn, Unplug } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  LogIn,
+  Pencil,
+  Plus,
+  Trash2,
+  Unplug,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,17 +34,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  createMyZenTimeEntry,
+  deleteMyZenTimeEntry,
   disconnectMyZen,
   fetchMyZenStatus,
   fetchMyZenTimeEntries,
+  fetchMyZenTimeEntry,
   MyZenNotConnectedError,
+  MyZenRejectedError,
   startMyZenLogin,
   submitMyZenLogin,
   submitMyZenMfaCode,
   type MyZenLoginStep,
   type MyZenStatus,
   type MyZenTimeEntry,
+  type MyZenTimeEntryInput,
+  updateMyZenTimeEntry,
 } from "@/lib/api/myzenApi";
+import { formatDuration, MyZenEntryForm } from "./MyZenEntryForm";
 
 /** The first and last day of the month that contains `day`, as yyyy-MM-dd. */
 export function monthOf(day: Date): { from: string; to: string } {
@@ -36,16 +62,23 @@ export function monthOf(day: Date): { from: string; to: string } {
   return { from: `${y}-${pad(m)}-01`, to: `${y}-${pad(m)}-${pad(last)}` };
 }
 
+/** The month before (-1) or after (+1) the one starting at `from` (yyyy-MM-01). */
+export function shiftMonth(from: string, months: number): { from: string; to: string } {
+  const [y, m] = from.split("-").map(Number);
+  return monthOf(new Date(y, m - 1 + months, 1));
+}
+
 function formatTime(value: string | null): string {
   return value ? new Date(value).toLocaleString() : "never";
 }
 
 /**
  * Connects the owner's MyZen account (issue #345, docs/myzen.md): MyZen's own
- * login, with the CAPTCHA and MFA code typed here, then this month's entries.
+ * login, with the CAPTCHA and MFA code typed here. Once connected it lists a
+ * month's entries and adds, edits and deletes them one at a time (issue #357).
  */
 export function MyZenPanel({ today }: { today?: Date }) {
-  const [month] = useState(() => monthOf(today ?? new Date()));
+  const [month, setMonth] = useState(() => monthOf(today ?? new Date()));
   const [status, setStatus] = useState<MyZenStatus | null>(null);
   const [step, setStep] = useState<MyZenLoginStep | null>(null);
   const [captcha, setCaptcha] = useState("");
@@ -53,6 +86,9 @@ export function MyZenPanel({ today }: { today?: Date }) {
   const [entries, setEntries] = useState<MyZenTimeEntry[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // The form: a new entry, an entry being edited, or closed.
+  const [editing, setEditing] = useState<MyZenTimeEntry | "new" | null>(null);
+  const [deleting, setDeleting] = useState<MyZenTimeEntry | null>(null);
 
   const loadStatus = useCallback(
     () =>
@@ -66,18 +102,69 @@ export function MyZenPanel({ today }: { today?: Date }) {
     void loadStatus();
   }, [loadStatus]);
 
+  /** Shows what went wrong; a lost session reloads the status, so the Reconnect button appears. */
+  const fail = useCallback(
+    (e: unknown, message: string) => {
+      if (e instanceof MyZenNotConnectedError) {
+        setEditing(null);
+        void loadStatus();
+      } else {
+        setError(e instanceof MyZenRejectedError ? e.message : message);
+      }
+    },
+    [loadStatus],
+  );
+
+  const loadEntries = useCallback(
+    () =>
+      fetchMyZenTimeEntries(month.from, month.to)
+        .then(setEntries)
+        .catch((e: unknown) => fail(e, "Could not load the time entries.")),
+    [month, fail],
+  );
+
   useEffect(() => {
     if (status?.state !== "Connected") return;
-    fetchMyZenTimeEntries(month.from, month.to)
-      .then(setEntries)
-      .catch((e: unknown) => {
-        if (e instanceof MyZenNotConnectedError) {
-          void loadStatus();
-        } else {
-          setError("Could not load the time entries.");
-        }
-      });
-  }, [status?.state, month, loadStatus]);
+    void loadEntries();
+  }, [status?.state, loadEntries]);
+
+  const save = async (input: MyZenTimeEntryInput) => {
+    try {
+      if (editing === "new") {
+        await createMyZenTimeEntry(input);
+      } else if (editing) {
+        await updateMyZenTimeEntry(editing.id, input);
+      }
+    } catch (e: unknown) {
+      if (e instanceof MyZenNotConnectedError) fail(e, "");
+      throw e;
+    }
+    setEditing(null);
+    await loadEntries();
+  };
+
+  const edit = async (entry: MyZenTimeEntry) => {
+    setError(null);
+    try {
+      setEditing(await fetchMyZenTimeEntry(entry.id));
+    } catch (e: unknown) {
+      fail(e, "Could not open the time entry.");
+    }
+  };
+
+  const remove = async (entry: MyZenTimeEntry) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteMyZenTimeEntry(entry.id);
+      await loadEntries();
+    } catch (e: unknown) {
+      fail(e, "MyZen did not delete the entry.");
+    } finally {
+      setBusy(false);
+      setDeleting(null);
+    }
+  };
 
   const run = async (action: () => Promise<MyZenLoginStep | void>) => {
     setBusy(true);
@@ -200,6 +287,44 @@ export function MyZenPanel({ today }: { today?: Date }) {
             <Unplug className="mr-2 h-4 w-4" />
             Disconnect
           </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Previous month"
+              onClick={() => setMonth((m) => shiftMonth(m.from, -1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <span className="text-sm font-medium" aria-live="polite">
+              {month.from.slice(0, 7)}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Next month"
+              onClick={() => setMonth((m) => shiftMonth(m.from, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button
+              className="ml-auto"
+              disabled={editing !== null}
+              onClick={() => setEditing("new")}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              Add entry
+            </Button>
+          </div>
+          {editing && (
+            <MyZenEntryForm
+              key={editing === "new" ? "new" : editing.id}
+              entry={editing === "new" ? undefined : editing}
+              defaultDate={month.from}
+              onSave={save}
+              onCancel={() => setEditing(null)}
+            />
+          )}
           {entries && (
             <Table>
               <TableHeader>
@@ -209,12 +334,15 @@ export function MyZenPanel({ today }: { today?: Date }) {
                   <TableHead>Description</TableHead>
                   <TableHead className="text-right">Duration</TableHead>
                   <TableHead>Invoiced</TableHead>
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {entries.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-muted-foreground">
+                    <TableCell colSpan={6} className="text-muted-foreground">
                       No time entries this month.
                     </TableCell>
                   </TableRow>
@@ -224,13 +352,53 @@ export function MyZenPanel({ today }: { today?: Date }) {
                     <TableCell>{entry.date}</TableCell>
                     <TableCell>{entry.project}</TableCell>
                     <TableCell>{entry.description}</TableCell>
-                    <TableCell className="text-right">{entry.duration.slice(0, 5)}</TableCell>
+                    <TableCell className="text-right">{formatDuration(entry.duration)}</TableCell>
                     <TableCell>{entry.invoiced ? "Yes" : "No"}</TableCell>
+                    <TableCell className="text-right whitespace-nowrap">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit entry of ${entry.date}`}
+                        disabled={busy}
+                        onClick={() => void edit(entry)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Delete entry of ${entry.date}`}
+                        disabled={busy}
+                        onClick={() => setDeleting(entry)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           )}
+          <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete this time entry?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {deleting &&
+                    `${deleting.date}, ${deleting.project}, ${formatDuration(deleting.duration)}. MyZen removes it for good.`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => deleting && void remove(deleting)}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         </>
       )}
     </div>

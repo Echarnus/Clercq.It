@@ -11,6 +11,18 @@ public record GetMyZenTimeEntriesQuery(DateOnly From, DateOnly To) : IRequest<IR
 
 public record GetMyZenTimeEntryQuery(long Id) : IRequest<MyZenTimeEntryDto?>;
 
+public record SearchMyZenProjectsQuery(string Query) : IRequest<IReadOnlyList<MyZenProjectOptionDto>>;
+
+public class SearchMyZenProjectsQueryValidator : AbstractValidator<SearchMyZenProjectsQuery>
+{
+    public SearchMyZenProjectsQueryValidator()
+    {
+        // MyZen's lookup only answers from a two-character prefix.
+        RuleFor(x => x.Query)
+            .Must(q => q?.Trim().Length is >= 2 and <= 50).WithMessage("Search must be 2 to 50 characters");
+    }
+}
+
 public class GetMyZenTimeEntriesQueryValidator : AbstractValidator<GetMyZenTimeEntriesQuery>
 {
     /// <summary>Longest period one request may read; each page is a round trip to MyZen.</summary>
@@ -60,4 +72,11 @@ public class GetMyZenTimeEntryQueryHandler(IMyZenGateway gateway) : IRequestHand
 {
     public Task<MyZenTimeEntryDto?> Handle(GetMyZenTimeEntryQuery request, CancellationToken cancellationToken) =>
         gateway.GetTimeEntryAsync(request.Id, cancellationToken);
+}
+
+public class SearchMyZenProjectsQueryHandler(IMyZenGateway gateway)
+    : IRequestHandler<SearchMyZenProjectsQuery, IReadOnlyList<MyZenProjectOptionDto>>
+{
+    public Task<IReadOnlyList<MyZenProjectOptionDto>> Handle(SearchMyZenProjectsQuery request, CancellationToken cancellationToken) =>
+        gateway.SearchProjectsAsync(request.Query.Trim(), cancellationToken);
 }

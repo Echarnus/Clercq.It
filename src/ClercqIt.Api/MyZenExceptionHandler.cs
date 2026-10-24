@@ -5,7 +5,7 @@ namespace Clercq.It.Api;
 
 /// <summary>
 /// MyZen failures become problem responses: 409 when the session must be
-/// reconnected, 502 when MyZen cannot be reached or answers unexpectedly.
+/// reconnected, 422 when MyZen refuses a change, 502 when MyZen cannot be reached or answers unexpectedly.
 /// </summary>
 public sealed class MyZenExceptionHandler : IExceptionHandler
 {
@@ -14,6 +14,7 @@ public sealed class MyZenExceptionHandler : IExceptionHandler
         var (status, title) = exception switch
         {
             MyZenNotConnectedException => (StatusCodes.Status409Conflict, "MyZen is not connected"),
+            MyZenRejectedException => (StatusCodes.Status422UnprocessableEntity, "MyZen refused the change"),
             MyZenUnavailableException => (StatusCodes.Status502BadGateway, "MyZen is unavailable"),
             _ => (0, string.Empty),
         };

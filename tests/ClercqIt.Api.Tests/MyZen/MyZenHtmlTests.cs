@@ -1,3 +1,4 @@
+using Clercq.It.Application.Features.MyZen;
 using Clercq.It.Infrastructure.MyZen;
 using FluentAssertions;
 
@@ -121,7 +122,7 @@ public class MyZenHtmlTests
 
         // Assert
         projects.Should().ContainSingle().Which.Should().Be(
-            new Clercq.It.Application.Features.MyZen.MyZenProjectDto(555, "Acme Website", "Acme NV", "01/01/2026", null, "Bezig"));
+            new MyZenProjectDto(555, "Acme Website", "Acme NV", "01/01/2026", null, "Bezig"));
         hasNext.Should().BeTrue();
         hasNextAfterLast.Should().BeFalse();
     }
@@ -132,6 +133,47 @@ public class MyZenHtmlTests
         var (projects, _) = MyZenHtml.ParseProjectList("""<table><tbody><tr id="ProjectID-9"><td>Solo</td></tr></tbody></table>""", 0);
 
         projects.Should().ContainSingle().Which.Should().Be(
-            new Clercq.It.Application.Features.MyZen.MyZenProjectDto(9, "Solo", "", null, null, ""));
+            new MyZenProjectDto(9, "Solo", "", null, null, ""));
+    }
+
+    [Fact(DisplayName = "The project lookup gives each project with its customer")]
+    public void ParseProjectSuggestions_ReadsCustomer()
+    {
+        // Act
+        var options = MyZenHtml.ParseProjectSuggestions(MyZenPages.ProjectSuggestions);
+
+        // Assert
+        options.Should().Equal(
+            new MyZenProjectOptionDto(20788, "Acme Website", 777, "Acme NV"),
+            new MyZenProjectOptionDto(23200, "Vakantie", null, ""));
+    }
+
+    [Theory(DisplayName = "An unexpected project lookup answer gives no projects")]
+    [InlineData("not json")]
+    [InlineData("{}")]
+    [InlineData("""[{"label":"No id"},{"value":"x","label":"Bad id"},3]""")]
+    public void ParseProjectSuggestions_Unexpected_Empty(string body)
+    {
+        MyZenHtml.ParseProjectSuggestions(body).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "A save or delete answer without an error counts as accepted")]
+    [InlineData("")]
+    [InlineData("""{"Success":true}""")]
+    [InlineData("{broken")]
+    [InlineData("""<form><span class="field-validation-valid"></span><div class="alert alert-danger d-none">hidden</div></form>""")]
+    public void ParseChangeError_Accepted_Null(string body)
+    {
+        MyZenHtml.ParseChangeError(body).Should().BeNull();
+    }
+
+    [Theory(DisplayName = "A save or delete answer with an error gives MyZen's reason")]
+    [InlineData("""{"Success":false,"Message":"Project is closed"}""", "Project is closed")]
+    [InlineData("""{"Success":false}""", "MyZen refused the change.")]
+    [InlineData("""<form><span class="field-validation-error">Date is required</span></form>""", "Date is required")]
+    [InlineData("""<div class="validation-summary-errors"><ul><li>Too long</li></ul></div>""", "Too long")]
+    public void ParseChangeError_Refused_Reason(string body, string reason)
+    {
+        MyZenHtml.ParseChangeError(body).Should().Be(reason);
     }
 }

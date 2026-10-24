@@ -444,6 +444,250 @@ public class MyZenGatewayTests
         await act.Should().ThrowAsync<MyZenNotConnectedException>();
     }
 
+    [Fact(DisplayName = "The project search asks MyZen's lookup with the page token")]
+    public async Task SearchProjects_UsesLookup()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/Base/GetAutoSuggestValues", MyZenPages.ProjectSuggestions);
+
+        // Act
+        var options = await Gateway().SearchProjectsAsync("acme", CancellationToken.None);
+
+        // Assert
+        options.Should().HaveCount(2);
+        var lookup = _myZen.Requests[1];
+        lookup.Headers["RequestVerificationToken"].Should().Be("page-token");
+        lookup.Form.Should().Contain("q=acme").And.Contain("autoSuggestType=Projects");
+    }
+
+    [Fact(DisplayName = "Creating an entry posts MyZen's save form with an empty ID")]
+    public async Task CreateTimeEntry_PostsForm()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntryDetails", "");
+
+        // Act
+        await Gateway().CreateTimeEntryAsync(Input, CancellationToken.None);
+
+        // Assert
+        var save = _myZen.Requests[1];
+        save.Headers["RequestVerificationToken"].Should().Be("page-token");
+        save.Headers["newui"].Should().Be("true");
+        save.Form.Should().Be("TimeRegistrationID=&ProjectID=20788&CustomerID=777&Date=01%2F09%2F2026&Duration=27000&Description=Sprint+review&Invoiced=false");
+        _store.Record!.State.Should().Be(MyZenSessionState.Connected);
+    }
+
+    [Fact(DisplayName = "An entry without a customer sends an empty customer ID")]
+    public async Task CreateTimeEntry_NoCustomer_EmptyField()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntryDetails", """{"Success":true}""");
+
+        // Act
+        await Gateway().CreateTimeEntryAsync(Input with { CustomerId = null, Invoiced = true }, CancellationToken.None);
+
+        // Assert
+        _myZen.Requests[1].Form.Should().Contain("CustomerID=&").And.EndWith("Invoiced=true");
+    }
+
+    [Fact(DisplayName = "A save MyZen refuses throws Rejected and keeps the session")]
+    public async Task CreateTimeEntry_Refused_ThrowsRejected()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntryDetails",
+            """<form><span class="field-validation-error">Project is closed</span></form>""");
+
+        // Act
+        var act = () => Gateway().CreateTimeEntryAsync(Input, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenRejectedException>().WithMessage("Project is closed");
+        _store.Record!.State.Should().Be(MyZenSessionState.Connected);
+    }
+
+    [Fact(DisplayName = "A save MyZen answers with an error status throws Unavailable")]
+    public async Task CreateTimeEntry_ServerError_Unavailable()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntryDetails", "", status: HttpStatusCode.InternalServerError);
+
+        // Act
+        var act = () => Gateway().CreateTimeEntryAsync(Input, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenUnavailableException>().WithMessage("MyZen answered 500 to the save.");
+    }
+
+    [Fact(DisplayName = "A save that lands on the login page marks the session expired")]
+    public async Task CreateTimeEntry_Expired_Throws()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.Login(), finalPath: "/Account/Logon");
+
+        // Act
+        var act = () => Gateway().CreateTimeEntryAsync(Input, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenNotConnectedException>();
+        _store.Record!.State.Should().Be(MyZenSessionState.Expired);
+    }
+
+    [Fact(DisplayName = "Updating an entry checks it exists, then saves it under its ID")]
+    public async Task UpdateTimeEntry_SavesWithId()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(101));
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntryDetails", "");
+
+        // Act
+        var found = await Gateway().UpdateTimeEntryAsync(101, Input, CancellationToken.None);
+
+        // Assert
+        found.Should().BeTrue();
+        _myZen.Requests[0].Query.Should().Be("?ID=101&projectSelectable=true");
+        _myZen.Requests[2].Form.Should().StartWith("TimeRegistrationID=101&");
+    }
+
+    [Fact(DisplayName = "Updating or deleting an unknown entry changes nothing")]
+    public async Task UpdateOrDelete_Unknown_ReturnsFalse()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", "<form></form>");
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(102));
+
+        // Act
+        var updated = await Gateway().UpdateTimeEntryAsync(101, Input, CancellationToken.None);
+        var deleted = await Gateway().DeleteTimeEntryAsync(101, CancellationToken.None);
+
+        // Assert
+        updated.Should().BeFalse();
+        deleted.Should().BeFalse();
+        _myZen.Requests.Should().OnlyContain(r => r.Method == "GET");
+    }
+
+    [Fact(DisplayName = "Deleting an entry checks it exists, then posts its ID")]
+    public async Task DeleteTimeEntry_PostsId()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(101));
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/DeleteTimeRegistration", """{"Success":true}""");
+
+        // Act
+        var found = await Gateway().DeleteTimeEntryAsync(101, CancellationToken.None);
+
+        // Assert
+        found.Should().BeTrue();
+        var delete = _myZen.Requests[2];
+        delete.Form.Should().Be("ID=101");
+        delete.Headers["RequestVerificationToken"].Should().Be("page-token");
+    }
+
+    [Fact(DisplayName = "A delete MyZen refuses throws Rejected")]
+    public async Task DeleteTimeEntry_Refused_ThrowsRejected()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(101));
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/DeleteTimeRegistration", """{"Success":false,"Message":"Invoiced"}""");
+
+        // Act
+        var act = () => Gateway().DeleteTimeEntryAsync(101, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenRejectedException>().WithMessage("Invoiced");
+    }
+
+    [Theory(DisplayName = "A change that lands on the login page marks the session expired")]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task DeleteTimeEntry_Expired_Throws(int loginAt)
+    {
+        // Arrange
+        await ConnectAsync();
+        var steps = new (HttpMethod Method, string Path, string Body)[]
+        {
+            (HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(101)),
+            (HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex),
+            (HttpMethod.Post, "/TimeRegistration/DeleteTimeRegistration", ""),
+        };
+        for (var i = 0; i <= loginAt; i++)
+        {
+            var (method, path, body) = steps[i];
+            if (i == loginAt)
+            {
+                _myZen.Respond(method, path, MyZenPages.Login(), finalPath: "/Account/Logon");
+            }
+            else
+            {
+                _myZen.Respond(method, path, body);
+            }
+        }
+
+        // Act
+        var act = () => Gateway().DeleteTimeEntryAsync(101, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenNotConnectedException>();
+        _store.Record!.State.Should().Be(MyZenSessionState.Expired);
+    }
+
+    [Theory(DisplayName = "An update that lands on the login page marks the session expired")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task UpdateTimeEntry_Expired_Throws(bool atDetails)
+    {
+        // Arrange
+        await ConnectAsync();
+        if (atDetails)
+        {
+            _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.Login(), finalPath: "/Account/Logon");
+        }
+        else
+        {
+            _myZen.Respond(HttpMethod.Get, "/TimeRegistration/TimeRegistrationEntryDetails", MyZenPages.EntryDetails(101));
+            _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.Login(), finalPath: "/Account/Logon");
+        }
+
+        // Act
+        var act = () => Gateway().UpdateTimeEntryAsync(101, Input, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenNotConnectedException>();
+    }
+
+    [Fact(DisplayName = "A project search that lands on the login page marks the session expired")]
+    public async Task SearchProjects_Expired_Throws()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/Base/GetAutoSuggestValues", MyZenPages.Login(), finalPath: "/Account/Logon");
+
+        // Act
+        var act = () => Gateway().SearchProjectsAsync("acme", CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenNotConnectedException>();
+    }
+
     [Fact(DisplayName = "A network failure becomes MyZen unavailable")]
     public async Task NetworkFailure_Unavailable()
     {
@@ -470,6 +714,8 @@ public class MyZenGatewayTests
         handler.CookieContainer.Should().BeSameAs(cookies);
         handler.AllowAutoRedirect.Should().BeTrue();
     }
+
+    private static readonly MyZenTimeEntryInput Input = new(new DateOnly(2026, 9, 1), 450, 20788, 777, "Sprint review", false);
 
     private async Task StartAsync()
     {

@@ -41,9 +41,27 @@ public record MyZenTimeEntryDto(
     TimeSpan Duration,
     bool Invoiced);
 
+/// <summary>A project MyZen suggests for a search, with the customer a time entry on it must carry.</summary>
+public record MyZenProjectOptionDto(long Id, string Name, long? CustomerId, string Customer);
+
+/// <summary>
+/// A time entry to create or update. <c>CustomerId</c> is null for projects without a customer,
+/// such as MyZen's absence projects (Feestdag, Vakantie, Ziekte).
+/// </summary>
+public record MyZenTimeEntryInput(
+    DateOnly Date,
+    int DurationMinutes,
+    long ProjectId,
+    long? CustomerId,
+    string? Description,
+    bool Invoiced);
+
 /// <summary>Thrown when MyZen is asked for data without a live session; the API answers 409.</summary>
 public sealed class MyZenNotConnectedException()
     : Exception("MyZen is not connected. Connect it again from the admin page.");
 
 /// <summary>Thrown when MyZen answers in a way the client does not understand; the API answers 502.</summary>
 public sealed class MyZenUnavailableException(string message) : Exception(message);
+
+/// <summary>Thrown when MyZen refuses a change, with MyZen's reason when it gave one; the API answers 422.</summary>
+public sealed class MyZenRejectedException(string message) : Exception(message);

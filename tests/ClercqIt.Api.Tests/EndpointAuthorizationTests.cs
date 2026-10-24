@@ -35,6 +35,10 @@ public class EndpointAuthorizationTests(CustomWebApplicationFactory factory)
         { "GET", "/api/myzen/projects", "certs" },
         { "GET", "/api/myzen/time-entries?from=2026-09-01&to=2026-09-30", "blogger" },
         { "GET", "/api/myzen/time-entries/1", "projects" },
+        { "GET", "/api/myzen/projects/search?q=web", "blogger" },
+        { "POST", "/api/myzen/time-entries", "certs" },
+        { "PUT", "/api/myzen/time-entries/1", "blogger" },
+        { "DELETE", "/api/myzen/time-entries/1", "projects" },
     };
 
     [Theory(DisplayName = "Protected endpoint without a token returns 401")]
