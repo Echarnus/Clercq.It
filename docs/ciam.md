@@ -134,7 +134,7 @@ Keycloak__Realm=clercqit
 Keycloak__ClientId=clercqit-web
 ```
 
-When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client stays for now, because the separate `administration-api` container in `infra/terraform/main.tf` is still configured with it.
+When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client can go too: its last user, the `administration-api` container, was removed in #387.
 
 ### Scaleway Container Deployment
 
