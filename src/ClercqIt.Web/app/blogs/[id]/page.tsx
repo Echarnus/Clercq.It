@@ -9,6 +9,7 @@ import { ArrowLeft, Calendar } from "lucide-react";
 import { fetchBlogById } from "../lib/api";
 import { Markdown } from "@/components/markdown";
 import { notFound } from "next/navigation";
+import { imageOrNone } from "@/lib/utils";
 
 interface BlogDetailPageProps {
   params: Promise<{ id: string }>;
@@ -30,6 +31,8 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   if (!blog) {
     notFound();
   }
+
+  const image = imageOrNone(blog.image);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -74,13 +77,15 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         <article className="lg:col-span-3 lg:row-start-2">
           {/* Blog Content with Image */}
           <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
-            <BlurImage
-              src={blog.image || "/placeholder.svg"}
-              alt={blog.title}
-              width={250}
-              height={250}
-              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
-            />
+            {image && (
+              <BlurImage
+                src={image}
+                alt={blog.title}
+                width={250}
+                height={250}
+                containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
+              />
+            )}
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               {/* Content files default the body to the summary; do not show it twice. */}
