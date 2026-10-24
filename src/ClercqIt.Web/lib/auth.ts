@@ -51,7 +51,7 @@ function getManager(): Promise<UserManager> {
 }
 
 /** Only same-site admin paths are allowed as a return address. */
-function safeReturnTo(value: unknown): string {
+export function safeReturnTo(value: unknown): string {
   return typeof value === "string" && value.startsWith("/admin") && !value.startsWith("//")
     ? value
     : DEFAULT_RETURN_TO;
