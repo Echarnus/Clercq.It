@@ -17,7 +17,7 @@ The frontend runs Next.js 16 (Turbopack builds), React 19, Tailwind CSS 4, zod 4
 
 Linting runs on ESLint 10 and type checks on TypeScript 6 (#378). `eslint-plugin-jsx-a11y`, `eslint-plugin-react` and `eslint-plugin-import` (the last two come with `eslint-config-next`) still declare ESLint 9 as their highest peer, but they load and report under ESLint 10, so `pnpm.peerDependencyRules.allowedVersions` in `package.json` allows `eslint` 10 for them. Drop that rule once the plugins declare ESLint 10. Held back on purpose: TypeScript stays on 6.0 because `typescript-eslint` 8 supports TypeScript below 6.1; `@types/node` stays on 24 to match the Node 24 runtime (Dependabot ignores newer majors). Lift a hold when the blocking package catches up.
 
-`package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
+`package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite, `postcss-selector-parser` under `@tailwindcss/typography`). Drop an override once the parent ships the fixed version.
 
 ### Optional Tools
 - **Visual Studio 2022** or **VS Code** with C# extension

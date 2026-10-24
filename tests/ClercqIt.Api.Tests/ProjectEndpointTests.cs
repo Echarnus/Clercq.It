@@ -188,6 +188,38 @@ public class ProjectEndpointTests : IAsyncLifetime
         updatedProject.GetProperty("featured").GetBoolean().Should().BeTrue();
     }
 
+    [Fact(DisplayName = "PUT /api/projects/{id} with removeImage clears the image")]
+    public async Task UpdateProject_RemoveImage_ClearsImage()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        using var createContent = CreateProjectFormContent(
+            "Image Project", "Short", "Long",
+            "2024-01-01", "2024-12-31", "false", "rust");
+        var createResponse = await client.PostAsync("/api/projects", createContent);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdProject = JsonSerializer.Deserialize<JsonElement>(
+            await createResponse.Content.ReadAsStringAsync(), JsonOptions);
+        createdProject.GetProperty("image").GetString().Should().NotBeNullOrEmpty();
+        var projectId = createdProject.GetProperty("id").GetString();
+
+        using var updateContent = new MultipartFormDataContent();
+        updateContent.Add(new StringContent("Image Project"), "title");
+        updateContent.Add(new StringContent("Short"), "shortDescription");
+        updateContent.Add(new StringContent("Long"), "longDescription");
+        updateContent.Add(new StringContent("2024-01-01"), "startDate");
+        updateContent.Add(new StringContent("2024-12-31"), "endDate");
+        updateContent.Add(new StringContent("false"), "featured");
+        updateContent.Add(new StringContent("rust"), "skills");
+        updateContent.Add(new StringContent("true"), "removeImage");
+
+        var updateResponse = await client.PutAsync($"/api/projects/{projectId}", updateContent);
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updatedProject = JsonSerializer.Deserialize<JsonElement>(
+            await updateResponse.Content.ReadAsStringAsync(), JsonOptions);
+        updatedProject.GetProperty("image").GetString().Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "DELETE /api/projects/{id} returns NoContent after successful deletion")]
     public async Task DeleteProject_ProjectExists_ReturnsNoContent()
     {

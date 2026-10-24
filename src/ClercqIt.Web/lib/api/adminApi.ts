@@ -257,6 +257,8 @@ export interface UpdateProjectData {
   shortDescription: string;
   longDescription: string;
   image?: File;
+  /** Clears the current image. Ignored when a new image is sent. */
+  removeImage?: boolean;
   startDate: string;
   endDate: string;
   featured: boolean;
@@ -270,6 +272,8 @@ export async function updateProject(id: string, data: UpdateProjectData): Promis
   formData.append("longDescription", data.longDescription);
   if (data.image) {
     formData.append("image", data.image);
+  } else if (data.removeImage) {
+    formData.append("removeImage", "true");
   }
   formData.append("startDate", data.startDate);
   formData.append("endDate", data.endDate);
