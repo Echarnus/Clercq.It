@@ -15,9 +15,8 @@ Project, blog and certification images are stored in Scaleway Object Storage (S3
 | Environment | Bucket | Credentials |
 | --- | --- | --- |
 | Production | `clercq-it-blog-images` (public-read ACL), `infra/terraform/main.tf` | IAM application `clercq-it-app-storage` and its API key, `infra/terraform/iam.tf` |
-| Verify | `clercq-it-verify-images` (public-read ACL), `infra/terraform/verify.tf` | IAM application `clercq-it-verify-storage` and its API key, `infra/terraform/verify.tf` |
 
-Terraform creates the keys and passes them to the container as secret environment variables. Nobody creates or copies a key by hand. Each key can only reach its own bucket (bucket policies in `infra/terraform/storage_policies.tf`). See [Secrets](./secrets.md) for rotation.
+Terraform creates the keys and passes them to the container as secret environment variables. Nobody creates or copies a key by hand. The key can only reach its own bucket (bucket policies in `infra/terraform/storage_policies.tf`). See [Secrets](./secrets.md) for rotation.
 
 ## Configuration
 

@@ -71,39 +71,6 @@ resource "scaleway_object_bucket_policy" "blog_images" {
   })
 }
 
-resource "scaleway_object_bucket_policy" "verify_images" {
-  bucket = scaleway_object_bucket.verify_images.name
-  region = var.scaleway_region
-
-  policy = jsonencode({
-    Version = "2023-04-17"
-    Id      = "clercq-it-verify-images"
-    Statement = [
-      {
-        Sid       = "Terraform manages the bucket"
-        Effect    = "Allow"
-        Principal = { SCW = local.terraform_principal }
-        Action    = "*"
-        Resource  = [scaleway_object_bucket.verify_images.name, "${scaleway_object_bucket.verify_images.name}/*"]
-      },
-      {
-        Sid       = "The verify container and content import read and write images"
-        Effect    = "Allow"
-        Principal = { SCW = "application_id:${scaleway_iam_application.verify_storage.id}" }
-        Action    = concat(["s3:ListBucket"], local.image_object_actions)
-        Resource  = [scaleway_object_bucket.verify_images.name, "${scaleway_object_bucket.verify_images.name}/*"]
-      },
-      {
-        Sid       = "Everyone can view the images"
-        Effect    = "Allow"
-        Principal = "*"
-        Action    = ["s3:GetObject"]
-        Resource  = ["${scaleway_object_bucket.verify_images.name}/*"]
-      },
-    ]
-  })
-}
-
 # The state bucket is created outside Terraform (infra/scripts/setup-backend.sh)
 # in this project. Only Terraform may touch it.
 resource "scaleway_object_bucket_policy" "terraform_state" {

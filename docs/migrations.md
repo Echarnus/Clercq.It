@@ -152,14 +152,11 @@ The build workflow generates an idempotent migration SQL script:
 
 ### Deploy Workflow (`deploy.yml`)
 
-The deploy workflow downloads `migration.sql` from the `build` run that triggered it and runs it twice with `psql -v ON_ERROR_STOP=1`:
+The deploy workflow downloads `migration.sql` from the `build` run that triggered it and runs it with `psql -v ON_ERROR_STOP=1` (`Execute database migrations`): against `clercqit_portfolio` as `clercqit_user`, with the password from the Terraform output `database_migrator_password`. Then the same login runs `infra/sql/grant-app-user.sql`, so the runtime login `clercqit_app` can use new tables. The run uses TLS with the pinned instance certificate (`PGSSLMODE=verify-ca`).
 
-1. **Verify** (`Verify: migrate database`): against `clercqit_verify` as `clercqit_verify_user`, with the password from the Terraform output `verify_database_password`. A failure stops the run before production is touched ([Verify stage](./devops.md#verify-stage)).
-2. **Production** (`Execute database migrations`): against `clercqit_portfolio` as `clercqit_user`, with the password from the Terraform output `database_migrator_password`.
+Before merge, the `Container smoke test` PR check already applied the same kind of script to an empty Postgres and started the image against it ([Release gates](./devops.md#release-gates)).
 
-After each run, the same login runs `infra/sql/grant-app-user.sql`, so the runtime login (`clercqit_verify_app`, `clercqit_app`) can use new tables. Both runs use TLS with the pinned instance certificate (`PGSSLMODE=verify-ca`).
-
-The host, port and database names come from the Terraform outputs (`database_endpoint`, `database_port`, `database_name`, `verify_database_name`), read once in the `Read infrastructure outputs` step. Sensitive values are masked in the log.
+The host, port and database name come from the Terraform outputs (`database_endpoint`, `database_port`, `database_name`), read once in the `Read infrastructure outputs` step. Sensitive values are masked in the log.
 
 **Note:** Migrations run only when `deploy.yml` is triggered by the `build` workflow. A manual deploy (`workflow_dispatch`) skips them, and the content import too.
 
@@ -437,14 +434,13 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ 1. Download migration script artifact (from build)        │  │
 │  │ 2. Read DB host and names from Terraform outputs          │  │
-│  │ 3. Migrate the verify database, deploy and smoke-test     │  │
-│  │ 4. Migrate the production database                        │  │
-│  │ 5. Deploy container to Scaleway, smoke test               │  │
+│  │ 3. Migrate the production database                        │  │
+│  │ 4. Deploy container to Scaleway, smoke test               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
 │  deploy.yml (manual workflow_dispatch)                            │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Deploy the chosen version (verify, then production)    │  │
+│  │ 1. Deploy the chosen version to production                │  │
 │  │    (migrations and content import skipped)                │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │

@@ -42,7 +42,7 @@ Create a new realm named `clercqit` with the following settings (matching the lo
 - **Remember Me**: true
 - **Brute Force Protection**: enabled
 
-Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Action > Partial import**, then adjust client redirect URIs for production. This is how the current deployment was built: a copy of that file without users and client secrets, with the production and verify redirect URIs, imported as 5 clients and 4 realm roles. Partial import does not cover client scopes, so step 5 is done by hand: a new realm already has a built-in `roles` scope, and its **realm roles** mapper was changed to token claim name `roles` with ID token, access token and userinfo on.
+Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Action > Partial import**, then adjust client redirect URIs for production. This is how the current deployment was built: a copy of that file without users and client secrets, with the production and (since removed) verify redirect URIs, imported as 5 clients and 4 realm roles. Partial import does not cover client scopes, so step 5 is done by hand: a new realm already has a built-in `roles` scope, and its **realm roles** mapper was changed to token claim name `roles` with ID token, access token and userinfo on.
 
 ### 3. Create Clients
 
@@ -63,10 +63,6 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Valid Post Logout Redirect URIs**: `https://www.clercq.it/admin`
 - **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
-
-#### `clercqit-web-verify` (Public, Standard Flow)
-
-The verify container (`Keycloak__ClientId` in `infra/terraform/verify.tf`) signs in with its own client. Configure it like `clercqit-web`, with the verify URL (Terraform output `verify_container_url`) in **Valid Redirect URIs** (`https://<verify-url>/admin/callback`), **Valid Post Logout Redirect URIs** and **Web Origins**.
 
 #### MCP clients
 
@@ -138,7 +134,7 @@ Keycloak__Realm=clercqit
 Keycloak__ClientId=clercqit-web
 ```
 
-When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client can go too: its last user, the `administration-api` container, was removed in #387.
+When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` or `clercqit-web-verify` client, delete it under **Clients**; nothing uses them since the verify environment was removed (#440). The Cloud IAM `clercqit-admin` client can go too: its last user, the `administration-api` container, was removed in #387.
 
 ### Scaleway Container Deployment
 

@@ -286,7 +286,7 @@ These are GitHub settings, not code. The owner turns them on once:
 
 ### Workflow output
 
-This repository is public, so workflow logs and job summaries are public too. Never print a secret or a sensitive Terraform output there. `deploy.yml` masks the sensitive outputs it reads (`::add-mask::`), and the `Terraform Output` step in `infra.yml` writes only the outputs without `sensitive = true` to the summary. Until #435 it wrote all of them with `terraform output -json`, which shows sensitive values in plain text; the exposed verify credentials were rotated (see [Secrets](./secrets.md#rotating-a-terraform-generated-credential)).
+This repository is public, so workflow logs and job summaries are public too. Never print a secret or a sensitive Terraform output there. `deploy.yml` masks the sensitive outputs it reads (`::add-mask::`), and the `Terraform Output` step in `infra.yml` writes only the outputs without `sensitive = true` to the summary. Until #435 it wrote all of them with `terraform output -json`, which shows sensitive values in plain text; the exposed verify credentials were rotated and later deleted with the verify environment (#440; see [Secrets](./secrets.md#rotating-a-terraform-generated-credential)).
 
 ## Security Layers Summary
 

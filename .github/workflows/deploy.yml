@@ -112,7 +112,7 @@ jobs:
 
       - name: Resolve image digest
         id: digest
-        # Verify and production must run the same image, not just the same tag.
+        # The release records the digest that production runs.
         run: |
           IMAGE_REF="${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
           IMAGE_DIGEST=$(docker buildx imagetools inspect "$IMAGE_REF" --format '{{json .Manifest}}' | jq -r '.digest // empty')
@@ -160,7 +160,7 @@ jobs:
           terraform_wrapper: false
 
       - name: Read infrastructure outputs
-        # Container IDs, database and bucket names for both environments
+        # Container ID, database and bucket names
         # (infra/terraform/outputs.tf). Sensitive values are masked in logs.
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
@@ -186,16 +186,6 @@ jobs:
           set_env DB_APP_PASSWORD database_app_password secret
           set_env PROD_BUCKET object_storage_bucket_name
           set_env PROD_CONTAINER_ID container_id
-          set_env VERIFY_CONTAINER_ID verify_container_id
-          set_env VERIFY_URL verify_container_url
-          set_env VERIFY_DB_NAME verify_database_name
-          set_env VERIFY_DB_USER verify_database_user
-          set_env VERIFY_DB_PASSWORD verify_database_password secret
-          set_env VERIFY_DB_APP_USER verify_database_app_user
-          set_env VERIFY_DB_APP_PASSWORD verify_database_app_password secret
-          set_env VERIFY_BUCKET verify_bucket_name
-          set_env VERIFY_STORAGE_ACCESS_KEY verify_storage_access_key secret
-          set_env VERIFY_STORAGE_SECRET_KEY verify_storage_secret_key secret
           # Every database connection uses TLS and pins the instance certificate
           # (docs/secrets.md#database-logins): psql via PGSSLMODE/PGSSLROOTCERT,
           # the content import via Database__CaCertificate.
@@ -221,78 +211,6 @@ jobs:
           github.event_name == 'workflow_run' &&
           github.event.workflow_run.name == 'build'
         run: dotnet build src/Clercq.It.ContentImport --configuration Release
-
-      # ------------------------------------------------------------------
-      # Verify stage (issue #243): the image runs against its own database,
-      # bucket and secrets first. Any failure here leaves production untouched.
-      # ------------------------------------------------------------------
-
-      - name: "Verify: migrate database"
-        if: >-
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.name == 'build'
-        run: |
-          if [ ! -f migration.sql ]; then
-            echo "⚠️  Migration script not found, skipping"
-            exit 0
-          fi
-          PGPASSWORD="$VERIFY_DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$VERIFY_DB_USER" -d "$VERIFY_DB_NAME" \
-            -f migration.sql -v ON_ERROR_STOP=1
-          # The runtime login gets rows-only access to the new tables (issue #416)
-          PGPASSWORD="$VERIFY_DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" -U "$VERIFY_DB_USER" -d "$VERIFY_DB_NAME" \
-            -v app_user="$VERIFY_DB_APP_USER" -f infra/sql/grant-app-user.sql
-          echo "✅ Verify database migrated"
-
-      - name: "Verify: import content"
-        if: >-
-          github.event_name == 'workflow_run' &&
-          github.event.workflow_run.name == 'build'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.SCALEWAY_SECRET_KEY }}
-          ObjectStorage__Endpoint: https://s3.fr-par.scw.cloud
-          ObjectStorage__Region: fr-par
-        run: |
-          export ObjectStorage__BucketName="$VERIFY_BUCKET"
-          export ObjectStorage__AccessKey="$VERIFY_STORAGE_ACCESS_KEY"
-          export ObjectStorage__SecretKey="$VERIFY_STORAGE_SECRET_KEY"
-          export ConnectionStrings__DefaultConnection="Host=$DB_HOST;Port=$DB_PORT;SSL Mode=Require;Database=$VERIFY_DB_NAME;Username=$VERIFY_DB_APP_USER;Password=$VERIFY_DB_APP_PASSWORD"
-          export Database__CaCertificate="$(cat "$PGSSLROOTCERT")"
-          dotnet run --project src/Clercq.It.ContentImport --configuration Release --no-build -- content
-
-      - name: "Verify: deploy image"
-        run: .github/scripts/set-container-image.sh "${VERIFY_CONTAINER_ID##*/}" "$IMAGE_REF"
-
-      - name: "Verify: smoke test"
-        id: verify_smoke
-        run: .github/scripts/smoke-test.sh "https://$VERIFY_URL" "${{ steps.version.outputs.version }}"
-
-      # e2e (#246) and DAST (#239) run here, against https://$VERIFY_URL, once they land.
-
-      - name: Open issue for failed verification
-        if: failure()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VERSION: ${{ steps.version.outputs.version }}
-          FAILURES: ${{ steps.verify_smoke.outputs.failures }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
-        run: .github/scripts/open-verify-issue.sh
-
-      # ------------------------------------------------------------------
-      # Production: only reached when every verify step passed.
-      # ------------------------------------------------------------------
-
-      - name: Check the image digest is still the verified one
-        id: promote
-        run: |
-          CURRENT=$(docker buildx imagetools inspect "$IMAGE_REF" --format '{{json .Manifest}}' | jq -r '.digest // empty')
-          if [[ "$CURRENT" != "$IMAGE_DIGEST" ]]; then
-            echo "❌ $IMAGE_REF moved from $IMAGE_DIGEST to ${CURRENT:-nothing} after verification; not promoting"
-            exit 1
-          fi
-          echo "✅ Promoting $IMAGE_REF ($IMAGE_DIGEST) to production"
-          echo "## ✅ Verified \`$IMAGE_REF\` ($IMAGE_DIGEST)" >> $GITHUB_STEP_SUMMARY
 
       - name: Execute database migrations
         if: >-
