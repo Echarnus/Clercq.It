@@ -84,6 +84,36 @@ export class MyZenEntryNotFoundError extends Error {
   }
 }
 
+/**
+ * Thrown for any other failed call; `message` carries the API's reason (the
+ * problem `detail`, such as "MyZen could not be reached.") when it gives one.
+ */
+export class MyZenRequestError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+  ) {
+    super(message);
+    this.name = "MyZenRequestError";
+  }
+}
+
+/** The problem `detail` of a failed response, if the API sent one. */
+async function problemDetail(response: Response): Promise<string | undefined> {
+  const problem = z
+    .object({ detail: z.string().optional() })
+    .safeParse(await response.json().catch(() => ({})));
+  return (problem.success && problem.data.detail) || undefined;
+}
+
+async function requestError(response: Response): Promise<MyZenRequestError> {
+  const detail = await problemDetail(response);
+  return new MyZenRequestError(
+    detail ?? `MyZen request failed (${response.status}).`,
+    response.status,
+  );
+}
+
 async function check(response: Response): Promise<Response> {
   if (response.status === 409) {
     throw new MyZenNotConnectedError();
@@ -92,15 +122,10 @@ async function check(response: Response): Promise<Response> {
     throw new MyZenEntryNotFoundError();
   }
   if (response.status === 422) {
-    const problem = z
-      .object({ detail: z.string().optional() })
-      .safeParse(await response.json().catch(() => ({})));
-    throw new MyZenRejectedError(
-      (problem.success && problem.data.detail) || "MyZen refused the change.",
-    );
+    throw new MyZenRejectedError((await problemDetail(response)) ?? "MyZen refused the change.");
   }
   if (!response.ok) {
-    throw new Error(`MyZen request failed (${response.status})`);
+    throw await requestError(response);
   }
   return response;
 }
@@ -111,7 +136,7 @@ async function send<T>(endpoint: string, schema: z.ZodType<T>, init: RequestInit
     throw new MyZenNotConnectedError();
   }
   if (!response.ok) {
-    throw new Error(`MyZen request failed (${response.status})`);
+    throw await requestError(response);
   }
   return schema.parse(await response.json());
 }
