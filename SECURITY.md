@@ -66,7 +66,7 @@ The project uses multiple automated security scanning tools:
   - Integrated into build pipeline
 
 #### Secret Detection
-- **TruffleHog**: Scans for accidentally committed secrets and credentials
+- **gitleaks** (`.github/workflows/sast.yml`): Scans every PR's commits and the full history on `main` for committed secrets; blocking
 - **GitHub Secret Scanning**: Native GitHub secret detection
 
 #### Security Scoring & Compliance
@@ -81,15 +81,15 @@ The project uses multiple automated security scanning tools:
 ### CI/CD Security
 
 - **Build Attestation**: All container images have signed build provenance
-- **Multi-platform Builds**: Support for AMD64 and ARM64 architectures
+- **Single platform**: `linux/amd64`, the architecture Scaleway serverless containers run
 - **Least Privilege**: GitHub Actions use minimal required permissions
-- **Secret Management**: Sensitive data stored in GitHub Secrets
+- **Secret Management**: Application secrets in Scaleway Secret Manager, pipeline credentials in GitHub Secrets (see [Secrets](./docs/secrets.md))
 - **Automated Scanning**: Security scans run on every push and pull request
 
 ### Container Security
 
 - **Non-root Execution**: Containers run with non-privileged users
-- **Minimal Base Images**: Alpine and Debian slim-based images with minimal packages
+- **Minimal Base Images**: Debian slim based images (`node:24-slim`, `nginx:1.30-trixie`), pinned by digest
 - **Health Checks**: Built-in container health monitoring
 - **Image Signing**: Container images are signed with attestations
 
