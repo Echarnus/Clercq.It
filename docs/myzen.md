@@ -23,6 +23,8 @@ On the MyZen tab:
 
 Each change writes one entry. Nothing writes entries in bulk.
 
+Claude can do the same through the site's MCP server: the MyZen tools are listed in [MCP](./mcp.md#tools) and need `MyZen.Owner`. Connecting MyZen stays on this tab.
+
 When MyZen drops the session, the next keep-alive or data call notices (MyZen answers with its login page), marks it **Expired**, and the tab offers **Reconnect MyZen**.
 
 Only the authenticator-app MFA is supported. SMS and e-mail codes are not.

@@ -62,7 +62,8 @@ public static class McpEndpoints
             .AddAuthorizationFilters()
             .WithTools<ProjectTools>()
             .WithTools<CertificationTools>()
-            .WithTools<BlogTools>();
+            .WithTools<BlogTools>()
+            .WithTools<MyZenTools>();
         return services;
     }
 

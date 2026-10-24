@@ -1,9 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
+
 namespace Clercq.It.Api.FeatureFlags;
 
 public static class FeatureFlagExtensions
 {
     public static IServiceCollection AddFeatureFlags(this IServiceCollection services) =>
-        services.AddSingleton<IFeatureFlags, ConfigurationFeatureFlags>();
+        services
+            .AddSingleton<IFeatureFlags, ConfigurationFeatureFlags>()
+            .AddSingleton<IAuthorizationHandler, FeatureFlagAuthorizationHandler>();
 
     /// <summary>
     /// Answers 404 Not Found while the flag is off, as if the endpoint did not

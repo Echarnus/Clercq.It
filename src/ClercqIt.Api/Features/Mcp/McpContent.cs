@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Clercq.It.Application.Features.MyZen;
 using FluentValidation;
 using MediatR;
 using ModelContextProtocol;
@@ -12,20 +13,37 @@ namespace Clercq.It.Api.Features.Mcp;
 /// </summary>
 public sealed class McpContent(IMediator mediator, IHttpContextAccessor httpContext, ILogger<McpContent> logger)
 {
-    public async Task<T> SendAsync<T>(IRequest<T> request, CancellationToken cancellationToken)
+    public async Task SendAsync(IRequest request, CancellationToken cancellationToken) =>
+        await SendAsync<Unit>(async () =>
+        {
+            await mediator.Send(request, cancellationToken);
+            return Unit.Value;
+        });
+
+    public Task<T> SendAsync<T>(IRequest<T> request, CancellationToken cancellationToken) =>
+        SendAsync(() => mediator.Send(request, cancellationToken));
+
+    private static async Task<T> SendAsync<T>(Func<Task<T>> send)
     {
         try
         {
-            return await mediator.Send(request, cancellationToken);
+            return await send();
         }
         catch (ValidationException ex)
         {
             var messages = ex.Errors.Select(e => e.ErrorMessage).Distinct();
             throw new McpException("Validation failed: " + string.Join("; ", messages));
         }
+        catch (Exception ex) when (ex is MyZenNotConnectedException or MyZenUnavailableException or MyZenRejectedException)
+        {
+            // MyZen's own messages say what to do (reconnect, MyZen's reason) and hold no secrets.
+            throw new McpException(ex.Message);
+        }
     }
 
-    public void Audit(string action, string type, Guid id)
+    public void Audit(string action, string type, Guid id) => Audit(action, type, id.ToString());
+
+    public void Audit(string action, string type, string id)
     {
         var user = httpContext.HttpContext?.User ?? new ClaimsPrincipal();
         // Service accounts have no username, so fall back to the client id (azp).
@@ -36,6 +54,8 @@ public sealed class McpContent(IMediator mediator, IHttpContextAccessor httpCont
     public static DateTime Utc(DateOnly date) => date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
 
     public static McpException NotFound(string type, Guid id) => new($"No {type} with id {id}.");
+
+    public static McpException NotFound(string type, long id) => new($"No {type} with id {id}.");
 }
 
 /// <summary>An image passed to a tool as base64, decoded and checked before upload.</summary>

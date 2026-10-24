@@ -27,6 +27,7 @@ A feature flag lets unfinished work merge to `main` and ship to production switc
 **Add and use a flag**
 
 - API endpoint or group: `.RequireFeature("NewBlogEditor")`. While the flag is off it answers 404, as if the endpoint did not exist. In a handler or service, inject `IFeatureFlags` and call `IsEnabled("NewBlogEditor")`.
+- MCP tool or authorization policy: `.AddRequirements(new FeatureFlagRequirement("NewBlogEditor"))` on the policy (`src/ClercqIt.Api/FeatureFlags/FeatureFlagRequirement.cs`). The policy fails while the flag is off, so the MCP server hides the tool.
 - Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` (cached for a minute; off when the API is unreachable). Hide a page in a server component with `if (!(await isEnabled("NewBlogEditor"))) notFound();`, and hide links to it the same way.
 - Name flags in PascalCase after the feature, not after a ticket. Names are case-insensitive.
 
