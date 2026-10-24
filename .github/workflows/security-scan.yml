@@ -146,8 +146,11 @@ jobs:
 
       - name: Install pnpm
         # Corepack installs the pnpm version (and checks the hash) named in packageManager.
-        run: corepack enable
-        working-directory: ./src/ClercqIt.Web
+        # Also make it the global default: setup-node's pnpm cache asks for the store
+        # path from the repo root, where no packageManager applies.
+        run: |
+          corepack enable
+          corepack install --global "$(jq -r .packageManager src/ClercqIt.Web/package.json)"
 
       - name: Setup pnpm cache
         uses: actions/setup-node@v7
