@@ -25,10 +25,10 @@ export default defineConfig({
       thresholds: {
         // The API client is fully covered; keep it that way.
         "lib/api/**": { lines: 100, branches: 95, functions: 100, statements: 99 },
-        lines: 64,
-        branches: 56,
-        functions: 54,
-        statements: 63,
+        lines: 81,
+        branches: 74,
+        functions: 76,
+        statements: 81,
       },
     },
   },

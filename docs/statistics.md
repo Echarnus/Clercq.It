@@ -1,6 +1,6 @@
 # Visitor statistics
 
-The admin dashboard has a **Statistics** tab (role `Admin.View`) with page views,
+The admin dashboard has a **Statistics > Visitors** section (`/admin/dashboard/visitors`, role `Admin.View`) with page views,
 unique page views and unique visitors for the last 7, 30 or 90 days, a daily
 trend and the ten most viewed pages. Issue #429.
 

@@ -3,7 +3,9 @@ import { signInAsAdmin } from "./auth";
 
 // Helper function to navigate to certifications tab
 async function navigateToCertificationsTab(page: Page) {
-  const certTab = page.locator('[role="tab"]:has-text("Certifications")');
+  const certTab = page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Certifications" });
   if (await certTab.isVisible()) {
     await certTab.click();
     await page.waitForTimeout(1000);
