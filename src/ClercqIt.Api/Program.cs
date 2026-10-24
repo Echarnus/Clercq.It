@@ -122,10 +122,14 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
     // MyZen reaches the owner's own MyZen account, so it has its own role (docs/myzen.md)
     options.AddPolicy(MyZenEndpoints.OwnerPolicy, policy => policy.RequireRole("MyZen.Owner"));
-    // The content MCP server: any content contributor; each tool then checks its own role (docs/mcp.md)
+    // MCP tools have no endpoint filter, so the flag is part of their policy
+    options.AddPolicy(MyZenTools.Policy, policy => policy
+        .RequireRole("MyZen.Owner")
+        .AddRequirements(new FeatureFlagRequirement(MyZenEndpoints.FeatureFlag)));
+    // The MCP server: any content contributor or the MyZen owner; each tool then checks its own role (docs/mcp.md)
     options.AddPolicy(McpEndpoints.Policy, policy => policy
         .AddAuthenticationSchemes(McpEndpoints.BearerScheme)
-        .RequireRole("Projects.Contributor", "Certifications.Contributor", "Blogs.Contributor"));
+        .RequireRole("Projects.Contributor", "Certifications.Contributor", "Blogs.Contributor", "MyZen.Owner"));
 });
 
 // Add Clean Architecture layers

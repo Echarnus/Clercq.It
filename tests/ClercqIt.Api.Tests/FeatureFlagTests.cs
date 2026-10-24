@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Clercq.It.Api.FeatureFlags;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +54,28 @@ public class ConfigurationFeatureFlagsTests
 
         // Assert
         all.Should().BeEquivalentTo(new Dictionary<string, bool> { ["Search"] = true, ["NewBlogEditor"] = false });
+    }
+}
+
+public class FeatureFlagAuthorizationHandlerTests
+{
+    [Theory(DisplayName = "A feature flag requirement holds only while the flag is on")]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public async Task Requirement_FollowsFlag(string value, bool succeeds)
+    {
+        // Arrange
+        var flags = new ConfigurationFeatureFlags(new ConfigurationBuilder()
+            .AddInMemoryCollection([new KeyValuePair<string, string?>("FeatureFlags:MyZen", value)])
+            .Build());
+        var requirement = new FeatureFlagRequirement("MyZen");
+        var context = new AuthorizationHandlerContext([requirement], new ClaimsPrincipal(), resource: null);
+
+        // Act
+        await new FeatureFlagAuthorizationHandler(flags).HandleAsync(context);
+
+        // Assert
+        context.HasSucceeded.Should().Be(succeeds);
     }
 }
 
