@@ -54,7 +54,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
         </h1>
 
         {/* Project details */}
-        <aside className="lg:col-start-4 lg:row-span-2 lg:row-start-1">
+        <aside className="lg:col-start-4 lg:row-start-2">
           <div className="space-y-4 rounded-lg bg-white/80 p-6 shadow-lg backdrop-blur-xs lg:sticky lg:top-28 dark:bg-slate-800/80">
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <Calendar className="h-4 w-4 shrink-0" />
