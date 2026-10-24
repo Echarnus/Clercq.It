@@ -110,6 +110,7 @@ export function ProjectList() {
     shortDescription: string;
     longDescription: string;
     image: File | null;
+    removeImage: boolean;
     startDate: string;
     endDate: string;
     featured: boolean;
@@ -123,6 +124,7 @@ export function ProjectList() {
           shortDescription: data.shortDescription,
           longDescription: data.longDescription,
           image: data.image || undefined,
+          removeImage: data.removeImage,
           startDate: data.startDate,
           endDate: data.endDate,
           featured: data.featured,

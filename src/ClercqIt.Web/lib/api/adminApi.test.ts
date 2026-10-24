@@ -154,13 +154,20 @@ describe("writes with a token", () => {
     await createProject({ ...data, image });
     await updateProject(project.id, data);
     await updateProject(project.id, { ...data, image, featured: false });
+    await updateProject(project.id, { ...data, removeImage: true });
+    await updateProject(project.id, { ...data, image, removeImage: true });
 
-    expect(calls.map((c) => c.method)).toEqual(["POST", "POST", "PUT", "PUT"]);
+    expect(calls.map((c) => c.method)).toEqual(["POST", "POST", "PUT", "PUT", "PUT", "PUT"]);
     expect(calls[0].form?.get("featured")).toBe("true");
     expect(calls[0].form?.get("skills")).toBe("x,y");
     expect(calls[0].form?.has("image")).toBe(false);
     expect(calls[1].form?.has("image")).toBe(true);
     expect(calls[3].form?.get("featured")).toBe("false");
+    expect(calls[2].form?.has("removeImage")).toBe(false);
+    expect(calls[4].form?.get("removeImage")).toBe("true");
+    expect(calls[4].form?.has("image")).toBe(false);
+    expect(calls[5].form?.has("removeImage")).toBe(false);
+    expect(calls[5].form?.has("image")).toBe(true);
 
     server.use(
       http.delete(`${API}/api/projects/:id`, () => new HttpResponse(null, { status: 204 })),
