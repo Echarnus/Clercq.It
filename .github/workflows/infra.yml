@@ -206,9 +206,11 @@ jobs:
           cd infra/terraform
           echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
+          echo "### Outputs (sensitive outputs left out):" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          terraform output -json >> $GITHUB_STEP_SUMMARY
+          # Never print sensitive outputs: `terraform output -json` shows them in
+          # plain text, and this repository's job summaries are public (#435).
+          terraform output -json | jq 'with_entries(select(.value.sensitive | not) | .value |= .value)' >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}
