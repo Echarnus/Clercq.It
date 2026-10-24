@@ -471,7 +471,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 - `DOCKER_PASSWORD`: Docker Hub access token
 
 ### Seeds and transitional secrets (GitHub repository secrets)
-- `DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `DATABASE_PASSWORD` is still read by the migration step in `deploy.yml` until the workflows read from Secret Manager directly.
+- `DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `deploy.yml` no longer reads `DATABASE_PASSWORD`: it takes the migration and runtime logins from the Terraform outputs ([secrets.md](./secrets.md#database-logins)).
 - `KEYCLOAK_REALM`: optional, defaults to `clercqit`.
 
 ### Environment Variables
