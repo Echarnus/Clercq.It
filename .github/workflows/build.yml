@@ -15,21 +15,25 @@ env:
   REGISTRY: docker.io
   IMAGE_NAME: echarnus/clercq-it
 
+# Read-only by default; jobs ask for the write scopes they need (#397).
 permissions:
-  contents: write
-  packages: write
-  pull-requests: read
-  id-token: write
-  attestations: write
+  contents: read
 
 jobs:
   test:
     uses: ./.github/workflows/test.yml
+    permissions:
+      contents: read
+      pull-requests: read
 
   build:
     name: Build Docker Image
     runs-on: ubuntu-latest
     needs: [test]
+    permissions:
+      contents: write # push the initial version tag
+      id-token: write # sign the build provenance
+      attestations: write
     outputs:
       version: ${{ steps.version.outputs.version }}
 
