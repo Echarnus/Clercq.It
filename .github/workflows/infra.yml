@@ -95,6 +95,7 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
+          TF_VAR_terraform_access_key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
 
       - name: Comment PR
         if: always()
@@ -197,6 +198,7 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
+          TF_VAR_terraform_access_key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
 
       - name: Terraform Output
         if: success()
