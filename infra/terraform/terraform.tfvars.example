@@ -8,6 +8,10 @@ scaleway_project_id      = "your-scaleway-project-id"
 scaleway_zone            = "fr-par-1"
 scaleway_region          = "fr-par"
 
+# Access key (not the secret) of the API key Terraform runs with; it is
+# allowed in the bucket policies (storage_policies.tf).
+terraform_access_key = "your-terraform-access-key"
+
 # Secret seeds: only used the first time each Secret Manager secret is
 # created (see docs/secrets.md). Leave unset to generate passwords and get
 # placeholders you replace in the Scaleway console.
