@@ -17,7 +17,7 @@ The frontend runs Next.js 16 (Turbopack builds), React 19, Tailwind CSS 4, zod 4
 
 Linting runs on ESLint 10 and type checks on TypeScript 6 (#378). `eslint-plugin-jsx-a11y`, `eslint-plugin-react` and `eslint-plugin-import` (the last two come with `eslint-config-next`) still declare ESLint 9 as their highest peer, but they load and report under ESLint 10, so `pnpm.peerDependencyRules.allowedVersions` in `package.json` allows `eslint` 10 for them. Drop that rule once the plugins declare ESLint 10. Held back on purpose: TypeScript stays on 6.0 because `typescript-eslint` 8 supports TypeScript below 6.1; `@types/node` stays on 24 to match the Node 24 runtime (Dependabot ignores newer majors). Lift a hold when the blocking package catches up.
 
-`package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite). Drop an override once the parent ships the fixed version.
+`package.json` has `pnpm.overrides` for transitive packages with known vulnerabilities that their parent pins to an old version (`postcss` and `sharp` under Next.js, `yaml` under Vite, `postcss-selector-parser` under `@tailwindcss/typography`). Drop an override once the parent ships the fixed version.
 
 ### Optional Tools
 - **Visual Studio 2022** or **VS Code** with C# extension
@@ -400,13 +400,15 @@ With no human review, agents are the only thing between a change and production,
 
 **Rules** (`.claude/rules/*.md`) load into Claude's context. A rule with `paths:` front matter loads only when Claude works on matching files; one without loads always.
 
+Do not name a rule `security.md`: OpenSSF Scorecard reads the first file with that name anywhere in the repo as the security policy, so it would shadow the root `SECURITY.md` (#400).
+
 | Rule | Loads for | Covers |
 | --- | --- | --- |
 | `backend.md` | `src/**/*.cs`, `tests/**/*.cs`, project files | layering, analyzer policy, format/build/test commands |
 | `frontend.md` | `src/ClercqIt.Web/**` | ESLint, Prettier and TypeScript policy |
 | `testing.md` | `src/**`, `tests/**` | test conventions and coverage ratchet |
 | `infra.md` | `infra/**` | `terraform fmt`/`validate`, secrets in Terraform |
-| `security.md` | always | no secrets, SAST, suppressions need a reason |
+| `secure-coding.md` | always | no secrets, SAST, suppressions need a reason |
 | `docs.md` | always | the docs rule and the docs check |
 
 **Skills** (`.claude/skills/<name>/SKILL.md`) are commands Claude runs on request or by itself:

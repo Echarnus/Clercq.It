@@ -223,6 +223,83 @@ public class UpdateProjectCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldClearImage_WhenRemoveImageRequested()
+    {
+        // Arrange
+        var existingProject = CreateExistingProject();
+        var projectId = existingProject.Id;
+
+        _mockProjectRepository
+            .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingProject);
+
+        var command = new UpdateProjectCommand(
+            projectId,
+            "Title",
+            "Short",
+            "Long",
+            null,
+            null,
+            null,
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(1),
+            false,
+            new[] { "Skill1" },
+            RemoveImage: true
+        );
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Image.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task Handle_ShouldPreferNewImage_OverRemoveImage()
+    {
+        // Arrange
+        var existingProject = CreateExistingProject();
+        var projectId = existingProject.Id;
+        var uploadedImageUrl = "https://s3.fr-par.scw.cloud/test-bucket/project-images/new.png";
+
+        _mockProjectRepository
+            .Setup(x => x.GetByIdAsync(projectId, MoqIt.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingProject);
+
+        _mockObjectStorageService
+            .Setup(x => x.UploadFileAsync(
+                "new.png",
+                MoqIt.IsAny<Stream>(),
+                "image/png",
+                false,
+                MoqIt.IsAny<CancellationToken>()))
+            .ReturnsAsync(uploadedImageUrl);
+
+        var command = new UpdateProjectCommand(
+            projectId,
+            "Title",
+            "Short",
+            "Long",
+            new MemoryStream(new byte[] { 1 }),
+            "new.png",
+            "image/png",
+            DateTime.UtcNow,
+            DateTime.UtcNow.AddDays(1),
+            false,
+            new[] { "Skill1" },
+            RemoveImage: true
+        );
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result!.Image.Should().Be(uploadedImageUrl);
+    }
+
+    [Fact]
     public async Task Handle_ShouldUpdateFeaturedFlag()
     {
         // Arrange

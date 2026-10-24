@@ -25,6 +25,23 @@ How issues, branches, PRs and reviews fit together is described in [Contributing
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
 
+### Workflow token permissions
+
+Every workflow sets a read-only `permissions` block at the top (`contents: read`, sometimes `actions: read` or `read-all`). A job that needs to write asks for it in its own `permissions` block, and only for the scopes it uses (#397):
+
+| Workflow | Job | Write scopes |
+| --- | --- | --- |
+| `build.yml` | `build` | `contents` (initial version tag), `id-token` and `attestations` (build provenance) |
+| `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
+| `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
+| `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
+| `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
+| `labels.yml` | `sync` | `issues` |
+| `repo-audit.yml` | `audit` | `issues` |
+| `scorecard.yml` | `analysis` | `security-events`, `id-token` |
+
+A job that calls a reusable workflow (`build.yml` calling `test.yml`) caps that workflow's permissions, so give the calling job what the called workflow needs. A new workflow follows the same rule; OpenSSF Scorecard's Token-Permissions check scores any top-level write as a failure.
+
 ## Workflow and review pipelines
 
 ### Docs check (`docs-check.yml`)
@@ -92,7 +109,11 @@ gh workflow run test.yml
 
 ### Third-party actions
 
-`aquasecurity/trivy-action` is pinned to a commit SHA (v0.36.0). Its old unprefixed tags such as `0.28.0` no longer exist upstream, which is what broke every build on `main` from 10 March 2026. Prefer SHA pins for third-party actions.
+Every action in `.github/workflows/` and `.github/actions/` is pinned to a full commit SHA with the release it stands for as a comment, for example `actions/checkout@<sha> # v7.0.1` (#398). A tag can be moved or deleted upstream; a SHA cannot. `aquasecurity/trivy-action` shows why: its old unprefixed tags such as `0.28.0` vanished upstream, which broke every build on `main` from 10 March 2026.
+
+The `FROM` lines in `src/Dockerfile` are pinned the same way, as `image:tag@sha256:<digest>`.
+
+Dependabot (`.github/dependabot.yml`, `github-actions` and `docker` ecosystems) updates both the SHA or digest and the version comment, so pins do not go stale. When you add an action or image by hand, pin it too. To find the SHA for a release: `git ls-remote --tags https://github.com/<owner>/<repo> <tag>` (use the `^{}` line for annotated tags). To find an image digest: `docker buildx imagetools inspect <image>:<tag>`. OpenSSF Scorecard's Pinned-Dependencies check flags anything left unpinned.
 
 ### Docker Image Tags
 

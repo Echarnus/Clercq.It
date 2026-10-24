@@ -5,10 +5,18 @@ import { Upload, X, ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
 
+// The content import stores this path for items without a picture.
+const PLACEHOLDER_IMAGE = "/placeholder.svg";
+
 interface ImageUploadProps {
   value?: File | null;
   onChange: (file: File | null) => void;
   existingImageUrl?: string;
+  /**
+   * Called when the existing image is removed. Without it the existing image
+   * cannot be removed, only replaced (for forms where an image is required).
+   */
+  onRemoveExisting?: () => void;
   label?: string;
   accept?: string;
 }
@@ -17,11 +25,17 @@ export function ImageUpload({
   value,
   onChange,
   existingImageUrl,
+  onRemoveExisting,
   label = "Image",
   accept = "image/jpeg,image/png,image/gif,image/webp",
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(null);
+  const [existingRemoved, setExistingRemoved] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const existing = existingImageUrl?.trim();
+  const existingImage =
+    existing && existing !== PLACEHOLDER_IMAGE && !existingRemoved ? existing : null;
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,7 +49,7 @@ export function ImageUpload({
     }
   };
 
-  const handleRemove = () => {
+  const clearSelectedFile = () => {
     onChange(null);
     setPreview(null);
     if (inputRef.current) {
@@ -43,7 +57,19 @@ export function ImageUpload({
     }
   };
 
-  const displayImage = preview || (existingImageUrl && !value ? existingImageUrl : null);
+  const handleRemove = () => {
+    if (preview || value) {
+      // Drop the newly chosen file; the existing image (if any) shows again.
+      clearSelectedFile();
+      return;
+    }
+    setExistingRemoved(true);
+    onRemoveExisting?.();
+  };
+
+  const displayImage = preview || (!value ? existingImage : null);
+  const showingExisting = displayImage !== null && displayImage === existingImage;
+  const canRemove = !showingExisting || onRemoveExisting !== undefined;
 
   return (
     <div className="space-y-2">
@@ -60,16 +86,18 @@ export function ImageUpload({
                 unoptimized={preview !== null}
               />
             </div>
-            <Button
-              type="button"
-              variant="destructive"
-              size="sm"
-              className="absolute top-2 right-2"
-              onClick={handleRemove}
-              aria-label="Remove image"
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {canRemove && (
+              <Button
+                type="button"
+                variant="destructive"
+                size="sm"
+                className="absolute top-2 right-2"
+                onClick={handleRemove}
+                aria-label="Remove image"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         ) : (
           <button
@@ -90,7 +118,7 @@ export function ImageUpload({
           className="hidden"
           aria-label={label}
         />
-        {!displayImage && (
+        {(!displayImage || !canRemove) && (
           <Button
             type="button"
             variant="outline"
@@ -98,7 +126,7 @@ export function ImageUpload({
             className="w-fit"
           >
             <Upload className="mr-2 h-4 w-4" />
-            Choose File
+            {displayImage ? "Replace image" : "Choose File"}
           </Button>
         )}
       </div>
