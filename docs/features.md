@@ -118,4 +118,4 @@ All blog and project creation/modification endpoints require valid JWT tokens wi
 
 ## MyZen time registration
 
-The owner can connect his own MyZen (TrustTeam / Billit) account from the admin dashboard and see his MyZen projects and time entries on clercq.it. He types MyZen's CAPTCHA and MFA code himself; the site keeps the session and shows **Reconnect MyZen** when MyZen ends it. Owner only (`MyZen.Owner`), behind the `MyZen` feature flag. Details: [MyZen](./myzen.md).
+The owner can connect his own MyZen (TrustTeam / Billit) account from the admin dashboard, see his MyZen projects and time entries on clercq.it, and add, edit and delete entries one at a time. He types MyZen's CAPTCHA and MFA code himself; the site keeps the session and shows **Reconnect MyZen** when MyZen ends it. Owner only (`MyZen.Owner`), behind the `MyZen` feature flag. Details: [MyZen](./myzen.md).

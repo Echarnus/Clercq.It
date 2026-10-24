@@ -35,12 +35,74 @@ export const MyZenTimeEntrySchema = z.object({
 
 export type MyZenTimeEntry = z.infer<typeof MyZenTimeEntrySchema>;
 
+export const MyZenProjectOptionSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  customerId: z.number().nullable(),
+  customer: z.string(),
+});
+
+export type MyZenProjectOption = z.infer<typeof MyZenProjectOptionSchema>;
+
+/** A time entry to add or change; `customerId` is null for projects without a customer. */
+export const MyZenTimeEntryInputSchema = z.object({
+  date: z.iso.date(),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60),
+  projectId: z.number().int().positive(),
+  customerId: z.number().int().positive().nullable(),
+  description: z.string().max(1000),
+  invoiced: z.boolean(),
+});
+
+export type MyZenTimeEntryInput = z.infer<typeof MyZenTimeEntryInputSchema>;
+
 /** Thrown when MyZen needs to be reconnected (the API answers 409). */
 export class MyZenNotConnectedError extends Error {
   constructor() {
     super("MyZen is not connected. Connect it again.");
     this.name = "MyZenNotConnectedError";
   }
+}
+
+/** Thrown when MyZen refuses a change (the API answers 422); the message is MyZen's reason. */
+export class MyZenRejectedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "MyZenRejectedError";
+  }
+}
+
+/** Thrown when MyZen has no time entry with the ID (the API answers 404). */
+export class MyZenEntryNotFoundError extends Error {
+  constructor() {
+    super("MyZen has no such time entry.");
+    this.name = "MyZenEntryNotFoundError";
+  }
+}
+
+async function check(response: Response): Promise<Response> {
+  if (response.status === 409) {
+    throw new MyZenNotConnectedError();
+  }
+  if (response.status === 404) {
+    throw new MyZenEntryNotFoundError();
+  }
+  if (response.status === 422) {
+    const problem = z
+      .object({ detail: z.string().optional() })
+      .safeParse(await response.json().catch(() => ({})));
+    throw new MyZenRejectedError(
+      (problem.success && problem.data.detail) || "MyZen refused the change.",
+    );
+  }
+  if (!response.ok) {
+    throw new Error(`MyZen request failed (${response.status})`);
+  }
+  return response;
 }
 
 async function send<T>(endpoint: string, schema: z.ZodType<T>, init: RequestInit = {}): Promise<T> {
@@ -54,9 +116,9 @@ async function send<T>(endpoint: string, schema: z.ZodType<T>, init: RequestInit
   return schema.parse(await response.json());
 }
 
-function postJson(body: object): RequestInit {
+function postJson(body: object, method = "POST"): RequestInit {
   return {
-    method: "POST",
+    method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   };
@@ -89,4 +151,30 @@ export async function disconnectMyZen(): Promise<void> {
 export function fetchMyZenTimeEntries(from: string, to: string): Promise<MyZenTimeEntry[]> {
   const query = new URLSearchParams({ from, to });
   return send(`/api/myzen/time-entries?${query.toString()}`, z.array(MyZenTimeEntrySchema));
+}
+
+/** One entry with its project and customer IDs, as the edit form needs them. */
+export async function fetchMyZenTimeEntry(id: number): Promise<MyZenTimeEntry> {
+  const response = await check(await authFetch(`/api/myzen/time-entries/${id}`));
+  return MyZenTimeEntrySchema.parse(await response.json());
+}
+
+/** Projects whose name matches `query` (at least two characters). */
+export function searchMyZenProjects(query: string): Promise<MyZenProjectOption[]> {
+  const params = new URLSearchParams({ q: query });
+  return send(`/api/myzen/projects/search?${params.toString()}`, z.array(MyZenProjectOptionSchema));
+}
+
+export async function createMyZenTimeEntry(entry: MyZenTimeEntryInput): Promise<void> {
+  const body = MyZenTimeEntryInputSchema.parse(entry);
+  await check(await authFetch("/api/myzen/time-entries", postJson(body)));
+}
+
+export async function updateMyZenTimeEntry(id: number, entry: MyZenTimeEntryInput): Promise<void> {
+  const body = MyZenTimeEntryInputSchema.parse(entry);
+  await check(await authFetch(`/api/myzen/time-entries/${id}`, postJson(body, "PUT")));
+}
+
+export async function deleteMyZenTimeEntry(id: number): Promise<void> {
+  await check(await authFetch(`/api/myzen/time-entries/${id}`, { method: "DELETE" }));
 }
