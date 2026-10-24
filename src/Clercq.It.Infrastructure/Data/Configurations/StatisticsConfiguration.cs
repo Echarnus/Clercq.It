@@ -10,7 +10,7 @@ public class StatsSaltConfiguration : IEntityTypeConfiguration<StatsSaltRecord>
     public void Configure(EntityTypeBuilder<StatsSaltRecord> builder)
     {
         builder.HasKey(s => s.Day);
-        builder.Property(s => s.Salt).IsRequired();
+        builder.Property(s => s.Salt).HasMaxLength(64).IsFixedLength().IsRequired();
         builder.ToTable("StatsSalts");
     }
 }
@@ -21,7 +21,7 @@ public class StatsPageVisitConfiguration : IEntityTypeConfiguration<StatsPageVis
     {
         builder.HasKey(v => new { v.Day, v.Path, v.VisitorHash });
         builder.Property(v => v.Path).HasMaxLength(RecordPageViewCommandValidator.MaxPathLength).IsRequired();
-        builder.Property(v => v.VisitorHash).IsRequired();
+        builder.Property(v => v.VisitorHash).HasMaxLength(64).IsFixedLength().IsRequired();
         builder.ToTable("StatsPageVisits");
     }
 }

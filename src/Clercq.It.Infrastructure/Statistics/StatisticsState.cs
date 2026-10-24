@@ -7,10 +7,10 @@ namespace Clercq.It.Infrastructure.Statistics;
 public sealed class StatisticsState
 {
     private readonly Lock _gate = new();
-    private (DateOnly Day, byte[] Salt)? _salt;
+    private (DateOnly Day, string Salt)? _salt;
     private DateOnly? _rolledUpBefore;
 
-    public byte[]? SaltFor(DateOnly day)
+    public string? SaltFor(DateOnly day)
     {
         lock (_gate)
         {
@@ -18,7 +18,7 @@ public sealed class StatisticsState
         }
     }
 
-    public void RememberSalt(DateOnly day, byte[] salt)
+    public void RememberSalt(DateOnly day, string salt)
     {
         lock (_gate)
         {
