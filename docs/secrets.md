@@ -8,7 +8,8 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 
 | Name (path `/clercq-it`) | Used by | First value comes from |
 | --- | --- | --- |
-| `db-app-password` | RDB admin and `clercqit_user` passwords, web/API container connection string | `TF_VAR_database_password` (GitHub `DATABASE_PASSWORD`), else generated |
+| `db-app-password` | Migration login `clercqit_user` (owns the schema; `deploy.yml` migrations only, never a container). The name predates the split in #416. | `TF_VAR_database_password` (GitHub `DATABASE_PASSWORD`), else generated |
+| `db-runtime-password` | Runtime login `clercqit_app` (rows only): web/API container connection string and the content import | generated; Terraform owns it end to end |
 | `keycloak-base-url` | `Keycloak__BaseUrl` on both containers (current value: `https://lemur-16.cloud-iam.com/auth`, see [ciam.md](./ciam.md#current-deployment)) | `TF_VAR_keycloak_base_url`, else a placeholder |
 | `myzen-session-key` | `MyZen__SessionKey` on the web/API container; encrypts the stored MyZen session ([MyZen](./myzen.md)) | generated |
 
@@ -26,7 +27,8 @@ The verify stage (see [DevOps](./devops.md#verify-stage)) has its own secrets, c
 
 | Name (path `/clercq-it/verify`) | Used by | First value comes from |
 | --- | --- | --- |
-| `db-password` | `clercqit_verify_user` password, verify connection string, verify migrations in `deploy.yml` | generated |
+| `db-password` | Verify migration login `clercqit_verify_user`: verify migrations in `deploy.yml` only | generated |
+| `app-password` | Verify runtime login `clercqit_verify_app`: verify connection string and verify content import | generated |
 
 `db-password` is fully Terraform-owned: `random_password.db_verify` writes it as a secret version without `ignore_changes`, so do not edit it in the console (the next apply overwrites it). Scaleway RDB requires at least one digit, uppercase, lowercase and special character; the special characters are limited to `!#%*-_+.` so the value stays safe unquoted in an Npgsql connection string and in `PGPASSWORD`. Verify has no Keycloak secret: its client `clercqit-web-verify` is public, like `clercqit-web`.
 
@@ -94,6 +96,22 @@ It cannot read a value (`scw secret version access` is refused). That is on purp
 ## State
 
 Seeded and generated values are stored in the Terraform state in the `clercq-it-terraform-state` bucket. That bucket must stay private, and should have versioning enabled.
+
+### Database logins
+
+Each database has two logins, so the running site cannot change the schema (issue #416):
+
+| Login | Rights | Used by |
+| --- | --- | --- |
+| `clercqit_admin` (instance admin) | Everything | Nothing. Its password is generated at apply time and written once (`password_wo`): it is not in the Terraform state or Secret Manager. Reset it in the Scaleway console if you ever need it. |
+| `clercqit_user` / `clercqit_verify_user` (migration) | Owns the schema of its own database | `deploy.yml` migrations only |
+| `clercqit_app` / `clercqit_verify_app` (runtime) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on tables, read sequences; no DDL, no `TRUNCATE`, no access to `__EFMigrationsHistory` | The containers and the content import |
+
+Scaleway's `readwrite` privilege covers the tables that exist when Terraform applies it. Right after each migration, `deploy.yml` runs `infra/sql/grant-app-user.sql` as the migration login, which grants the runtime login access to new tables and sets default privileges for later ones.
+
+Every connection uses TLS and pins the instance's certificate (the `certificate` attribute of `scaleway_rdb_instance`, Terraform output `database_ca_certificate`). The containers get it as `Database__CaCertificate`; the API then connects with `SSL Mode=VerifyCA` against that certificate only (`src/Clercq.It.Infrastructure/Data/DatabaseTls.cs`). Without it the connection string's `SSL Mode=Require` still refuses plain text. `psql` in `deploy.yml` uses `PGSSLMODE=verify-ca` and `PGSSLROOTCERT`.
+
+The instance keeps its public endpoint. The containers have no fixed outbound address and the migrations run from GitHub runners, so an IP allow list or a private network would cut one of them off; TLS with a pinned certificate and per-purpose logins are the protection instead.
 
 ### Who can reach which bucket
 

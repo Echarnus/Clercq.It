@@ -30,10 +30,12 @@ public static class DependencyInjection
             // NOTE: MigrationsAssembly is configured for EF Core tooling (dotnet ef) only.
             // Migrations are NEVER executed at runtime in production.
             // Production migrations are applied via SQL scripts in the deployment pipeline.
+            var caCertificate = configuration[DatabaseTls.CaCertificateKey];
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
-                    x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+                    x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+                        .ConfigureDataSource(dataSource => DatabaseTls.Configure(dataSource, caCertificate))));
         }
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
