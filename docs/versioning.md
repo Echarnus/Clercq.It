@@ -53,7 +53,17 @@ Versions are calculated by [GitVersion](https://gitversion.net) (`GitVersion.yml
 After every successful automatic deploy, the `release` job in `.github/workflows/deploy.yml` creates:
 
 - a tag `prod-<version>` on the deployed commit, for example `prod-1.0.190`;
-- a GitHub Release titled `<version>` with notes generated from the merged PRs.
+- a GitHub Release titled `<version>` with the image digest and notes generated from the merged PRs;
+- two release assets with the image's signed SLSA build provenance (#403): `clercq-it-<version>.intoto.jsonl` (the in-toto statements as DSSE envelopes) and `clercq-it-<version>.sigstore.json` (the full Sigstore bundle).
+
+The provenance is the attestation `build.yml` creates with `actions/attest-build-provenance`; the release job fetches it from the repository's attestations API by image digest. If none is found, the release is still created, without assets, and the run shows a warning. To check a release against the image:
+
+```bash
+gh attestation verify oci://docker.io/echarnus/clercq-it@<digest> \
+  --repo Echarnus/Clercq.It --bundle clercq-it-<version>.sigstore.json
+```
+
+OpenSSF Scorecard's Signed-Releases check reads these assets on the last five releases.
 
 The `prod-` prefix is deliberate: GitVersion treats `v`-tags as version sources, so tagging each deploy with `v1.0.190` would reset the commit count and make the next version `1.0.1`. Tags without the `v` prefix that do not parse as a version are ignored by GitVersion.
 

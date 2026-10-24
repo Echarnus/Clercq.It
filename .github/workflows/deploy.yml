@@ -44,6 +44,7 @@ jobs:
       issues: write  # a failed smoke test opens an issue
     outputs:
       version: ${{ steps.version.outputs.version }}
+      image-digest: ${{ steps.digest.outputs.image-digest }}
 
     steps:
       - name: Checkout repository
@@ -110,6 +111,7 @@ jobs:
           exit 1
 
       - name: Resolve image digest
+        id: digest
         # Verify and production must run the same image, not just the same tag.
         run: |
           IMAGE_REF="${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}"
@@ -121,6 +123,7 @@ jobs:
           echo "📦 $IMAGE_REF is $IMAGE_DIGEST"
           echo "IMAGE_REF=$IMAGE_REF" >> $GITHUB_ENV
           echo "IMAGE_DIGEST=$IMAGE_DIGEST" >> $GITHUB_ENV
+          echo "image-digest=$IMAGE_DIGEST" >> $GITHUB_OUTPUT
 
       - name: Install dependencies
         run: |
@@ -417,11 +420,37 @@ jobs:
     if: github.event_name == 'workflow_run'
     permissions:
       contents: write
+      attestations: read
     steps:
+      - name: Fetch the image's build provenance
+        # build.yml signs SLSA build provenance for the image digest
+        # (actions/attest-build-provenance). Attach it to the release so the
+        # release itself carries signed provenance (#403, OpenSSF Scorecard
+        # Signed-Releases): the DSSE envelopes as .intoto.jsonl and the full
+        # Sigstore bundle, which `gh attestation verify --bundle` checks.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.deploy.outputs.version }}
+          IMAGE_DIGEST: ${{ needs.deploy.outputs.image-digest }}
+        run: |
+          # Production is already live here, so a missing attestation only
+          # warns: the release and its tag still get created, without assets.
+          mkdir -p provenance
+          if ! gh api "repos/${GITHUB_REPOSITORY}/attestations/${IMAGE_DIGEST}" \
+            --jq '[.attestations[].bundle | select(.dsseEnvelope.payloadType == "application/vnd.in-toto+json")]' \
+            > bundles.json || [ "$(jq length bundles.json)" -eq 0 ]; then
+            echo "::warning::No build provenance found for ${IMAGE_DIGEST}; the release gets no provenance assets"
+            exit 0
+          fi
+          jq -c '.[].dsseEnvelope' bundles.json > "provenance/clercq-it-${VERSION}.intoto.jsonl"
+          jq '.[0]' bundles.json > "provenance/clercq-it-${VERSION}.sigstore.json"
+          ls -l provenance
+
       - name: Create tag and GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ needs.deploy.outputs.version }}
+          IMAGE_DIGEST: ${{ needs.deploy.outputs.image-digest }}
           SHA: ${{ github.event.workflow_run.head_sha }}
         run: |
           # The tag uses a "prod-" prefix so GitVersion ignores it; a plain
@@ -431,9 +460,11 @@ jobs:
             echo "Release $TAG already exists"
             exit 0
           fi
-          gh release create "$TAG" \
+          # shellcheck disable=SC2046 # no assets when the folder is empty
+          gh release create "$TAG" $(find provenance -type f) \
             --repo "$GITHUB_REPOSITORY" \
             --target "$SHA" \
             --title "$VERSION" \
+            --notes "Image: \`docker.io/echarnus/clercq-it@${IMAGE_DIGEST}\`" \
             --generate-notes
           echo "## 🏷️ Released ${VERSION} (tag ${TAG})" >> $GITHUB_STEP_SUMMARY
