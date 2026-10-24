@@ -23,7 +23,7 @@ public sealed class ProjectTools(McpContent content)
             ?? throw McpContent.NotFound("project", id);
 
     [McpServerTool(Name = "create_project")]
-    [Description("Creates a project. Descriptions are Markdown. Without an image the site shows a placeholder.")]
+    [Description("Creates a project. Descriptions are Markdown. Without an image the site shows no picture.")]
     public async Task<ProjectDto> CreateAsync(
         [Description("Title, max 200 characters")] string title,
         [Description("Summary shown on cards, max 500 characters")] string shortDescription,
@@ -46,7 +46,7 @@ public sealed class ProjectTools(McpContent content)
     }
 
     [McpServerTool(Name = "update_project", Idempotent = true)]
-    [Description("Updates a project. Only the fields you pass change; an image replaces the current one.")]
+    [Description("Updates a project. Only the fields you pass change; an image replaces the current one and removeImage clears it.")]
     public async Task<ProjectDto> UpdateAsync(
         Guid id,
         string? title = null,
@@ -58,6 +58,7 @@ public sealed class ProjectTools(McpContent content)
         bool? featured = null,
         [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string? imageBase64 = null,
         [Description("Image file name with its extension, required with imageBase64")] string? imageFileName = null,
+        [Description("Remove the current image, so the project shows no picture")] bool removeImage = false,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAsync(id, cancellationToken);
@@ -71,7 +72,8 @@ public sealed class ProjectTools(McpContent content)
             startDate is { } start ? McpContent.Utc(start) : current.StartDate,
             endDate is { } end ? McpContent.Utc(end) : current.EndDate,
             featured ?? current.Featured,
-            skills ?? current.Skills), cancellationToken)
+            skills ?? current.Skills,
+            removeImage), cancellationToken)
             ?? throw McpContent.NotFound("project", id);
         content.Audit("updated", "project", id);
         return result;
