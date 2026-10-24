@@ -65,7 +65,7 @@ public sealed class EfSiteStatistics(ApplicationDbContext db, StatisticsState st
                     today,
                     visits.Sum(v => (long)v.Views),
                     visits.Count,
-                    visits.Select(v => Convert.ToHexString(v.VisitorHash)).Distinct().Count()));
+                    visits.Select(v => v.VisitorHash).Distinct().Count()));
 
                 pages = pages
                     .Concat(visits.GroupBy(v => v.Path)
@@ -124,11 +124,9 @@ public sealed class EfSiteStatistics(ApplicationDbContext db, StatisticsState st
         state.RememberRollup(today);
     }
 
-    public static byte[] VisitorHash(byte[] salt, string ipAddress, string userAgent)
-    {
-        var input = Encoding.UTF8.GetBytes($"{ipAddress}\n{userAgent}");
-        return SHA256.HashData([.. salt, .. input]);
-    }
+    /// <summary>Hex SHA-256 of the salt, the IP address and the user agent.</summary>
+    public static string VisitorHash(string salt, string ipAddress, string userAgent) =>
+        Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes($"{salt}\n{ipAddress}\n{userAgent}")));
 
     private async Task RollupIfDueAsync(DateOnly today, CancellationToken cancellationToken)
     {
@@ -138,7 +136,7 @@ public sealed class EfSiteStatistics(ApplicationDbContext db, StatisticsState st
         }
     }
 
-    private async Task<byte[]> GetSaltAsync(DateOnly today, CancellationToken cancellationToken)
+    private async Task<string> GetSaltAsync(DateOnly today, CancellationToken cancellationToken)
     {
         if (state.SaltFor(today) is { } cached)
         {
@@ -146,7 +144,7 @@ public sealed class EfSiteStatistics(ApplicationDbContext db, StatisticsState st
         }
 
         // Several instances may start the day at once: the first insert wins, everyone reads it back.
-        var candidate = RandomNumberGenerator.GetBytes(32);
+        var candidate = Convert.ToHexString(RandomNumberGenerator.GetBytes(32));
         await db.Database.ExecuteSqlAsync(
             $"""
             INSERT INTO "StatsSalts" ("Day", "Salt") VALUES ({today}, {candidate})

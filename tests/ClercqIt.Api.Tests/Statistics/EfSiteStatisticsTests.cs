@@ -74,7 +74,7 @@ public class EfSiteStatisticsTests(CustomWebApplicationFactory factory) : IAsync
 
         // Assert
         var second = (await _db.StatsPageVisits.AsNoTracking().SingleAsync()).VisitorHash;
-        second.Should().HaveCount(32).And.NotEqual(first);
+        second.Should().HaveLength(64).And.NotBe(first);
     }
 
     [Fact(DisplayName = "Statistics combine rolled-up days with today's live counts")]
