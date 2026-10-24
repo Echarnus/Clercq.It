@@ -17,6 +17,16 @@ How the public site is laid out, and the UX review that set these rules (issue #
 
 Admin pages (`/admin`) are outside these rules: they render without the public header and footer.
 
+## Themes
+
+The site has a light and a dark theme (issue #410). Both use the Tailwind slate scale, so the public pages, the shadcn components and the admin area look the same.
+
+- **Picker.** The header button (`src/ClercqIt.Web/components/theme-toggle.tsx`) opens a menu with Light, Dark and System. System is the default and follows the OS setting. `next-themes` keeps the choice in `localStorage` (key `theme`) and sets the `dark` class and `color-scheme` on `<html>` before the page paints, so there is no flash and native controls (scrollbars, date pickers) match.
+- **Tokens.** The colours are HSL tokens in `src/ClercqIt.Web/app/globals.css` (`:root` for light, `.dark` for dark), exposed to Tailwind through `@theme` (`bg-background`, `text-muted-foreground`, `border-border` and so on). Light uses slate-50 pages, white cards and slate-900 text and buttons; dark uses slate-900 pages, slate-800 cards and slate-50 text. There is no pure black.
+- **New UI uses the tokens.** Prefer `bg-card`, `text-foreground`, `text-muted-foreground` and `border-border` over hard-coded `slate-*` pairs with `dark:` overrides. Older pages still use slate classes; they match the tokens, so convert them when you touch them.
+- **Browser chrome.** The root layout exports `viewport.themeColor`: white for a light OS, slate-900 (`#0f172a`) for a dark one.
+- **Check both themes.** Screenshot a UI change in light and dark, for example with Playwright `newPage({ colorScheme: "dark" })`.
+
 ## UX review (2026-10-23)
 
 Measured at 1440px wide before the change: the logo started at 96px from the left, while page content started at 272px (Portfolio, Certifications, details, 404), 144px (Blogs) or both 272px and 96px on one page (home). The content edge jumped on every navigation.
