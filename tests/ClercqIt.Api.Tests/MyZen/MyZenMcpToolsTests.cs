@@ -194,10 +194,11 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
         var missing = await mcp.CallToolAsync("get_myzen_time_entry", Args(("id", 4)));
 
         // Assert
-        Text(unknown).Should().Be("No MyZen time entry with id 1.");
+        new[] { unknown, expired, refused, missing }.Should().OnlyContain(r => r.IsError == true);
+        Text(unknown).Should().EndWith("No MyZen time entry with id 1.");
         Text(expired).Should().Contain("Connect it again");
-        Text(refused).Should().Be("Invoiced");
-        missing.IsError.Should().BeTrue();
+        Text(refused).Should().EndWith(": Invoiced");
+        Text(missing).Should().EndWith("No MyZen time entry with id 4.");
     }
 
     [Fact(DisplayName = "Deleting an entry returns a confirmation")]
