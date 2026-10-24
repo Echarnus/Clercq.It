@@ -86,6 +86,22 @@ It cannot read a value (`scw secret version access` is refused). That is on purp
 
 Seeded and generated values are stored in the Terraform state in the `clercq-it-terraform-state` bucket. That bucket must stay private, and should have versioning enabled.
 
+### Database logins
+
+Each database has two logins, so the running site cannot change the schema (issue #416):
+
+| Login | Rights | Used by |
+| --- | --- | --- |
+| `clercqit_admin` (instance admin) | Everything | Nothing. Its password is generated at apply time and written once (`password_wo`): it is not in the Terraform state or Secret Manager. Reset it in the Scaleway console if you ever need it. |
+| `clercqit_user` / `clercqit_verify_user` (migration) | Owns the schema of its own database | `deploy.yml` migrations only |
+| `clercqit_app` / `clercqit_verify_app` (runtime) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on tables, read sequences; no DDL, no `TRUNCATE`, no access to `__EFMigrationsHistory` | The containers and the content import |
+
+Scaleway's `readwrite` privilege covers the tables that exist when Terraform applies it. Right after each migration, `deploy.yml` runs `infra/sql/grant-app-user.sql` as the migration login, which grants the runtime login access to new tables and sets default privileges for later ones.
+
+Every connection uses TLS and pins the instance's certificate (the `certificate` attribute of `scaleway_rdb_instance`, Terraform output `database_ca_certificate`). The containers get it as `Database__CaCertificate`; the API then connects with `SSL Mode=VerifyCA` against that certificate only (`src/Clercq.It.Infrastructure/Data/DatabaseTls.cs`). Without it the connection string's `SSL Mode=Require` still refuses plain text. `psql` in `deploy.yml` uses `PGSSLMODE=verify-ca` and `PGSSLROOTCERT`.
+
+The instance keeps its public endpoint. The containers have no fixed outbound address and the migrations run from GitHub runners, so an IP allow list or a private network would cut one of them off; TLS with a pinned certificate and per-purpose logins are the protection instead.
+
 ### Who can reach which bucket
 
 Scaleway IAM grants object storage per project, so on its own every storage key could read every bucket, including the state. Bucket policies in `infra/terraform/storage_policies.tf` close that (issue #415). With the `2023-04-17` policy version a bucket allows only the principals it lists:
