@@ -6,29 +6,61 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
-import { fetchBlogById } from "../lib/api";
+import { fetchBlogBySegment } from "../lib/api";
 import { Markdown } from "@/components/markdown";
-import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/json-ld";
+import { notFound, permanentRedirect } from "next/navigation";
+import {
+  absoluteUrl,
+  AUTHOR_NAME,
+  blogPath,
+  breadcrumbJsonLd,
+  metaDescription,
+  pageMetadata,
+  personJsonLd,
+  SITE_NAME,
+} from "@/lib/seo";
 
 interface BlogDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // The page and its metadata need the same item; cache() fetches it once per request.
-const getBlog = cache(fetchBlogById);
+const getBlog = cache(fetchBlogBySegment);
 
 export async function generateMetadata({ params }: BlogDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const blog = await getBlog(id);
-  return blog ? { title: blog.title, description: blog.shortDescription } : {};
+  const { slug } = await params;
+  const blog = await getBlog(slug);
+  if (!blog) return {};
+
+  const description = metaDescription(blog.shortDescription || blog.longDescription);
+  const path = blogPath(blog);
+  return {
+    ...pageMetadata({
+      title: blog.title,
+      description,
+      path,
+      type: "article",
+      image: blog.image || undefined,
+      openGraph: { publishedTime: blog.publishDate, authors: [AUTHOR_NAME], tags: blog.tags },
+    }),
+    keywords: blog.tags,
+    authors: [{ name: AUTHOR_NAME }],
+  };
 }
 
 export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
-  const { id } = await params;
-  const blog = await getBlog(id);
+  const { slug } = await params;
+  const blog = await getBlog(slug);
 
   if (!blog) {
     notFound();
+  }
+
+  // Old GUID links and stale slugs move permanently to the canonical URL.
+  const path = blogPath(blog);
+  if (`/blogs/${slug}` !== path) {
+    permanentRedirect(path);
   }
 
   const formatDate = (dateString: string) => {
@@ -41,6 +73,30 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
 
   return (
     <PageContainer as="section" className="py-16">
+      <JsonLd
+        data={[
+          {
+            "@type": "BlogPosting",
+            "@id": absoluteUrl(path),
+            url: absoluteUrl(path),
+            mainEntityOfPage: absoluteUrl(path),
+            headline: blog.title,
+            description: metaDescription(blog.shortDescription || blog.longDescription),
+            datePublished: blog.publishDate,
+            dateModified: blog.publishDate,
+            ...(blog.image ? { image: absoluteUrl(blog.image) } : {}),
+            keywords: blog.tags.join(", "),
+            author: personJsonLd(),
+            publisher: personJsonLd(),
+            isPartOf: { "@type": "Blog", name: `${SITE_NAME} blog`, url: absoluteUrl("/blogs") },
+          },
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Blog", path: "/blogs" },
+            { name: blog.title, path },
+          ]),
+        ]}
+      />
       <Button asChild variant="ghost" className="mb-8">
         <Link href="/blogs">
           <ArrowLeft className="mr-2 h-4 w-4" />

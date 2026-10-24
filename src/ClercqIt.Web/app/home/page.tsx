@@ -6,6 +6,25 @@ import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Code, Cloud, GitBranch } from "lucide-react";
 import Image from "next/image";
 import { fetchFeaturedProjects } from "../portfolio/lib/api";
+import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import {
+  AUTHOR_NAME,
+  pageMetadata,
+  personJsonLd,
+  projectPath,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
+
+const HOME_TITLE = `${AUTHOR_NAME} - Developer & Solution Architect`;
+
+// The home page is served at / and /home; both name / as canonical.
+export const metadata: Metadata = {
+  ...pageMetadata({ title: HOME_TITLE, description: SITE_DESCRIPTION, path: "/", type: "profile" }),
+  title: { absolute: `${HOME_TITLE} | ${SITE_NAME}` },
+};
 
 export default async function HomePage() {
   const featuredProjects = await fetchFeaturedProjects();
@@ -30,6 +49,19 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          personJsonLd(),
+          {
+            "@type": "WebSite",
+            "@id": `${SITE_URL}/#website`,
+            url: SITE_URL,
+            name: SITE_NAME,
+            description: SITE_DESCRIPTION,
+            publisher: { "@id": personJsonLd()["@id"] },
+          },
+        ]}
+      />
       {/* Hero Section */}
       <PageContainer as="section" className="py-16">
         <div className="mx-auto max-w-3xl text-center">
@@ -113,7 +145,7 @@ export default async function HomePage() {
             </div>
           ) : (
             featuredProjects.slice(0, 3).map((project) => (
-              <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
+              <Link key={project.id} href={projectPath(project)} className="block">
                 <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <CardHeader className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">

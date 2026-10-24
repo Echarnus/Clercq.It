@@ -14,6 +14,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [Migrations](./migrations.md) | EF Core migrations and how they reach production |
 | [Cloud IAM](./ciam.md) | Production Keycloak (Cloud IAM) realm, clients and roles |
 | [Features](./features.md) | Site features overview |
+| [SEO](./seo.md) | Readable detail URLs, redirects from old GUID URLs, page metadata, Open Graph, JSON-LD, sitemap and robots.txt |
 | [UX and page layout](./ux.md) | Layout rules for the public site (one content width), the UX review and its open findings |
 | [MCP](./mcp.md) | Content MCP server at `/api/mcp`: tools, Keycloak auth, adding it as a Claude connector |
 | [MyZen](./myzen.md) | Connecting the owner's MyZen account: login flow, session, keep-alive, managing time entries, API |

@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/pagination";
 import type { Blog } from "./lib/api";
 import { getArchive, matchesFilters, MONTH_NAMES } from "./lib/filters";
+import { blogPath } from "@/lib/seo";
 
 interface BlogsContentProps {
   blogs: Blog[];
@@ -117,7 +118,7 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
             </div>
           ) : (
             paginatedBlogs.map((blog) => (
-              <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
+              <Link key={blog.id} href={blogPath(blog)} className="block">
                 <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                   <BlurImage
                     src={blog.image || "/placeholder.svg"}

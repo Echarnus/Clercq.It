@@ -1,4 +1,5 @@
 import { fetchProjects, fetchProject, type Project } from "@/lib/api/baseApi";
+import { resolveItem } from "@/lib/seo";
 
 // Re-export Project type for convenience
 export type { Project };
@@ -18,4 +19,9 @@ export async function fetchFeaturedProjects(): Promise<Project[]> {
 
 export async function fetchProjectById(id: string): Promise<Project | null> {
   return fetchProject(`/${id}`);
+}
+
+// Resolves a detail URL segment: `<slug>-<short id>` or an old full GUID (docs/seo.md).
+export async function fetchProjectBySegment(segment: string): Promise<Project | null> {
+  return resolveItem(segment, fetchProjectById, fetchAllProjects);
 }

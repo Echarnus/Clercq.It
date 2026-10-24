@@ -5,8 +5,14 @@ import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/c
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { fetchAllProjects } from "./lib/api";
+import { pageMetadata, projectPath } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Portfolio" };
+export const metadata: Metadata = pageMetadata({
+  title: "Portfolio",
+  description:
+    "Projects by Kenneth De Clercq in solution architecture, .NET and TypeScript development and cloud technologies.",
+  path: "/portfolio",
+});
 
 export default async function PortfolioPage() {
   const projects = await fetchAllProjects();
@@ -35,7 +41,7 @@ export default async function PortfolioPage() {
               </div>
             ) : (
               projects.map((project) => (
-                <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
+                <Link key={project.id} href={projectPath(project)} className="block">
                   <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                     <BlurImage
                       src={project.image || "/placeholder.svg"}
