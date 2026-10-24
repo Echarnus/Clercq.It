@@ -11,6 +11,12 @@
     <!-- Coverage excludes compiler-generated code; see docs/testing.md#coverage. -->
     <RunSettingsFilePath>$(MSBuildThisFileDirectory)tests/coverage.runsettings</RunSettingsFilePath>
   </PropertyGroup>
+  <!-- packages.lock.json pins every NuGet package, direct and transitive, by version and
+       content hash; CI and Docker restore with locked mode (#399, docs/development.md).
+       Not the AppHost: Aspire pulls OS-specific packages, so its lock file would differ per machine. -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' != 'Clercq.It.AppHost'">
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+  </PropertyGroup>
   <!-- The Aspire AppHost is local-only and never built in CI. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(MSBuildProjectName)' != 'Clercq.It.AppHost'">
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
