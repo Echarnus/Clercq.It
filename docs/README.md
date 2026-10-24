@@ -5,7 +5,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | Page | What it covers |
 | --- | --- |
 | [Contributing](./contributing.md) | Issue → branch → PR → required checks → auto-merge → deploy loop, labels, docs rule, enforced rules (rulesets, PR conventions, weekly audit) |
-| [Architecture](./architecture.md) | Layers, API endpoints and roles, database tables, authentication, the production container |
+| [Architecture](./architecture.md) | C4 diagrams (context, containers, API components, deployment, sign-in and MCP flows), layers, API endpoints and roles, database tables, authentication, the production container |
 | [Development](./development.md) | Local setup with Aspire, Keycloak test users, code style and analyzers, frontend lint/format/types and hooks, troubleshooting |
 | [Testing](./testing.md) | Unit test stack and conventions, how to run tests, coverage gate and thresholds |
 | [DevOps](./devops.md) | GitHub Actions pipelines, deployment, required secrets |
