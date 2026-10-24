@@ -45,12 +45,13 @@ The Project Portfolio feature enables administrators to showcase their work thro
 - `GET /api/projects/featured` - Retrieve only featured projects (public)
 - `POST /api/projects/images` - Upload a project image (authenticated)
 - `POST /api/projects` - Create a new project (authenticated)
+- `PUT /api/projects/{id}` - Update a project (authenticated). Send a new `image` file to replace the image, or `removeImage=true` to clear it; send neither to keep it
 
 ### Validation Rules
 - Title: Required, max 200 characters
 - Short description: Required, max 500 characters
 - Long description: Required, max 50,000 characters, supports full markdown
-- Image URL: Required, must be a valid HTTP/HTTPS URL from the image upload endpoint
+- Image: Optional. A project without an image shows no picture on the site
 - Start/End dates: Required, valid ISO 8601 format, end date must be >= start date
 - Skills: At least 1 skill required, maximum 20 skills
 - Featured flag: Optional, defaults to false
@@ -58,6 +59,9 @@ The Project Portfolio feature enables administrators to showcase their work thro
 ### Workflow
 1. Upload project image via `POST /api/projects/images` to get the image URL
 2. Create project with the returned image URL via `POST /api/projects`
+
+### Admin image field
+In the admin project dialog, the red X on the current image removes it; saving then stores the project without an image (issue #405). Blog posts and certifications need an image, so their dialogs show **Replace image** instead of an X. The `/placeholder.svg` import default counts as no image.
 
 ### Storage
 - Project images stored separately in Scaleway Object Storage
