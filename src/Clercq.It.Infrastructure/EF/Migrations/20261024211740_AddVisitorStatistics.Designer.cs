@@ -12,7 +12,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Clercq.It.Infrastructure.EF.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20261024210529_AddVisitorStatistics")]
+    [Migration("20261024211740_AddVisitorStatistics")]
     partial class AddVisitorStatistics
     {
         /// <inheritdoc />
@@ -216,8 +216,10 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
-                    b.Property<byte[]>("VisitorHash")
-                        .HasColumnType("bytea");
+                    b.Property<string>("VisitorHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.Property<int>("Views")
                         .HasColumnType("integer");
@@ -232,9 +234,11 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                     b.Property<DateOnly>("Day")
                         .HasColumnType("date");
 
-                    b.Property<byte[]>("Salt")
+                    b.Property<string>("Salt")
                         .IsRequired()
-                        .HasColumnType("bytea");
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
 
                     b.HasKey("Day");
 

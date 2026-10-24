@@ -45,7 +45,7 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                 {
                     Day = table.Column<DateOnly>(type: "date", nullable: false),
                     Path = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    VisitorHash = table.Column<byte[]>(type: "bytea", nullable: false),
+                    VisitorHash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     Views = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -58,7 +58,7 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                 columns: table => new
                 {
                     Day = table.Column<DateOnly>(type: "date", nullable: false),
-                    Salt = table.Column<byte[]>(type: "bytea", nullable: false)
+                    Salt = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false)
                 },
                 constraints: table =>
                 {
