@@ -134,6 +134,7 @@ public static class ProjectsEndpoints
             var endDateString = form["endDate"].ToString();
             var featuredString = form["featured"].ToString();
             var skillsString = form["skills"].ToString();
+            _ = bool.TryParse(form["removeImage"].ToString(), out var removeImage);
 
             var skills = skillsString.Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(s => s.Trim())
@@ -181,7 +182,8 @@ public static class ProjectsEndpoints
                 startDate,
                 endDate,
                 featured,
-                skills
+                skills,
+                removeImage
             );
 
             var result = await mediator.Send(command);
@@ -196,7 +198,7 @@ public static class ProjectsEndpoints
         .RequireAuthorization("ProjectsContributor")
         .WithName("UpdateProject")
         .WithSummary("Update a project")
-        .WithDescription("Updates an existing project. Image is optional - if not provided, the existing image is retained. Requires the Projects.Contributor role.")
+        .WithDescription("Updates an existing project. Image is optional - if not provided, the existing image is retained; send removeImage=true to clear it. Requires the Projects.Contributor role.")
         .DisableAntiforgery();
 
         group.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>
