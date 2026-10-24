@@ -266,6 +266,152 @@ public sealed class MyZenGateway(
         return found.SingleOrDefault();
     }
 
+    public Task<IReadOnlyList<MyZenProjectOptionDto>> SearchProjectsAsync(string query, CancellationToken cancellationToken) =>
+        WithSession<IReadOnlyList<MyZenProjectOptionDto>>(async session =>
+        {
+            if (await RequestTokenAsync(session, cancellationToken) is not { } token)
+            {
+                return null;
+            }
+
+            var response = await session.PostAsync("/Base/GetAutoSuggestValues", Form(
+                ("q", query),
+                ("option1", string.Empty),
+                ("option2", string.Empty),
+                ("option3", string.Empty),
+                ("option4", string.Empty),
+                ("autoSuggestType", "Projects"),
+                ("delay", "0")), token, cancellationToken);
+            return response.IsLoginPage ? null : MyZenHtml.ParseProjectSuggestions(response.Body);
+        }, cancellationToken);
+
+    public Task CreateTimeEntryAsync(MyZenTimeEntryInput entry, CancellationToken cancellationToken) =>
+        WithSession(async session =>
+        {
+            if (await RequestTokenAsync(session, cancellationToken) is not { } token)
+            {
+                return null;
+            }
+
+            return await SaveEntryAsync(session, token, id: null, entry, cancellationToken);
+        }, cancellationToken);
+
+    public async Task<bool> UpdateTimeEntryAsync(long id, MyZenTimeEntryInput entry, CancellationToken cancellationToken)
+    {
+        var outcome = await WithSession(async session =>
+        {
+            if (await EntryExistsAsync(session, id, cancellationToken) is not { } exists)
+            {
+                return null;
+            }
+            if (!exists)
+            {
+                return Outcome.NotFound;
+            }
+            if (await RequestTokenAsync(session, cancellationToken) is not { } token)
+            {
+                return null;
+            }
+
+            return await SaveEntryAsync(session, token, id, entry, cancellationToken);
+        }, cancellationToken);
+        return outcome.Found;
+    }
+
+    public async Task<bool> DeleteTimeEntryAsync(long id, CancellationToken cancellationToken)
+    {
+        var outcome = await WithSession(async session =>
+        {
+            if (await EntryExistsAsync(session, id, cancellationToken) is not { } exists)
+            {
+                return null;
+            }
+            if (!exists)
+            {
+                return Outcome.NotFound;
+            }
+            if (await RequestTokenAsync(session, cancellationToken) is not { } token)
+            {
+                return null;
+            }
+
+            var response = await session.PostAsync("/TimeRegistration/DeleteTimeRegistration",
+                Form(("ID", id.ToString(CultureInfo.InvariantCulture))), token, cancellationToken, newUi: true);
+            if (response.IsLoginPage)
+            {
+                return null;
+            }
+
+            EnsureAccepted(response, "delete");
+            logger.LogInformation("MyZen time entry deleted");
+            return Outcome.Done;
+        }, cancellationToken);
+        return outcome.Found;
+    }
+
+    private async Task<Outcome?> SaveEntryAsync(Session session, string token, long? id, MyZenTimeEntryInput entry,
+        CancellationToken cancellationToken)
+    {
+        var response = await session.PostAsync("/TimeRegistration/TimeRegistrationEntryDetails", Form(
+            ("TimeRegistrationID", id?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            ("ProjectID", entry.ProjectId.ToString(CultureInfo.InvariantCulture)),
+            ("CustomerID", entry.CustomerId?.ToString(CultureInfo.InvariantCulture) ?? string.Empty),
+            ("Date", entry.Date.ToString(MyZenHtml.DateFormat, CultureInfo.InvariantCulture)),
+            ("Duration", (entry.DurationMinutes * 60).ToString(CultureInfo.InvariantCulture)),
+            ("Description", entry.Description ?? string.Empty),
+            ("Invoiced", entry.Invoiced ? "true" : "false")), token, cancellationToken, newUi: true);
+        if (response.IsLoginPage)
+        {
+            return null;
+        }
+
+        EnsureAccepted(response, "save");
+        logger.LogInformation("MyZen time entry {Action}", id is null ? "created" : "updated");
+        return Outcome.Done;
+    }
+
+    private void EnsureAccepted(Reply response, string action)
+    {
+        if ((int)response.Status is < 200 or > 299)
+        {
+            logger.LogWarning("MyZen answered {Status} to a {Action}", (int)response.Status, action);
+            throw new MyZenUnavailableException($"MyZen answered {(int)response.Status} to the {action}.");
+        }
+
+        if (MyZenHtml.ParseChangeError(response.Body) is { } error)
+        {
+            logger.LogWarning("MyZen refused a {Action}", action);
+            throw new MyZenRejectedException(error);
+        }
+    }
+
+    /// <summary>Whether MyZen has an entry with this ID; null when MyZen showed its login page.</summary>
+    private static async Task<bool?> EntryExistsAsync(Session session, long id, CancellationToken cancellationToken)
+    {
+        var response = await session.GetAsync(
+            $"/TimeRegistration/TimeRegistrationEntryDetails?ID={id.ToString(CultureInfo.InvariantCulture)}&projectSelectable=true",
+            cancellationToken);
+        if (response.IsLoginPage)
+        {
+            return null;
+        }
+
+        return MyZenHtml.ParseTimeEntryDetails(response.Body)?.Id == id;
+    }
+
+    /// <summary>The anti-forgery token for MyZen's AJAX calls; null when MyZen showed its login page.</summary>
+    private static async Task<string?> RequestTokenAsync(Session session, CancellationToken cancellationToken)
+    {
+        var index = await session.GetAsync(KeepAlivePath, cancellationToken);
+        if (index.IsLoginPage)
+        {
+            return null;
+        }
+
+        return MyZenHtml.ParseRequestVerificationToken(index.Body)
+            ?? throw new MyZenUnavailableException("MyZen's time registration page has no request token.");
+    }
+
     /// <summary>
     /// Runs a data call on the connected session. The call returns null when MyZen
     /// answered with its login page: the session is then marked expired.
@@ -280,7 +426,18 @@ public sealed class MyZenGateway(
             }
 
             var session = new Session(_options.BaseUrl, handlers, data);
-            var result = await call(session);
+            T? result;
+            try
+            {
+                result = await call(session);
+            }
+            catch (MyZenRejectedException)
+            {
+                // MyZen answered while signed in: keep the cookies it refreshed.
+                await SaveAsync(session, MyZenSessionState.Connected, page: null, record.ConnectedAt, cancellationToken);
+                throw;
+            }
+
             if (result is null)
             {
                 await ExpireAsync(record, cancellationToken);
@@ -427,14 +584,19 @@ public sealed class MyZenGateway(
         public Task<Reply> GetAsync(string path, CancellationToken cancellationToken) =>
             SendAsync(new HttpRequestMessage(HttpMethod.Get, path), cancellationToken);
 
+        /// <summary>Posts a form; <c>newUi</c> adds the header MyZen's current pages send with their save and delete calls.</summary>
         public Task<Reply> PostAsync(string path, IEnumerable<KeyValuePair<string, string>> form, string? headerToken,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken, bool newUi = false)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, path) { Content = new FormUrlEncodedContent(form) };
             if (headerToken is not null)
             {
                 request.Headers.Add("RequestVerificationToken", headerToken);
                 request.Headers.Add("X-Requested-With", "XMLHttpRequest");
+            }
+            if (newUi)
+            {
+                request.Headers.Add("newui", "true");
             }
             return SendAsync(request, cancellationToken);
         }
@@ -463,6 +625,13 @@ public sealed class MyZenGateway(
                 page?.FormToken ?? _data?.FormToken,
                 page?.HeaderToken ?? _data?.HeaderToken,
                 page?.CaptchaCheck ?? _data?.CaptchaCheck);
+    }
+
+    /// <summary>The result of a change; <c>Found</c> is false when MyZen had no entry with the ID.</summary>
+    private sealed record Outcome(bool Found)
+    {
+        public static readonly Outcome Done = new(true);
+        public static readonly Outcome NotFound = new(false);
     }
 
     /// <summary>A MyZen response; <c>IsLoginPage</c> when it ended on the login page, so the session is not (or no longer) signed in.</summary>

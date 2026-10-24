@@ -180,6 +180,111 @@ public class MyZenEndpointTests(CustomWebApplicationFactory factory) : IAsyncLif
         found.StatusCode.Should().Be(HttpStatusCode.OK);
         missing.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
+
+    [Fact(DisplayName = "GET /api/myzen/projects/search returns the matching projects")]
+    public async Task SearchProjects_Ok()
+    {
+        // Arrange
+        _gateway.Setup(g => g.SearchProjectsAsync("web", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MyZenProjectOptionDto(5, "Website", 7, "Acme")]);
+
+        // Act
+        var options = await _client.GetFromJsonAsync<List<MyZenProjectOptionDto>>("/api/myzen/projects/search?q=web");
+
+        // Assert
+        options.Should().ContainSingle().Which.CustomerId.Should().Be(7);
+    }
+
+    [Fact(DisplayName = "A one-character project search returns 400")]
+    public async Task SearchProjects_TooShort_BadRequest()
+    {
+        var response = await _client.GetAsync("/api/myzen/projects/search?q=w");
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact(DisplayName = "POST /api/myzen/time-entries adds the entry and returns 204")]
+    public async Task CreateTimeEntry_NoContent()
+    {
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/myzen/time-entries", EntryBody());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        _gateway.Verify(g => g.CreateTimeEntryAsync(
+            new MyZenTimeEntryInput(new DateOnly(2026, 9, 1), 480, 5, 7, "Work", false), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact(DisplayName = "An entry without a project or with a zero duration returns 400 and is not sent")]
+    public async Task CreateTimeEntry_Invalid_BadRequest()
+    {
+        var response = await _client.PostAsJsonAsync("/api/myzen/time-entries",
+            new { date = "2026-09-01", durationMinutes = 0, projectId = 0, invoiced = false });
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        _gateway.Verify(g => g.CreateTimeEntryAsync(It.IsAny<MyZenTimeEntryInput>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact(DisplayName = "An entry MyZen refuses returns 422 with MyZen's reason")]
+    public async Task CreateTimeEntry_Rejected_Unprocessable()
+    {
+        // Arrange
+        _gateway.Setup(g => g.CreateTimeEntryAsync(It.IsAny<MyZenTimeEntryInput>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new MyZenRejectedException("Project is closed"));
+
+        // Act
+        var response = await _client.PostAsJsonAsync("/api/myzen/time-entries", EntryBody());
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await response.Content.ReadAsStringAsync()).Should().Contain("Project is closed");
+    }
+
+    [Fact(DisplayName = "PUT /api/myzen/time-entries/{id} returns 204, or 404 for an unknown entry")]
+    public async Task UpdateTimeEntry_NoContentOrNotFound()
+    {
+        // Arrange
+        _gateway.Setup(g => g.UpdateTimeEntryAsync(1, It.IsAny<MyZenTimeEntryInput>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        // Act
+        var found = await _client.PutAsJsonAsync("/api/myzen/time-entries/1", EntryBody());
+        var missing = await _client.PutAsJsonAsync("/api/myzen/time-entries/2", EntryBody());
+
+        // Assert
+        found.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        missing.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "DELETE /api/myzen/time-entries/{id} returns 204, or 404 for an unknown entry")]
+    public async Task DeleteTimeEntry_NoContentOrNotFound()
+    {
+        // Arrange
+        _gateway.Setup(g => g.DeleteTimeEntryAsync(1, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        // Act
+        var found = await _client.DeleteAsync("/api/myzen/time-entries/1");
+        var missing = await _client.DeleteAsync("/api/myzen/time-entries/2");
+
+        // Assert
+        found.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        missing.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact(DisplayName = "A change on an expired session returns 409")]
+    public async Task DeleteTimeEntry_Expired_Conflict()
+    {
+        // Arrange
+        _gateway.Setup(g => g.DeleteTimeEntryAsync(1, It.IsAny<CancellationToken>())).ThrowsAsync(new MyZenNotConnectedException());
+
+        // Act
+        var response = await _client.DeleteAsync("/api/myzen/time-entries/1");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+    }
+
+    private static object EntryBody() =>
+        new { date = "2026-09-01", durationMinutes = 480, projectId = 5, customerId = 7, description = " Work ", invoiced = false };
 }
 
 /// <summary>The EF session store against the real PostgreSQL test database.</summary>

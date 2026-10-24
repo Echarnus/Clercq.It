@@ -11,10 +11,11 @@ public class MyZenExceptionHandlerTests
     public static TheoryData<Exception, int> Handled => new()
     {
         { new MyZenNotConnectedException(), StatusCodes.Status409Conflict },
+        { new MyZenRejectedException("no"), StatusCodes.Status422UnprocessableEntity },
         { new MyZenUnavailableException("down"), StatusCodes.Status502BadGateway },
     };
 
-    [Theory(DisplayName = "MyZen errors become 409 or 502 problem responses")]
+    [Theory(DisplayName = "MyZen errors become 409, 422 or 502 problem responses")]
     [MemberData(nameof(Handled))]
     public async Task MyZenError_Handled(Exception exception, int status)
     {

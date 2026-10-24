@@ -60,6 +60,12 @@ public static class MyZenEndpoints
             .WithSummary("List MyZen projects")
             .WithDescription("Every project in MyZen. 409 when the session must be reconnected");
 
+        group.MapGet("/projects/search", async (string q, IMediator mediator, CancellationToken ct) =>
+            Results.Ok(await mediator.Send(new SearchMyZenProjectsQuery(q), ct)))
+            .WithName("SearchMyZenProjects")
+            .WithSummary("Search MyZen projects")
+            .WithDescription("Projects whose name matches 'q' (2 to 50 characters), with the customer ID a time entry needs. 409 when the session must be reconnected");
+
         group.MapGet("/time-entries", async (DateOnly from, DateOnly to, IMediator mediator, CancellationToken ct) =>
             Results.Ok(await mediator.Send(new GetMyZenTimeEntriesQuery(from, to), ct)))
             .WithName("GetMyZenTimeEntries")
@@ -71,6 +77,27 @@ public static class MyZenEndpoints
             .WithName("GetMyZenTimeEntry")
             .WithSummary("Get a MyZen time entry")
             .WithDescription("One time entry with its project and customer IDs. 409 when the session must be reconnected");
+
+        group.MapPost("/time-entries", async (MyZenTimeEntryInput body, IMediator mediator, CancellationToken ct) =>
+        {
+            await mediator.Send(new CreateMyZenTimeEntryCommand(body), ct);
+            return Results.NoContent();
+        })
+            .WithName("CreateMyZenTimeEntry")
+            .WithSummary("Add a MyZen time entry")
+            .WithDescription("Adds one entry. 409 when the session must be reconnected, 422 when MyZen refuses it");
+
+        group.MapPut("/time-entries/{id:long}", async (long id, MyZenTimeEntryInput body, IMediator mediator, CancellationToken ct) =>
+            await mediator.Send(new UpdateMyZenTimeEntryCommand(id, body), ct) ? Results.NoContent() : Results.NotFound())
+            .WithName("UpdateMyZenTimeEntry")
+            .WithSummary("Change a MyZen time entry")
+            .WithDescription("Replaces one entry. 404 when MyZen has no such entry, 409 when the session must be reconnected, 422 when MyZen refuses it");
+
+        group.MapDelete("/time-entries/{id:long}", async (long id, IMediator mediator, CancellationToken ct) =>
+            await mediator.Send(new DeleteMyZenTimeEntryCommand(id), ct) ? Results.NoContent() : Results.NotFound())
+            .WithName("DeleteMyZenTimeEntry")
+            .WithSummary("Delete a MyZen time entry")
+            .WithDescription("Deletes one entry. 404 when MyZen has no such entry, 409 when the session must be reconnected");
 
         return endpoints;
     }
