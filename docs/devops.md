@@ -99,6 +99,26 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - Pull requests only
 - Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`. The .NET stage copies `src/nuget.config`, `src/Directory.Packages.props` (central package versions) and each project's `packages.lock.json` before `dotnet restore --locked-mode`, and the Node stage installs pnpm through Corepack from the hash-pinned `packageManager` field; the build context is `src/`, so files at the repo root are not in the image.
 
+#### container-test (`Container smoke test`)
+- Pull requests only, required check (issue #439)
+- Builds the image with `load: true` and runs it the way Scaleway does, so a container that crashes at startup fails the PR. The PR build alone never started the image: the missing libicu in 1.0.247 to 1.0.252 only showed after merge.
+- A `postgres:17-alpine` service container is the throwaway database. The job applies the idempotent migration script with `psql` and runs the content import (`src/Clercq.It.ContentImport`), the same steps as `deploy.yml`.
+- `docker run --network host`: the container reaches Postgres on `localhost:5432` and serves the site on `http://localhost`. `Keycloak__BaseUrl` is a dummy (`https://keycloak.invalid`): the API needs a URL to start and only fetches the Keycloak metadata when someone signs in. Object storage is not configured, so image uploads are not covered.
+- The start step fails as soon as the container stops, and waits up to 120 s for `http://localhost/`. Then `.github/scripts/smoke-test.sh http://localhost 0.0.0-ci` runs the same checks as after a production deploy. On failure the job prints `docker logs` and the API and frontend logs from inside the container.
+- ZAP (#239) and Playwright e2e (#246) are meant to run as steps after the smoke test, against the same running container.
+
+Run the same check locally (needs Docker; from the repo root):
+
+```bash
+docker build -t clercq-it:ci --build-arg VERSION=0.0.0-ci ./src
+docker run -d --name ci-db -p 5432:5432 -e POSTGRES_DB=clercqit_ci -e POSTGRES_USER=clercqit_user -e POSTGRES_PASSWORD=ci-only-password postgres:17-alpine
+# apply the migrations and import content as in the job, then:
+docker run -d --name clercq-it --network host \
+  -e ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=clercqit_ci;Username=clercqit_user;Password=ci-only-password' \
+  -e Keycloak__BaseUrl=https://keycloak.invalid clercq-it:ci
+.github/scripts/smoke-test.sh http://localhost 0.0.0-ci
+```
+
 #### deploy-scripts
 - Pull requests only
 - Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI)

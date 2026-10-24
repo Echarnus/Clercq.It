@@ -80,7 +80,7 @@ gh api -X POST repos/Echarnus/Clercq.It/rulesets --input .github/rulesets/prod-t
 | Rule | Setting |
 | --- | --- |
 | Pull request required | Yes, **0** approvals (no human review; a reviewer agent may be added in #251), stale approvals dismissed, squash merge only |
-| Required status checks | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts`, `Docs updated`, `PR conventions`, `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan`, `Trivy Filesystem Scan` |
+| Required status checks | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Container smoke test`, `Test deploy scripts`, `Docs updated`, `PR conventions`, `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan`, `Trivy Filesystem Scan` |
 | Branch up to date | Required before merging (strict checks) |
 | Linear history | Required |
 | Force push and deletion | Blocked |

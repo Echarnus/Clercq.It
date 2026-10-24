@@ -85,6 +85,10 @@ dotnet test tests/ClercqIt.Api.Tests
 
 In CI they are a separate step, `API integration tests`, after `Unit tests` in the `Test .NET API` job (Docker is built into `ubuntu-latest`). In a Claude Code cloud session the Docker daemon is installed but not running: start it with `dockerd > /tmp/dockerd.log 2>&1 &`. If Docker Hub answers `429 Too Many Requests`, pull through Google's mirror and retag, for example `docker pull mirror.gcr.io/keycloak/keycloak:26.4 && docker tag mirror.gcr.io/keycloak/keycloak:26.4 keycloak/keycloak:26.4`. `quay.io` is not reachable from the cloud session.
 
+## Container smoke test
+
+The `Container smoke test` job in `.github/workflows/test.yml` starts the production image on every PR against a throwaway Postgres with migrations and content applied, and runs `.github/scripts/smoke-test.sh` against `http://localhost`. It catches what unit and integration tests cannot: a broken image, a missing runtime library, nginx or `src/start.sh` failing. Details and the local commands: [devops.md](./devops.md#container-test-container-smoke-test). ZAP (#239) and e2e (#246) will run against the same container.
+
 ## Coverage
 
 The `Test .NET API` job fails when line coverage is below `tests/coverage-thresholds.json`, per assembly and in total. It prints a table in the job summary and uploads the HTML report as the `coverage-report` artifact. Coverage also still goes to Codecov.

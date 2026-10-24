@@ -33,6 +33,7 @@
           { "context": "Test .NET API" },
           { "context": "Test Next.js Frontend" },
           { "context": "Build Docker image (no push)" },
+          { "context": "Container smoke test" },
           { "context": "Test deploy scripts" },
           { "context": "Docs updated" },
           { "context": "PR conventions" },
