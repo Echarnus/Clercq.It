@@ -59,6 +59,22 @@ New pages are added to the index in [docs/README.md](./README.md).
 
 GitHub enforces the trunk-based model (issue #245). The rules live as code in `.github/rulesets/` and a weekly audit checks they are still in place.
 
+### Live status
+
+Checked on 2026-10-24 with `gh api repos/Echarnus/Clercq.It/rulesets` and `gh api repos/Echarnus/Clercq.It/rules/branches/main` (issue #433):
+
+| Rule | Status |
+| --- | --- |
+| Ruleset `main` | **Active** since 2026-10-22 (id 25640431). Matches `main.json`: all 13 required checks, strict, squash only, no bypass actors. `main` is protected. |
+| Ruleset `prod-tags` | **Not applied.** Anyone with write access, and any workflow with `contents: write`, can create, move or delete `prod-*` and `v*` tags. |
+| Repository settings | Applied: auto-merge on, squash only, head branches deleted after merge. |
+
+To apply `prod-tags`, an admin runs this once from the repository root (agents are not allowed to change repository rules):
+
+```bash
+gh api -X POST repos/Echarnus/Clercq.It/rulesets --input .github/rulesets/prod-tags.json
+```
+
 ### Ruleset `main` (`.github/rulesets/main.json`)
 
 | Rule | Setting |
