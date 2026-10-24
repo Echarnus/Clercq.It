@@ -83,7 +83,7 @@ jobs:
         run: |
           echo "📦 Restoring dependencies for production projects..."
           cd src
-          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --locked-mode
           echo "✅ Dependencies restored successfully"
 
       - name: Install EF Core tools
