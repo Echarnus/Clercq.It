@@ -116,8 +116,10 @@ resource "scaleway_iam_policy" "verify_storage" {
   application_id = scaleway_iam_application.verify_storage.id
 
   rule {
-    project_ids          = [var.scaleway_project_id]
-    permission_set_names = ["ObjectStorageFullAccess"]
+    project_ids = [var.scaleway_project_id]
+    # Objects only: no bucket settings and no bucket deletes. The bucket policy
+    # (storage_policies.tf) then limits the key to its own bucket.
+    permission_set_names = ["ObjectStorageObjectsRead", "ObjectStorageObjectsWrite", "ObjectStorageObjectsDelete"]
   }
 }
 
