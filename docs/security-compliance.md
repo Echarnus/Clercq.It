@@ -30,7 +30,7 @@ The scorecard evaluates:
 - Code review requirements
 - CI/CD security
 - Dependency update practices
-- Fuzzing implementation
+- Fuzzing implementation (property-based tests with fast-check, see [testing.md](./testing.md#property-based-tests-fuzzing))
 - License verification
 - Maintained status
 - Pinned dependencies
