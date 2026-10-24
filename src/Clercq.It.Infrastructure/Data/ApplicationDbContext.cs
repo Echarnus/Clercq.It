@@ -1,5 +1,6 @@
 using Clercq.It.Domain.Entities;
 using Clercq.It.Infrastructure.MyZen;
+using Clercq.It.Infrastructure.Statistics;
 using Microsoft.EntityFrameworkCore;
 
 namespace Clercq.It.Infrastructure.Data;
@@ -26,6 +27,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<Blog> Blogs => Set<Blog>();
     public DbSet<Certification> Certifications => Set<Certification>();
     public DbSet<MyZenSessionRecord> MyZenSessions => Set<MyZenSessionRecord>();
+    public DbSet<StatsSaltRecord> StatsSalts => Set<StatsSaltRecord>();
+    public DbSet<StatsPageVisitRecord> StatsPageVisits => Set<StatsPageVisitRecord>();
+    public DbSet<StatsDailyPageRecord> StatsDailyPages => Set<StatsDailyPageRecord>();
+    public DbSet<StatsDayRecord> StatsDays => Set<StatsDayRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

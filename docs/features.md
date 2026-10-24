@@ -2,6 +2,16 @@
 
 This document provides an overview of the main features available in the Clercq.It application.
 
+## Visitor Statistics
+
+The admin dashboard's **Statistics** tab shows page views, unique page views and
+unique visitors for the last 7, 30 or 90 days, with a daily trend and the top
+pages. Counting is first-party and cookieless; details in
+[Visitor statistics](./statistics.md).
+
+- `POST /api/stats/pageview` - Count a page view (public, sent by the site)
+- `GET /api/stats?days=30` - Statistics for a period (`Admin.View`)
+
 ## Blog Management
 
 The Blog Management feature allows administrators to create, manage, and publish blog posts with rich markdown content and images.

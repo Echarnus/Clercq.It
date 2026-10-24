@@ -111,6 +111,7 @@ Implements external concerns and data persistence.
 - **Repositories**: Generic `Repository<T>` and specific implementations
 - **Unit of Work**: Transaction management and change tracking
 - **Object Storage**: S3-compatible service for Scaleway Object Storage (blog images)
+- **Statistics**: cookieless visitor statistics in PostgreSQL, daily salts and rollup (`Statistics/`, see [Visitor statistics](./statistics.md))
 - **MyZen**: client for the owner's MyZen account and its encrypted session store (`MyZen/`, see [MyZen](./myzen.md))
 - **Configuration**: Settings for object storage and authentication
 
