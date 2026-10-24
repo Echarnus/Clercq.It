@@ -9,12 +9,15 @@ name: Sync labels
   workflow_dispatch:
 
 permissions:
-  issues: write
+  contents: read
 
 jobs:
   sync:
     name: Sync labels
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

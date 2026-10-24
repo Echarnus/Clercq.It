@@ -25,6 +25,23 @@ How issues, branches, PRs and reviews fit together is described in [Contributing
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
 
+### Workflow token permissions
+
+Every workflow sets a read-only `permissions` block at the top (`contents: read`, sometimes `actions: read` or `read-all`). A job that needs to write asks for it in its own `permissions` block, and only for the scopes it uses (#397):
+
+| Workflow | Job | Write scopes |
+| --- | --- | --- |
+| `build.yml` | `build` | `contents` (initial version tag), `id-token` and `attestations` (build provenance) |
+| `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
+| `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
+| `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
+| `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
+| `labels.yml` | `sync` | `issues` |
+| `repo-audit.yml` | `audit` | `issues` |
+| `scorecard.yml` | `analysis` | `security-events`, `id-token` |
+
+A job that calls a reusable workflow (`build.yml` calling `test.yml`) caps that workflow's permissions, so give the calling job what the called workflow needs. A new workflow follows the same rule; OpenSSF Scorecard's Token-Permissions check scores any top-level write as a failure.
+
 ## Workflow and review pipelines
 
 ### Docs check (`docs-check.yml`)

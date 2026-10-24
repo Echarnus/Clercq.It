@@ -29,7 +29,7 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
             return null;
         }
 
-        // Update image if provided
+        // Update image if provided, or remove it when asked
         if (request.ImageStream != null && !string.IsNullOrEmpty(request.ImageFileName) && !string.IsNullOrEmpty(request.ImageContentType))
         {
             var imageUrl = await _objectStorageService.UploadFileAsync(
@@ -39,6 +39,11 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
                 isInlineImage: false,
                 cancellationToken);
             project.ChangeImage(imageUrl);
+        }
+        else if (request.RemoveImage)
+        {
+            // A new image wins over a removal; without either the current image stays.
+            project.ChangeImage(string.Empty);
         }
 
         // Update other properties

@@ -20,15 +20,18 @@ env:
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
+# Read-only by default; the plan job asks for write access to comment on the PR (#397).
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     if: github.event_name == 'pull_request'
 
     steps:
