@@ -7,7 +7,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 ### Required Software
 - **.NET 10 SDK** (LTS) - [Download](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Node.js 24 LTS** - [Download](https://nodejs.org/). CI (`test.yml`, `security-scan.yml`) and the Docker image (`node:24-slim`) use the same major.
-- **pnpm 10.12.4+** - Install with `npm install -g pnpm`
+- **pnpm** - Run `corepack enable` once (Corepack ships with Node 24). It installs the exact pnpm version in `src/ClercqIt.Web/package.json` (`packageManager`, pinned with its sha512 hash) and checks the hash.
 - **Docker** - [Download](https://www.docker.com/products/docker-desktop)
 - **Git** - [Download](https://git-scm.com/)
 
@@ -354,6 +354,8 @@ One standard for every editor and for CI, defined in two files at the repo root:
 - **`Directory.Build.props`**: applies to every project under `src/` and `tests/`. It sets `Nullable` and `ImplicitUsings`, the .NET analyzers at `AnalysisLevel=latest-recommended`, and `EnforceCodeStyleInBuild`. Release builds treat every warning as an error. The exceptions are NuGet vulnerability warnings (NU1901 to NU1904), which Dependabot and the security scan handle, and the local-only Aspire AppHost.
 
 - **`src/Directory.Packages.props`**: central package management (`ManagePackageVersionsCentrally`). Every NuGet version lives here; `PackageReference` items in the csproj files have no `Version`. To add a package, add a `PackageVersion` line here and a version-less `PackageReference` in the project. It sits in `src/` because the Docker build context is `src/` (the Dockerfile copies it before `dotnet restore`); `tests/Directory.Packages.props` imports it. Dependabot updates it.
+
+- **`packages.lock.json`** (one per project, next to the csproj): `RestorePackagesWithLockFile` in `Directory.Build.props` pins every NuGet package, direct and transitive, by version and content hash (#399). CI, the Docker build and the session-start hook restore with `dotnet restore --locked-mode`, which fails when a lock file is missing or out of date. After adding or updating a package in `src/Directory.Packages.props`, run `dotnet restore Clercq.It.CI.slnf --force-evaluate` and commit the changed lock files. Dependabot updates them in its own PRs. The Aspire AppHost has no lock file: it pulls OS-specific packages, so its lock file would differ on every machine.
 
 `Clercq.It.CI.slnf` is the solution without the AppHost. Use it for restore, build, test and format, as CI does.
 

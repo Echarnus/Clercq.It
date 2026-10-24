@@ -55,7 +55,7 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 
 #### docker-build
 - Pull requests only
-- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`. The .NET stage copies `src/nuget.config` and `src/Directory.Packages.props` (central package versions) before `dotnet restore`; the build context is `src/`, so files at the repo root are not in the image.
+- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`. The .NET stage copies `src/nuget.config`, `src/Directory.Packages.props` (central package versions) and each project's `packages.lock.json` before `dotnet restore --locked-mode`, and the Node stage installs pnpm through Corepack from the hash-pinned `packageManager` field; the build context is `src/`, so files at the repo root are not in the image.
 
 #### deploy-scripts
 - Pull requests only

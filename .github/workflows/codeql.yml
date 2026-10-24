@@ -42,7 +42,7 @@ jobs:
       - name: Restore dependencies
         run: |
           cd src
-          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj
+          dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --locked-mode
 
       - name: Build
         run: |

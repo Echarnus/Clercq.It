@@ -36,7 +36,7 @@ jobs:
 
       # Clercq.It.CI.slnf is the solution without the Aspire AppHost
       - name: Restore dependencies (excluding Aspire projects)
-        run: dotnet restore Clercq.It.CI.slnf
+        run: dotnet restore Clercq.It.CI.slnf --locked-mode
 
       - name: Check formatting and code style
         run: |
@@ -111,7 +111,9 @@ jobs:
           node-version: '24'
 
       - name: Install pnpm
-        run: npm install -g pnpm@10.12.4
+        # Corepack installs the pnpm version (and checks the hash) named in packageManager.
+        run: corepack enable
+        working-directory: ./src/ClercqIt.Web
 
       - name: Setup pnpm cache
         uses: actions/setup-node@v7
