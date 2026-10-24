@@ -22,6 +22,7 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { imageOrNone } from "@/lib/utils";
 import type { Blog } from "./lib/api";
 import { getArchive, matchesFilters, MONTH_NAMES } from "./lib/filters";
 
@@ -116,41 +117,46 @@ export function BlogsContent({ blogs }: BlogsContentProps) {
               No blogs found matching your filters.
             </div>
           ) : (
-            paginatedBlogs.map((blog) => (
-              <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
-                <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
-                  <BlurImage
-                    src={blog.image || "/placeholder.svg"}
-                    alt={blog.title}
-                    width={200}
-                    height={200}
-                    containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
-                  />
+            paginatedBlogs.map((blog) => {
+              const image = imageOrNone(blog.image);
+              return (
+                <Link key={blog.id} href={`/blogs/${blog.id}`} className="block">
+                  <Card className="group cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
+                    {image && (
+                      <BlurImage
+                        src={image}
+                        alt={blog.title}
+                        width={200}
+                        height={200}
+                        containerClassName="w-full md:w-48 h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
+                      />
+                    )}
 
-                  <CardContent className="flex flex-col justify-center p-6 md:flex-1">
-                    <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
-                      {formatDate(blog.publishDate)}
-                    </div>
+                    <CardContent className="flex flex-col justify-center p-6 md:flex-1">
+                      <div className="mb-2 text-sm text-slate-500 dark:text-slate-400">
+                        {formatDate(blog.publishDate)}
+                      </div>
 
-                    <CardTitle className="mb-2 text-xl text-slate-900 dark:text-white">
-                      {blog.title}
-                    </CardTitle>
+                      <CardTitle className="mb-2 text-xl text-slate-900 dark:text-white">
+                        {blog.title}
+                      </CardTitle>
 
-                    <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
-                      {blog.shortDescription}
-                    </CardDescription>
+                      <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
+                        {blog.shortDescription}
+                      </CardDescription>
 
-                    <div className="flex flex-wrap gap-2">
-                      {blog.tags.map((tag) => (
-                        <Badge key={tag} variant="secondary" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))
+                      <div className="flex flex-wrap gap-2">
+                        {blog.tags.map((tag) => (
+                          <Badge key={tag} variant="secondary" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })
           )}
         </div>
 
