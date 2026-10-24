@@ -109,7 +109,11 @@ gh workflow run test.yml
 
 ### Third-party actions
 
-`aquasecurity/trivy-action` is pinned to a commit SHA (v0.36.0). Its old unprefixed tags such as `0.28.0` no longer exist upstream, which is what broke every build on `main` from 10 March 2026. Prefer SHA pins for third-party actions.
+Every action in `.github/workflows/` and `.github/actions/` is pinned to a full commit SHA with the release it stands for as a comment, for example `actions/checkout@<sha> # v7.0.1` (#398). A tag can be moved or deleted upstream; a SHA cannot. `aquasecurity/trivy-action` shows why: its old unprefixed tags such as `0.28.0` vanished upstream, which broke every build on `main` from 10 March 2026.
+
+The `FROM` lines in `src/Dockerfile` are pinned the same way, as `image:tag@sha256:<digest>`.
+
+Dependabot (`.github/dependabot.yml`, `github-actions` and `docker` ecosystems) updates both the SHA or digest and the version comment, so pins do not go stale. When you add an action or image by hand, pin it too. To find the SHA for a release: `git ls-remote --tags https://github.com/<owner>/<repo> <tag>` (use the `^{}` line for annotated tags). To find an image digest: `docker buildx imagetools inspect <image>:<tag>`. OpenSSF Scorecard's Pinned-Dependencies check flags anything left unpinned.
 
 ### Docker Image Tags
 
