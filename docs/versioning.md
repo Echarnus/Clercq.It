@@ -45,7 +45,7 @@ Versions are calculated by [GitVersion](https://gitversion.net) (`GitVersion.yml
 | Work branch | `{Major}.{Minor}.{Commits}-{label}` (label from GitVersion, or the branch type) | `1.0.190-fix` |
 
 - The patch number is the number of commits on `main` since the last `v`-tag. With squash merges, each merged PR adds one.
-- **Major and minor** are bumped by pushing a `v`-tag by hand, for example `v1.1.0` or `v2.0.0`. Only do this for a deliberate version jump.
+- **Major and minor** are bumped with a new `v`-tag, for example `v1.1.0` or `v2.0.0`. Only do this for a deliberate version jump. The `prod-tags` ruleset ([Enforced rules](./contributing.md#enforced-rules)) lets only GitHub Actions create, move or delete `v*` tags, so a tag pushed by hand is rejected. An admin has to disable that ruleset for the push and enable it again.
 - The build pipeline creates `v1.0.0` if no `v`-tag exists, because GitVersion needs a baseline.
 
 ## Production releases
@@ -95,5 +95,5 @@ dotnet gitversion /showConfig
 ## Troubleshooting
 
 - **Version did not increment**: a commit that carries a `v`-tag shows that tag's version; the next commit increments. Check that no one pushed a `v`-tag by accident (`git tag -l 'v*'`).
-- **Version jumped back to a low patch number**: a new `v`-tag was created. Remove it if it was a mistake (`git push --delete origin vX.Y.Z`), or accept it as the new baseline.
+- **Version jumped back to a low patch number**: a new `v`-tag was created. Accept it as the new baseline, or have an admin remove it (`git push --delete origin vX.Y.Z` is blocked by the `prod-tags` ruleset until it is disabled).
 - **Branch gets an odd label**: the branch name does not start with one of the types above; rename it.
