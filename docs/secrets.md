@@ -62,7 +62,7 @@ A placeholder value (`replace-me`) means the secret was created without a seed; 
 | --- | --- | --- |
 | Owner | Full, in the Scaleway console | Personal Scaleway login |
 | GitHub Actions (`infra.yml`, `deploy.yml`) | Manages secrets and infra | `SCALEWAY_ACCESS_KEY` / `SCALEWAY_SECRET_KEY` repository secrets (needs IAM manager rights) |
-| Claude cloud sessions | **Read-only**, this project only | IAM application `clercq-it-claude-agent` with `SecretManagerReadOnly` + `SecretManagerSecretAccess` |
+| Claude cloud sessions | **List only** (names, paths, versions; no values), this project only | IAM application `clercq-it-claude-agent` with `SecretManagerReadOnly` |
 | Running containers | Values injected at deploy time | None of their own |
 
 ### Setting up Claude's read-only key (owner, once)
@@ -73,13 +73,29 @@ The IAM application and its policy are created by Terraform. The key itself is c
 2. In Claude, open the project's settings → Cloud environment → add (or edit) the environment, and add network secrets `SCW_ACCESS_KEY`, `SCW_SECRET_KEY` and `SCW_DEFAULT_PROJECT_ID` with the values from step 1. Never paste them in a chat, issue or PR.
 3. Allow network access to `api.scaleway.com` in the same environment.
 
-A session can then read a secret with the Scaleway CLI that the session-start hook installs:
+A session can then see which secrets and versions exist with the Scaleway CLI that the session-start hook installs:
 
 ```bash
 scw secret secret list path=/clercq-it
-scw secret version access <secret-id> revision=latest_enabled
+scw secret version list <secret-id>
 ```
+
+It cannot read a value (`scw secret version access` is refused). That is on purpose (issue #415): no agent task needs a secret value, and the values include the owner's MyZen login. If a task ever does, the owner reads the value and puts it where it is needed.
 
 ## State
 
 Seeded and generated values are stored in the Terraform state in the `clercq-it-terraform-state` bucket. That bucket must stay private, and should have versioning enabled.
+
+### Who can reach which bucket
+
+Scaleway IAM grants object storage per project, so on its own every storage key could read every bucket, including the state. Bucket policies in `infra/terraform/storage_policies.tf` close that (issue #415). With the `2023-04-17` policy version a bucket allows only the principals it lists:
+
+| Bucket | Allowed |
+| --- | --- |
+| `clercq-it-terraform-state` | Terraform only |
+| `clercq-it-blog-images` | Terraform and the deploy pipeline (all actions), the site container's key (`clercq-it-app-storage`: list, read, write, delete objects and set their ACL), everyone (read objects) |
+| `clercq-it-verify-images` | Terraform (all actions), the verify key (`clercq-it-verify-storage`: same object actions), everyone (read objects) |
+
+The container keys' IAM policies are also reduced from `ObjectStorageFullAccess` to the objects-only sets (`ObjectStorageObjectsRead`, `ObjectStorageObjectsWrite`, `ObjectStorageObjectsDelete`), so they cannot change bucket settings or delete buckets.
+
+"Terraform" is whoever owns the API key in the `SCALEWAY_ACCESS_KEY` repository secret. The infra workflow passes that access key (not the secret key) as `TF_VAR_terraform_access_key`, and Terraform looks up its user or application. If you rotate that key to one owned by another user or application, run **Deploy Infra** right away so the policies follow. If a policy ever locks Terraform out, the Organization owner can delete it in the console (Object Storage → bucket → Bucket policy) and rerun the pipeline.
