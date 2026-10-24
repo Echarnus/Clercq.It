@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import Link from "next/link";
 import { PageContainer } from "@/components/page-container";
 import { Markdown } from "@/components/markdown";
@@ -8,7 +9,12 @@ import { BlurImage } from "@/components/ui/blur-image";
 import { ExternalLink, Calendar, Building2 } from "lucide-react";
 import { fetchAllCertifications } from "./lib/api";
 
-export const metadata: Metadata = { title: "Certifications" };
+export const metadata: Metadata = pageMetadata({
+  title: "Certifications",
+  description:
+    "Professional certifications of Kenneth De Clercq in cloud technologies, software development and engineering practices.",
+  path: "/certifications",
+});
 
 export default async function CertificationsPage() {
   const certifications = await fetchAllCertifications();

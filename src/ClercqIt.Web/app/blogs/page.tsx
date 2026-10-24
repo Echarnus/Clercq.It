@@ -1,9 +1,15 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { PageContainer } from "@/components/page-container";
 import { fetchAllBlogs } from "./lib/api";
 import { BlogsContent } from "./blogs-content";
 
-export const metadata: Metadata = { title: "Blog" };
+export const metadata: Metadata = pageMetadata({
+  title: "Blog",
+  description:
+    "Insights, tutorials and thoughts by Kenneth De Clercq on software development, cloud technologies and web architecture.",
+  path: "/blogs",
+});
 
 export default async function BlogsPage() {
   const blogs = await fetchAllBlogs();

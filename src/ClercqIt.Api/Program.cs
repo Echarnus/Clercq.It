@@ -225,6 +225,7 @@ app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 app.MapCertificationsEndpoints();
 app.MapMyZenEndpoints();
+app.MapStatisticsEndpoints();
 app.MapFeatureFlagEndpoints();
 app.MapContentMcp();
 

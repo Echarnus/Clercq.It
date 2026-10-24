@@ -1,4 +1,5 @@
 import { fetchBlogs, fetchBlog, type Blog } from "@/lib/api/baseApi";
+import { resolveItem } from "@/lib/seo";
 
 // Re-export Blog type for convenience
 export type { Blog };
@@ -14,4 +15,9 @@ export async function fetchAllBlogs(): Promise<Blog[]> {
 
 export async function fetchBlogById(id: string): Promise<Blog | null> {
   return fetchBlog(`/${id}`);
+}
+
+// Resolves a detail URL segment: `<slug>-<short id>` or an old full GUID (docs/seo.md).
+export async function fetchBlogBySegment(segment: string): Promise<Blog | null> {
+  return resolveItem(segment, fetchBlogById, fetchAllBlogs);
 }
