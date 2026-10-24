@@ -54,7 +54,7 @@ Once the `clercqit-mcp` client exists in Cloud IAM:
 
 `tests/ClercqIt.Api.Tests/McpEndpointTests.cs` and `tests/ClercqIt.Api.Tests/MyZen/MyZenMcpToolsTests.cs` (with a mocked MyZen gateway) run the real MCP client against the API with real Keycloak tokens (see [Testing](./testing.md#api-integration-tests)): 401 with the metadata link, 403, per-role tool lists, and each tool.
 
-To try it locally, run the Aspire stack ([Development](./development.md)), get a token for a local user, and point the MCP Inspector at `http://localhost:5000/api/mcp` with an `Authorization: Bearer <token>` header:
+To try it locally, run the Aspire stack ([Development](./development.md)), get a token for a local user, and point the MCP Inspector at `http://localhost:5001/api/mcp` (the Aspire API port; `5000` when you run the API on its own) with an `Authorization: Bearer <token>` header:
 
 ```bash
 npx @modelcontextprotocol/inspector

@@ -110,13 +110,14 @@ All three layers share the same base API configuration and Project type.
 
 ```typescript
 // Zod schema with runtime validation
-const ProjectSchema = z.object({
-  id: z.string().uuid(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+// src/ClercqIt.Web/lib/api/baseApi.ts
+export const ProjectSchema = z.object({
+  id: z.guid(), // not z.uuid(): .NET Guids are not always RFC 9562 UUIDs
+  startDate: z.iso.datetime(),
+  endDate: z.iso.datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
-  image: z.string().url(),
+  image: z.string(), // empty when the project has no image
   featured: z.boolean(),
   title: z.string().min(1),
   skills: z.array(z.string()),

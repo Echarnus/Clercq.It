@@ -54,8 +54,10 @@ Every workflow sets a read-only `permissions` block at the top (`contents: read`
 | `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
 | `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
 | `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
+| `deploy.yml` | `deploy` | `issues` (p1 issue on a failed verify or smoke test) |
 | `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
 | `labels.yml` | `sync` | `issues` |
+| `sast.yml` | `semgrep` | `security-events` (SARIF upload) |
 | `repo-audit.yml` | `audit` | `issues` |
 | `scorecard.yml` | `analysis` | `security-events`, `id-token` |
 
@@ -78,15 +80,19 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 ### Jobs
 
 #### test-dotnet
-- Uses .NET 10
-- Runs xUnit tests with code coverage
-- Uploads coverage to Codecov
-- Tests located in `/tests/` directory
+- Uses .NET 10 and restores `Clercq.It.CI.slnf` in locked mode (`--locked-mode`)
+- Checks formatting (`dotnet format --verify-no-changes`), then builds in Release with warnings as errors
+- Runs the unit tests, then the API integration tests (`tests/ClercqIt.Api.Tests`, PostgreSQL and Keycloak in Testcontainers)
+- Runs the backend coverage gate (`.github/scripts/check_coverage.py` against `tests/coverage-thresholds.json`, see [Testing](./testing.md))
+- Uploads the coverage report as an artifact and to Codecov (Codecov failures do not fail the job)
+- Lists vulnerable NuGet packages for the API (informational; the blocking check is `.NET Security Scan`)
 
 #### test-frontend
 - Uses Node.js 24 (LTS) and pnpm, the same Node major as the Docker image (`node:24-slim`)
-- Runs Jest tests and ESLint
-- Builds Next.js application to verify compilation
+- Runs ESLint (no warnings allowed), the Prettier check and the TypeScript check
+- Builds the Next.js application
+- Runs the Vitest unit tests with the frontend coverage gate (`pnpm test:coverage`)
+- Runs `pnpm audit --audit-level=high`
 
 
 #### docker-build
@@ -96,21 +102,22 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 #### deploy-scripts
 - Pull requests only
 - Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI)
+- Runs `check-pr-conventions.test.sh` and the Python tests in `.github/scripts/tests/` (docs check, repository audit, coverage gate)
 
 ### Example
 
 ```bash
-# Runs automatically on push/PR
-# Or manually trigger with
-gh workflow run test.yml
+# Runs automatically on every PR, and from build.yml on main.
+# It has no workflow_dispatch trigger, so it cannot be started by hand.
 ```
 
 ## Build Pipeline (`build.yml`)
 
 ### Triggers
-- Push to `main` branch only
-- Manual workflow dispatch with optional branch selection
-- Pull requests (test only, no build/push)
+- Push to `main`
+- Manual workflow dispatch. It builds the ref you dispatch from (`gh workflow run build.yml --ref <branch>`); the `branch` input is not used by any step.
+
+PRs do not run `build.yml`; they run `test.yml` directly.
 
 ### Jobs
 
@@ -118,13 +125,15 @@ gh workflow run test.yml
 - Calls the test pipeline to ensure all tests pass
 
 #### build
-- Uses GitVersion for semantic versioning
+- Uses GitVersion and `.github/actions/calculate-version` for the version (see [Versioning](./versioning.md))
+- Generates the idempotent migration script `migration.sql` (`dotnet ef migrations script --idempotent`) and uploads it as an artifact for `deploy.yml`
 - Builds `linux/amd64` only: Scaleway serverless containers run amd64, and an emulated arm64 build added 20+ minutes per merge
 - Publishes to Docker Hub with multiple tags:
   - Semantic version (e.g., `1.0.1`)
   - Short SHA (e.g., `abc1234`)
   - `latest` (for main branch)
-- Generates build attestation for security
+- Generates signed build provenance (`actions/attest-build-provenance`) and pushes it to the registry
+- Scans the pushed image with Trivy (CRITICAL and HIGH, report only; the blocking scan is `Trivy Container Scan` on the PR)
 
 ### Third-party actions
 
@@ -246,31 +255,36 @@ gh workflow run codeql.yml
 ## Infrastructure Pipeline (`infra.yml`)
 
 ### Triggers
-- Push to `main` branch with changes to `infra/**` files
-- Pull requests with changes to `infra/**` files
-- After every `Deploy to Scaleway` run (`workflow_run`); the apply job only runs when that deploy succeeded
+- Pull requests that change `infra/**` (plan only)
+- Push to `main` that changes `infra/**`
+- After every completed `Deploy to Scaleway` run (`workflow_run`); the apply job only runs when that deploy succeeded
 - Manual workflow dispatch
+
+So Terraform is applied after every successful deploy, not only after infra changes. That is safe for the running image: both containers ignore `registry_image` (`lifecycle.ignore_changes`), so an apply never resets them to `:latest`.
 
 ### Jobs
 
 #### terraform-plan (`Terraform Plan`)
-- Runs on pull requests only
-- `terraform fmt -check`, `init`, `validate` and `plan`, and posts the plan as a PR comment
+- Pull requests only
+- Runs `terraform fmt -check` (reported, but `continue-on-error`, so it does not fail the job), `terraform init`, `terraform validate` and `terraform plan`
 - A failing `terraform plan` fails the job (`set -o pipefail`, since the output is piped through `tee`). Before this fix the check stayed green on a broken plan. The plan is still posted as a PR comment when it fails.
-- Not a required check: it only runs on PRs that touch `infra/`, and a required check that does not run would block every other PR
+- Not a required check in `.github/rulesets/main.json`
 
 #### terraform-deploy (`Deploy Infrastructure`)
-- Applies Terraform to production on a push to `main`, after a successful deploy, or by hand
-- Uses the `production` environment without a required reviewer, and the `production-terraform` concurrency group
+- Runs on the push, `workflow_run` and dispatch triggers above
+- Uses the `production` GitHub environment and the `production-terraform` concurrency group
+- Runs `terraform apply -auto-approve`, then writes the outputs without `sensitive = true` to the job summary (#435)
+
+There is no destroy job.
 
 ### Infrastructure Components
 
-- **Serverless Container**: Auto-scales 0-1 vCPU with 512MB memory
-- **Serverless SQL**: PostgreSQL database with minimal resource allocation
-- **Object Storage**: S3-compatible bucket for blog images with public-read ACL. Bucket policies (`storage_policies.tf`) keep each storage key to its own bucket and the state bucket to Terraform only ([secrets.md](./secrets.md#who-can-reach-which-bucket))
-- **Organization**: ClercqIt with Portfolio namespace
-- **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
-- **Cost Optimization**: Infrastructure scales to zero when not in use
+- **Serverless container** `clercq-it-app`: 0 to 1 instances, 500 mVCPU, 512 MB, port 80, in the existing `portfolio` container namespace (read as a data source, not managed by Terraform)
+- **Managed PostgreSQL** `portfolio-db`: Scaleway RDB `DB-DEV-S`, PostgreSQL 16, no HA, backups on, public endpoint; database `clercqit_portfolio`, user `clercqit_user`. It does not scale to zero.
+- **Object Storage**: bucket `clercq-it-blog-images` for blog images, public-read ACL. Bucket policies (`storage_policies.tf`) keep each storage key to its own bucket and the state bucket to Terraform only ([secrets.md](./secrets.md#who-can-reach-which-bucket))
+- **IAM**: an application and objects-only API key the container uses for Object Storage, and a list-only Secret Manager application for the Claude agent (`iam.tf`)
+- **Secrets**: Scaleway Secret Manager (`secrets.tf`, see [Secrets](./secrets.md))
+- **Cockpit**: a token the container uses to send logs and metrics through OpenTelemetry
 
 - **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
 - **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
@@ -564,7 +578,7 @@ The CI/CD pipeline includes comprehensive automated security scanning:
 
 ### Container Security
 - **Non-root execution**: Containers run with non-privileged users
-- **Minimal attack surface**: Alpine-based images with minimal packages
+- **Minimal attack surface**: Debian slim based images (`node:24-slim`, `nginx:1.30-trixie`), pinned by digest
 - **Health checks**: Built-in container health monitoring
 - **Image attestation**: Signed provenance for supply chain security
 
@@ -578,7 +592,8 @@ Comprehensive security scanning workflow:
   - Trivy filesystem scanning
   - .NET security analysis
   - npm security audit
-  - OpenSSF Scorecard
+
+OpenSSF Scorecard runs in its own workflow, `scorecard.yml`.
 
 #### codeql.yml
 Advanced code analysis:
@@ -591,7 +606,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 - **Schedule**: Weekly on Mondays at 8:00 AM UTC
 - **Ecosystems**: NuGet, npm (`src/ClercqIt.Web`), GitHub Actions, Docker, Terraform
 - **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
-- **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
+- **Review**: no default assignee or reviewer, and no reviewer agent yet (#251). A grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
 - **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
 - **Action majors**: Dependabot proposes GitHub Actions majors as separate PRs too. The audit of 23 October 2026 (#353) moved every workflow to the latest major (`actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/setup-dotnet@v6`, `github/codeql-action@v4`, `hashicorp/setup-terraform@v4`, the Docker actions, `codecov/codecov-action@v7`, `actions/github-script@v9`, `actions/attest-build-provenance@v4`, `gittools/actions@v4`, which needs GitVersion 6.2 or newer, so `versionSpec` is `6.8.x`; 6.8 and 6.0 compute the same version for this repo). These run on Node 24. In `actions/github-script` v9 scripts can no longer `require('@actions/github')`; use the injected `github` client.
@@ -653,7 +668,7 @@ trivy image clercq-it:local --severity HIGH,CRITICAL
 
 **Issue**: Tests fail during build
 - **Cause**: Code compilation or test errors
-- **Solution**: Run tests locally first with `dotnet test Clercq.It.CI.slnf` and `pnpm test`
+- **Solution**: Run the `quality-check` skill, or `dotnet test Clercq.It.CI.slnf` and `pnpm test` (in `src/ClercqIt.Web`)
 
 **Issue**: Next.js build fails with "useSearchParams() should be wrapped in a suspense boundary"
 - **Cause**: Next.js 15 requires components using `useSearchParams()` to be wrapped in a Suspense boundary for static page generation
@@ -704,8 +719,8 @@ trivy image clercq-it:local --severity HIGH,CRITICAL
 - **Solution**: Deploy workflow now only triggers after "build" workflow (removed "Deploy Infra" trigger to prevent conflicts)
 
 **Issue**: Container image reverting to `:latest` tag
-- **Cause**: Infrastructure pipeline was running on every push to main, resetting the container image to `:latest` via Terraform, conflicting with the deploy pipeline's version-specific updates
-- **Solution**: Infrastructure pipeline now only runs when files in `infra/**` are modified, preventing it from reverting application deployments
+- **Cause**: A Terraform apply reset the container image to `var.container_image` (`:latest`), overriding the version the deploy pipeline set
+- **Solution**: Both containers ignore `registry_image` (`lifecycle.ignore_changes`), so `deploy.yml` alone owns the running image. `infra.yml` still applies after every deploy.
 
 **Issue**: Deploy fails due to missing Docker image
 - **Cause**: Build pipeline didn't push to Docker Hub
@@ -784,15 +799,11 @@ gh secret list
 
 ## GitHub Environments
 
-### infrastructure-plan Environment
-- Used for Terraform planning in pull requests
-- No protection rules
-- Provides Scaleway credentials for planning
-
 ### production Environment
-- Used for Terraform apply and destroy operations
-- Requires manual approval from designated reviewers
-- Protected with deployment protection rules
+- Used by the `deploy` job in `deploy.yml` and the `terraform-deploy` job in `infra.yml`
+- Its protection rules are set in the GitHub repository settings, not in this repository. Merges to `main` deploy without a human step (see [Contributing](./contributing.md)), so the environment should not require reviewers.
+
+The `Terraform Plan` job on PRs uses no environment; it reads the repository secrets.
 
 ## Resources
 

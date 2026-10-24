@@ -1,323 +1,52 @@
-# Blog Creation Feature - Deployment Guide
+# Images and object storage
 
-This guide provides instructions for deploying the new blog creation feature with authentication and object storage.
+Project, blog and certification images are stored in Scaleway Object Storage (S3-compatible). This page replaces the original blog-creation deployment guide; the setup it described (account-wide keys passed as Terraform variables) is gone.
 
-## Overview
+## How it works
 
-The blog creation feature adds the ability to create blog posts through the API with:
-- JWT authentication for secure access
-- Markdown support for blog content
-- Image uploads to Scaleway Object Storage
-- Input validation with FluentValidation
+- The admin UI, the MCP server (`imageBase64`, see [MCP](./mcp.md)) and the content import (see [Content](./content.md)) all upload through `IObjectStorageService` (`src/Clercq.It.Domain/Abstractions/IObjectStorageService.cs`), implemented by `src/Clercq.It.Infrastructure/Services/ObjectStorageService.cs` with the AWS S3 SDK.
+- Each upload gets the key `<prefix>/<new GUID>/<file name>`, so names never collide. The API returns the public URL `<Endpoint>/<BucketName>/<key>`, and that URL is stored on the item.
+- Accepted types: jpg, jpeg, png, gif and webp (FluentValidation in Application). nginx accepts request bodies up to 10 MB (`client_max_body_size` in `src/nginx.conf`); the MCP tools accept images up to 5 MB.
+- Replacing or removing an image, or deleting an item, leaves the old object in the bucket. `DeleteFileAsync` exists but nothing calls it yet.
+- `POST /api/images` (`Blogs.Contributor`) uploads an image for use inside Markdown and returns its URL.
 
-## Changes Summary
+## Infrastructure
 
-### Infrastructure
+| Environment | Bucket | Credentials |
+| --- | --- | --- |
+| Production | `clercq-it-blog-images` (public-read ACL), `infra/terraform/main.tf` | IAM application `clercq-it-app-storage` and its API key, `infra/terraform/iam.tf` |
+| Verify | `clercq-it-verify-images` (public-read ACL), `infra/terraform/verify.tf` | IAM application `clercq-it-verify-storage` and its API key, `infra/terraform/verify.tf` |
 
-#### Terraform Resources Added
+Terraform creates the keys and passes them to the container as secret environment variables. Nobody creates or copies a key by hand. Each key can only reach its own bucket (bucket policies in `infra/terraform/storage_policies.tf`). See [Secrets](./secrets.md) for rotation.
 
-1. **Object Storage Bucket** (`scaleway_object_bucket.blog_images`)
-   - Bucket name: `clercq-it-blog-images`
-   - Region: `fr-par`
-   - Public read access via ACL
+## Configuration
 
-2. **New Variables** (in `variables.tf`)
-   - `scaleway_access_key` - S3 access key
-   - `scaleway_secret_key` - S3 secret key
+| Setting | Production value |
+| --- | --- |
+| `ObjectStorage__Endpoint` | `https://s3.fr-par.scw.cloud` |
+| `ObjectStorage__BucketName` | `clercq-it-blog-images` |
+| `ObjectStorage__Region` | `fr-par` |
+| `ObjectStorage__AccessKey`, `ObjectStorage__SecretKey` | From `scaleway_iam_api_key.app_storage` (secret env vars) |
 
-3. **Container Environment Variables** (in `main.tf`)
-   - `ObjectStorage__Endpoint`
-   - `ObjectStorage__BucketName`
-   - `ObjectStorage__Region`
-   - `ObjectStorage__AccessKey`
-   - `ObjectStorage__SecretKey`
+Without these settings an upload fails with `Object storage is not configured`. Reading content still works.
 
-### Application Code
+Locally, the Aspire AppHost does not start object storage. Run MinIO with the command in the comment in `src/Clercq.It.AppHost/Program.cs`, and set the `ObjectStorage` settings for the API with `dotnet user-secrets` (endpoint `http://localhost:9100`, bucket `clercq-it-dev`).
 
-#### New Files
-
-- `src/Clercq.It.Domain/Abstractions/IObjectStorageService.cs`
-- `src/Clercq.It.Infrastructure/Configuration/ObjectStorageSettings.cs`
-- `src/Clercq.It.Infrastructure/Services/ObjectStorageService.cs`
-- `src/Clercq.It.Application/Features/Blogs/Commands/CreateBlogCommand.cs`
-- `src/Clercq.It.Application/Features/Blogs/Commands/CreateBlogCommandHandler.cs`
-- `src/Clercq.It.Application/Features/Blogs/Commands/CreateBlogCommandValidator.cs`
-
-#### Modified Files
-
-- `src/ClercqIt.Api/Program.cs` - Added JWT authentication
-- `src/ClercqIt.Api/Features/BlogsEndpoints.cs` - Added POST endpoint
-- `src/ClercqIt.Api/appsettings.json` - Added configuration sections
-- `src/Clercq.It.Infrastructure/DependencyInjection.cs` - Registered S3 client and services
-
-#### New Dependencies
-
-- `Microsoft.AspNetCore.Authentication.JwtBearer` (9.0.9)
-- `AWSSDK.S3` (4.0.7.7)
-- `FluentValidation` (12.0.0)
-- `Microsoft.Extensions.Configuration.Binder` (9.0.9)
-
-## Deployment Steps
-
-### 1. Set Up Scaleway Object Storage
-
-#### Create Access Keys
-
-1. Log in to Scaleway Console
-2. Navigate to **IAM** > **API Keys**
-3. Create a new API key or use existing one
-4. Save the **Access Key** and **Secret Key**
-
-#### Configure Bucket (via Terraform)
-
-The bucket will be created automatically by Terraform. No manual setup required.
-
-### 2. Configure GitHub Secrets
-
-Add the following secrets to your GitHub repository:
-
-```
-SCW_ACCESS_KEY       - Scaleway access key (for Terraform and Object Storage)
-SCW_SECRET_KEY       - Scaleway secret key (for Terraform and Object Storage)
-DATABASE_PASSWORD    - PostgreSQL database password
-```
-
-### 3. Update Terraform Variables
-
-Update your Terraform workflow to pass the new variables:
-
-```yaml
-# In .github/workflows/infra.yml
-env:
-  TF_VAR_scaleway_access_key: ${{ secrets.SCW_ACCESS_KEY }}
-  TF_VAR_scaleway_secret_key: ${{ secrets.SCW_SECRET_KEY }}
-  TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
-```
-
-### 4. Deploy Infrastructure
+## Check it
 
 ```bash
-# Option 1: Via GitHub Actions
-# Push to main branch or manually trigger the infrastructure workflow
+# Public read works (no auth)
+curl -s https://www.clercq.it/api/blogs | head -c 300
 
-# Option 2: Manually via Terraform
-cd infra/terraform
-
-# Initialize Terraform
-terraform init
-
-# Plan changes
-terraform plan -var="scaleway_access_key=$SCW_ACCESS_KEY" \
-  -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="database_password=$DB_PASSWORD"
-
-# Apply changes
-terraform apply -var="scaleway_access_key=$SCW_ACCESS_KEY" \
-  -var="scaleway_secret_key=$SCW_SECRET_KEY" \
-  -var="database_password=$DB_PASSWORD"
+# Writes need a token with the right role: expect 401
+curl -s -o /dev/null -w '%{http_code}\n' -X POST https://www.clercq.it/api/images -F "image=@test.jpg"
 ```
 
-### 5. Deploy Application
-
-The application will be deployed automatically via the deploy pipeline when:
-1. Code is pushed to `main` branch
-2. Docker image is built successfully
-3. Terraform has configured the container with environment variables
-
-## Verification
-
-### 1. Check Infrastructure
-
-```bash
-# Verify bucket exists
-aws s3 ls s3://clercq-it-blog-images --endpoint-url=https://s3.fr-par.scw.cloud
-
-# Verify container environment variables
-# Check Scaleway Console > Containers > clercq-it-app > Environment Variables
-```
-
-### 2. Test API Endpoint
-
-```bash
-# Get all blogs (no auth required)
-curl https://www.clercq.it/api/blogs
-
-# Test authentication (should return 401)
-curl -X POST https://www.clercq.it/api/blogs \
-  -F "shortDescription=Test" \
-  -F "longDescription=Test" \
-  -F "tags=Test" \
-  -F "image=@test.jpg"
-
-# Expected: 401 Unauthorized
-```
-
-### 3. Check Logs
-
-```bash
-# Via Scaleway Console
-# Navigate to Cockpit > Logs
-# Filter by: container_name = "clercq-it-app"
-```
-
-## Security Considerations
-
-### Object Storage Security
-
-- Bucket has **public-read** ACL - anyone can view uploaded images
-- Write access requires valid S3 credentials (configured in container)
-- Consider implementing image size limits and virus scanning for production
-
-### Environment Variables
-
-All sensitive configuration is stored in environment variables, not in code:
-- S3 access credentials
-- Database password
-- Cloud IAM API key
-
-Never commit these values to version control.
-
-## Rollback Plan
-
-If issues occur after deployment:
-
-### 1. Disable Blog Creation
-
-```bash
-# Temporarily remove authentication requirement
-# Edit BlogsEndpoints.cs and comment out:
-# .RequireAuthorization()
-
-# Or deploy a hotfix that returns 503 Service Unavailable
-```
-
-### 2. Revert Infrastructure
-
-```bash
-cd infra/terraform
-
-# Revert to previous state
-terraform apply -target=-scaleway_object_bucket.blog_images
-
-# Or use git to checkout previous version
-git checkout <previous-commit> infra/terraform/
-terraform apply
-```
-
-### 3. Redeploy Previous Version
-
-```bash
-# Via GitHub Actions
-gh workflow run deploy.yml -f version=<previous-version>
-
-# Via Docker
-docker pull echarnus/clercq-it:<previous-version>
-# Update container image in Scaleway Console
-```
-
-## Monitoring
-
-### Metrics to Monitor
-
-1. **API Response Times**
-   - POST /api/blogs endpoint latency
-   - Object storage upload time
-
-2. **Error Rates**
-   - 401 Unauthorized (authentication failures)
-   - 400 Bad Request (validation errors)
-   - 500 Internal Server Error (object storage errors)
-
-3. **Object Storage**
-   - Bucket storage size
-   - Number of objects
-   - Bandwidth usage
-
-4. **Costs**
-   - Scaleway Object Storage costs (per GB stored and transferred)
-   - Container runtime costs
-
-### Alerts to Configure
-
-- High error rate on POST /api/blogs
-- Object storage unavailable
-- JWT token validation failures spike
-- Unusual file upload sizes
-
-## Cost Estimation
-
-### Scaleway Object Storage Pricing (as of 2024)
-
-- **Storage**: €0.01 per GB per month
-- **Outbound Transfer**: €0.01 per GB
-- **Requests**: Negligible for low volume
-
-**Example Monthly Cost:**
-- 100 blog posts with 1MB images = 0.1 GB storage = €0.001/month
-- 10,000 image views at 1MB each = 10 GB transfer = €0.10/month
-- **Total**: ~€0.10/month for moderate usage
+Container logs are in Scaleway Cockpit (Observability → Cockpit → Logs, container `clercq-it-app`).
 
 ## Troubleshooting
 
-### Issue: Object Storage Not Configured
-
-**Error:** "Object storage is not configured"
-
-**Solution:**
-1. Verify environment variables are set in container
-2. Check Scaleway Console > Containers > Environment Variables
-3. Ensure `ObjectStorage__AccessKey` is not empty
-
-### Issue: 401 Unauthorized
-
-**Error:** 401 response on POST request
-
-**Solution:**
-1. Verify JWT token is included in Authorization header
-2. Check token format: `Bearer <token>`
-3. Verify JWT secret key matches between token generation and validation
-4. Check token expiration
-
-### Issue: Image Upload Fails
-
-**Error:** S3 error during upload
-
-**Solution:**
-1. Verify S3 credentials are correct
-2. Check bucket exists: `aws s3 ls --endpoint-url=https://s3.fr-par.scw.cloud`
-3. Verify network connectivity from container to S3 endpoint
-4. Check bucket ACL permissions
-
-## Next Steps
-
-After successful deployment:
-
-1. **Implement Token Generation**
-   - Create admin endpoint for token generation
-   - Or use external identity provider (Auth0, Scaleway IAM)
-
-2. **Add Rate Limiting**
-   - Prevent abuse of blog creation endpoint
-   - Consider ASP.NET Core Rate Limiting middleware
-
-3. **Implement Image Optimization**
-   - Resize images before upload
-   - Generate thumbnails
-   - Convert to WebP format
-
-4. **Add Blog Management**
-   - UPDATE endpoint for editing blogs
-   - DELETE endpoint for removing blogs
-   - PATCH endpoint for publishing/unpublishing
-
-5. **Frontend Integration**
-   - Create blog creation UI
-   - Implement markdown editor
-   - Add image preview and upload progress
-
-## Support
-
-For issues or questions:
-- Check logs in Scaleway Cockpit
-- Review API documentation: `/docs/api-blog-creation.md`
-- Check architecture: `/docs/architecture.md`
+- **`Object storage is not configured`**: an `ObjectStorage__*` setting is empty. In production, run **Deploy Infra** so Terraform sets them again.
+- **401 or 403 on upload**: the token is missing or lacks the role (`Blogs.Contributor` for `/api/images`, the matching contributor role for project, blog and certification writes). See [Cloud IAM](./ciam.md).
+- **413 Request Entity Too Large**: the body is over nginx's 10 MB limit.
+- **S3 error during upload (403)**: check the bucket exists, the key's IAM policy has the objects-only permission sets, and the bucket policy in `infra/terraform/storage_policies.tf` lists that key ([Secrets](./secrets.md#who-can-reach-which-bucket)).
