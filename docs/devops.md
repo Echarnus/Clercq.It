@@ -8,18 +8,37 @@ The CI/CD pipeline is built using **GitHub Actions** and follows **trunk-based d
 
 ## Pipeline Workflows
 
-The project uses six main workflows:
+The repository has 13 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
 
-1. **Test Pipeline** (`test.yml`) - Runs on every push and PR with security checks
-2. **Build Pipeline** (`build.yml`) - Builds and publishes Docker images with vulnerability scanning
-3. **Security Scanning** (`security-scan.yml`) - Comprehensive security analysis
-4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
-5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
-6. **Deploy Pipeline** (`deploy.yml`) - Verifies the image in the verify environment, then deploys the same digest to production
-7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
-8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
-9. **SAST** (`sast.yml`) - Semgrep and gitleaks on every PR and on `main`, blocking (see [Application security](./application-security.md#static-analysis-sast))
-10. **OpenSSF Scorecard** (`scorecard.yml`) - Scores repository security practices and publishes the result behind the README badge
+| Workflow | Runs on | What it does | Required checks |
+| --- | --- | --- | --- |
+| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build, Docker build without push, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts` |
+| Docs check (`docs-check.yml`) | PR to `main` (also on label changes) | Fails code changes without a `docs/` change | `Docs updated` |
+| PR conventions (`pr-conventions.yml`) | PR to `main` (also on edit) | Branch name `<type>/<issue>-<slug>` and `Closes #<n>` in the body | `PR conventions` |
+| SAST (`sast.yml`) | PR, push to `main`, by hand | Semgrep (ERROR findings block) and gitleaks | `Semgrep`, `gitleaks` |
+| CodeQL (`codeql.yml`) | PR, push to `main`, Mondays 08:00 UTC, by hand | C# and JS/TS analysis; the gate fails on an open high or critical alert | `CodeQL gate` |
+| Security Scanning (`security-scan.yml`) | PR, push to `main`, daily 02:00 UTC, by hand | Trivy image and filesystem scans, NuGet and npm vulnerability audits | `Trivy Container Scan`, `Trivy Filesystem Scan`, `.NET Security Scan`, `npm Security Audit` |
+| Deploy Infra (`infra.yml`) | PR or push touching `infra/**`; after every `Deploy to Scaleway` run; by hand | `terraform fmt`, `validate` and plan on PRs (plan posted as a comment); apply on `main` | none (only runs on `infra/` PRs) |
+| build (`build.yml`) | Push to `main`, by hand | Runs `test.yml` again, computes the version, builds and pushes the image to Docker Hub with provenance, Trivy scan | — |
+| Deploy to Scaleway (`deploy.yml`) | After a successful `build` on `main`, by hand | Verify stage, promote the same digest to production, smoke test with rollback, `prod-<version>` tag and release | — |
+| OpenSSF Scorecard (`scorecard.yml`) | Push to `main`, Mondays 02:30 UTC, branch protection changes, by hand | Scores the repo and feeds the README badge | — |
+| Repository audit (`repo-audit.yml`) | Mondays 06:00 UTC, by hand | Checks rulesets, repo settings, branches and tags against the rules in [Enforced rules](./contributing.md#enforced-rules) | — |
+| Sync labels (`labels.yml`) | Push to `main` that changes `.github/labels.yml`, by hand | Applies the label list | — |
+| Pipeline Test (`pipeline-test.yml`) | By hand only | Smoke checks of the pipeline pieces | — |
+
+Dependabot also opens weekly update PRs, which go through the same PR checks.
+
+### On a pull request
+
+Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml`, `codeql.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 13 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
+
+### On merge to main
+
+The squash commit on `main` starts this chain, with no manual step:
+
+1. `build.yml`: runs the tests again, builds and pushes `echarnus/clercq-it:<version>` with signed provenance. `sast.yml`, `codeql.yml`, `security-scan.yml` and `scorecard.yml` also run on the push.
+2. `deploy.yml` (after a successful build): **verify** (migrate the verify database, import content, deploy the image to `clercq-it-verify`, smoke test), then **promote** the same image digest to production (migrations, content import, deploy, smoke test, roll back on failure), then **release** (`prod-<version>` tag and GitHub Release). A failed verify or smoke test opens a p1 issue.
+3. `infra.yml` (after every `Deploy to Scaleway` run that succeeded, or a push that touches `infra/`): `terraform apply` in the `production-terraform` concurrency group.
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md). The rules GitHub enforces on `main` and on release tags, and the weekly audit that checks them, are in [Enforced rules](./contributing.md#enforced-rules).
 
@@ -227,34 +246,22 @@ gh workflow run codeql.yml
 ## Infrastructure Pipeline (`infra.yml`)
 
 ### Triggers
-- Push to `main` branch with changes to `infra/**` files only
+- Push to `main` branch with changes to `infra/**` files
 - Pull requests with changes to `infra/**` files
+- After every `Deploy to Scaleway` run (`workflow_run`); the apply job only runs when that deploy succeeded
 - Manual workflow dispatch
-
-**Note**: The pipeline only runs when infrastructure files are modified to prevent conflicts with application deployments. This ensures Terraform doesn't revert container image versions set by the deploy pipeline.
 
 ### Jobs
 
-#### terraform-check
-- Validates Terraform formatting and configuration
-- Runs on all infrastructure changes
-
-#### terraform-plan
-- Creates Terraform execution plan
-- Runs on pull requests
-- Uses `infrastructure-plan` environment
+#### terraform-plan (`Terraform Plan`)
+- Runs on pull requests only
+- `terraform fmt -check`, `init`, `validate` and `plan`, and posts the plan as a PR comment
 - A failing `terraform plan` fails the job (`set -o pipefail`, since the output is piped through `tee`). Before this fix the check stayed green on a broken plan. The plan is still posted as a PR comment when it fails.
+- Not a required check: it only runs on PRs that touch `infra/`, and a required check that does not run would block every other PR
 
-#### terraform-apply
-- Applies Terraform changes to production
-- Runs on main branch push
-- Uses `production` environment with manual approval
-- Requires reviewer approval before execution
-
-#### terraform-destroy
-- Manual workflow to destroy infrastructure
-- Uses `production` environment with manual approval
-- Requires explicit confirmation
+#### terraform-deploy (`Deploy Infrastructure`)
+- Applies Terraform to production on a push to `main`, after a successful deploy, or by hand
+- Uses the `production` environment without a required reviewer, and the `production-terraform` concurrency group
 
 ### Infrastructure Components
 
@@ -443,7 +450,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 
 ### Automatic Deployment (Main Branch)
 
-1. Developer pushes to `main` branch
+1. A PR is squash-merged into `main` (direct pushes are blocked by the `main` ruleset)
 2. Test pipeline runs automatically
 3. If tests pass, build pipeline starts
 4. Docker image is built with semantic version
