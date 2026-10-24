@@ -15,6 +15,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [Cloud IAM](./ciam.md) | Production Keycloak (Cloud IAM) realm, clients and roles |
 | [Features](./features.md) | Site features overview |
 | [UX and page layout](./ux.md) | Layout rules for the public site (one content width), the UX review and its open findings |
+| [MCP](./mcp.md) | Content MCP server at `/api/mcp`: tools, Keycloak auth, adding it as a Claude connector |
 | [MyZen](./myzen.md) | Connecting the owner's MyZen account: login flow, session, keep-alive, API |
 | [Content](./content.md) | Adding projects, blog posts and certifications as Markdown files through PRs |
 | [Portfolio feature](./portfolio-feature.md) | Projects / portfolio pages |
