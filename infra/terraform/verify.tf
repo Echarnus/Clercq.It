@@ -33,6 +33,11 @@ resource "random_password" "db_verify" {
   min_upper        = 1
   min_lower        = 1
   min_numeric      = 1
+
+  # Bump to rotate. 2026-10-24: the value was exposed in public job summaries (#435).
+  keepers = {
+    rotation = "2026-10-24"
+  }
 }
 
 resource "scaleway_secret" "verify" {
@@ -121,10 +126,20 @@ resource "scaleway_iam_policy" "verify_storage" {
   }
 }
 
+# Change the input to rotate the key. 2026-10-24: the key was exposed in
+# public job summaries (#435).
+resource "terraform_data" "verify_storage_key_rotation" {
+  input = "2026-10-24"
+}
+
 resource "scaleway_iam_api_key" "verify_storage" {
   application_id     = scaleway_iam_application.verify_storage.id
   description        = "Clercq.It verify object storage key (managed by Terraform)"
   default_project_id = var.scaleway_project_id
+
+  lifecycle {
+    replace_triggered_by = [terraform_data.verify_storage_key_rotation]
+  }
 }
 
 resource "scaleway_cockpit_token" "verify_logs_token" {

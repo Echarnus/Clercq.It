@@ -282,6 +282,10 @@ These are GitHub settings, not code. The owner turns them on once:
 1. **Settings → Code security → Secret Protection**: enable it, and enable **Push protection**.
 2. Apply the rulesets in `.github/rulesets/` as described in [contributing.md](./contributing.md#changing-a-rule). The `main` ruleset requires `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan` and `Trivy Filesystem Scan`.
 
+### Workflow output
+
+This repository is public, so workflow logs and job summaries are public too. Never print a secret or a sensitive Terraform output there. `deploy.yml` masks the sensitive outputs it reads (`::add-mask::`), and the `Terraform Output` step in `infra.yml` writes only the outputs without `sensitive = true` to the summary. Until #435 it wrote all of them with `terraform output -json`, which shows sensitive values in plain text; the exposed verify credentials were rotated (see [Secrets](./secrets.md#rotating-a-terraform-generated-credential)).
+
 ## Security Layers Summary
 
 ### Defense in Depth
