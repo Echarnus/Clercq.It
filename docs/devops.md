@@ -245,6 +245,7 @@ gh workflow run codeql.yml
 - **Cost Optimization**: Infrastructure scales to zero when not in use
 
 - **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
+- **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
 - **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
 
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
@@ -407,7 +408,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 - `DOCKER_PASSWORD`: Docker Hub access token
 
 ### Seeds and transitional secrets (GitHub repository secrets)
-- `DATABASE_PASSWORD`, `ADMINISTRATION_DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`, `KEYCLOAK_WEB_CLIENT_SECRET`, `KEYCLOAK_ADMIN_CLIENT_SECRET`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `DATABASE_PASSWORD` is still read by the migration step in `deploy.yml` until the workflows read from Secret Manager directly.
+- `DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `DATABASE_PASSWORD` is still read by the migration step in `deploy.yml` until the workflows read from Secret Manager directly.
 - `KEYCLOAK_REALM`: optional, defaults to `clercqit`.
 
 ### Environment Variables

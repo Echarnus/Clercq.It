@@ -16,22 +16,16 @@ locals {
   # Names only: for_each cannot iterate over sensitive values.
   secret_names = toset([
     "db-app-password",
-    "db-administration-password",
     "keycloak-base-url",
-    # Only read by the administration-api container; the site itself uses a
-    # public PKCE client and needs no Keycloak secret (#257, #346).
-    "keycloak-admin-client-secret",
     "myzen-session-key",
   ])
 
   # Seed values used only when a secret is created. Values that cannot be
   # generated fall back to a placeholder the owner replaces in the console.
   secret_seeds = {
-    "db-app-password"              = coalesce(var.database_password, random_password.db_app.result)
-    "db-administration-password"   = coalesce(var.administration_database_password, random_password.db_administration.result)
-    "keycloak-base-url"            = coalesce(var.keycloak_base_url, "https://replace-me.cloud-iam.com/auth")
-    "keycloak-admin-client-secret" = coalesce(var.keycloak_admin_client_secret, "replace-me")
-    "myzen-session-key"            = random_password.myzen_session_key.result
+    "db-app-password"   = coalesce(var.database_password, random_password.db_app.result)
+    "keycloak-base-url" = coalesce(var.keycloak_base_url, "https://replace-me.cloud-iam.com/auth")
+    "myzen-session-key" = random_password.myzen_session_key.result
   }
 
   # Values read back from Secret Manager (latest enabled version).
@@ -39,11 +33,6 @@ locals {
 }
 
 resource "random_password" "db_app" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "db_administration" {
   length  = 32
   special = false
 }
