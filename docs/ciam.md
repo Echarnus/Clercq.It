@@ -64,6 +64,10 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
 
+#### `clercqit-web-verify` (Public, Standard Flow)
+
+The verify container (`Keycloak__ClientId` in `infra/terraform/verify.tf`) signs in with its own client. Configure it like `clercqit-web`, with the verify URL (Terraform output `verify_container_url`) in **Valid Redirect URIs** (`https://<verify-url>/admin/callback`), **Valid Post Logout Redirect URIs** and **Web Origins**.
+
 #### MCP clients
 
 The content MCP server (`/api/mcp`, see [MCP](./mcp.md)) accepts any realm token with a contributor role. Two clients give Claude such a token. They are not in the deployment yet; the owner creates them in the Cloud IAM console.

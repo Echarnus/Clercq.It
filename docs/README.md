@@ -4,8 +4,8 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 
 | Page | What it covers |
 | --- | --- |
-| [Contributing](./contributing.md) | Issue → branch → PR → agent review → deploy loop, labels, docs rule, enforced rules (rulesets, PR conventions, weekly audit) |
-| [Architecture](./architecture.md) | Layers, design patterns, project structure |
+| [Contributing](./contributing.md) | Issue → branch → PR → required checks → auto-merge → deploy loop, labels, docs rule, enforced rules (rulesets, PR conventions, weekly audit) |
+| [Architecture](./architecture.md) | Layers, API endpoints and roles, database tables, authentication, the production container |
 | [Development](./development.md) | Local setup with Aspire, Keycloak test users, code style and analyzers, frontend lint/format/types and hooks, troubleshooting |
 | [Testing](./testing.md) | Unit test stack and conventions, how to run tests, coverage gate and thresholds |
 | [DevOps](./devops.md) | GitHub Actions pipelines, deployment, required secrets |
@@ -22,6 +22,6 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [Content](./content.md) | Adding projects, blog posts and certifications as Markdown files through PRs |
 | [Portfolio feature](./portfolio-feature.md) | Projects / portfolio pages |
 | [Portfolio implementation summary](./portfolio-implementation-summary.md) | How the portfolio feature was built |
-| [Blog deployment](./deployment-blog-creation.md) | Blog creation and object storage |
+| [Images and object storage](./deployment-blog-creation.md) | Where images are stored, buckets and keys per environment, local MinIO, troubleshooting |
 | [Application security](./application-security.md) | Application-level security controls |
 | [Security compliance](./security-compliance.md) | Framework alignment (NIST, ISO 27001, PCI DSS) |

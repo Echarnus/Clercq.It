@@ -56,6 +56,17 @@ All of these reach the containers as `secret_environment_variables`, which the S
 
 A placeholder value (`replace-me`) means the secret was created without a seed; set the real value the same way.
 
+## Rotating a Terraform-generated credential
+
+Values Terraform generates itself (`random_password`, IAM API keys) are not rotated in the console. Each one carries a rotation marker: change it and the next apply replaces the value and updates every user of it.
+
+| Credential | Marker |
+| --- | --- |
+| Verify database password (`/clercq-it/verify/db-password`) | `keepers.rotation` on `random_password.db_verify` in `verify.tf` |
+| Verify object storage key | `input` of `terraform_data.verify_storage_key_rotation` in `verify.tf` |
+
+Both were rotated on 24 October 2026 after they showed up in public job summaries (#435).
+
 ## Access
 
 | Who | Access | Credential |

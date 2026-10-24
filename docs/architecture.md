@@ -72,10 +72,10 @@ in this table in the same PR.
 The core of the application containing business logic and domain models.
 
 **Components:**
-- **Entities**: `Project` and `Blog` aggregate roots
+- **Entities**: `Project`, `Blog` and `Certification` aggregate roots
 - **Value Objects**: `Skills` and `Tags` collections for complex domain concepts
-- **Abstractions**: `IAggregateRoot`, `IRepository<T>`, `IUnitOfWork`
-- **Repository Interfaces**: `IProjectRepository`, `IBlogRepository`
+- **Abstractions**: `IAggregateRoot`, `IRepository<T>`, `IUnitOfWork`, `IObjectStorageService`
+- **Repository Interfaces**: `IProjectRepository`, `IBlogRepository`, `ICertificationRepository`
 
 **Key Principles:**
 - No dependencies on other layers
@@ -88,11 +88,10 @@ The core of the application containing business logic and domain models.
 Orchestrates application workflows and use cases.
 
 **Components:**
-- **Features**: Organized by aggregate (Projects, Blogs)
-- **Queries**: `GetAllProjectsQuery`, `GetFeaturedProjectsQuery`, `GetAllBlogsQuery`
-- **Commands**: `CreateProjectCommand`, `CreateBlogCommand` for creating projects and blog posts with images
+- **Features**: Organized by area (`Projects`, `Blogs`, `Certifications`, `MyZen`, `Statistics`)
+- **Queries and commands**: list, get by id, create, update and delete for projects, blogs and certifications; image upload; MyZen session and time entries; page views and the statistics summary
 - **Handlers**: MediatR query and command handlers implementing CQRS pattern
-- **DTOs**: `ProjectDto`, `BlogDto` for data transfer
+- **DTOs**: `ProjectDto`, `BlogDto`, `CertificationDto` and per-feature DTOs for data transfer
 - **Validation**: FluentValidation validators run for every MediatR request through `ValidationBehavior` (Application/Common/Behaviors); a failure becomes a 400 validation problem via `ValidationExceptionHandler` in the API
 
 **Key Principles:**
@@ -126,10 +125,11 @@ Implements external concerns and data persistence.
 Exposes HTTP endpoints and handles web concerns.
 
 **Components:**
-- **Minimal APIs**: Feature-based endpoint organization
-- **Endpoints**: `/api/projects`, `/api/blogs`
-- **Authentication**: JWT Bearer authentication for protected endpoints
-- **OpenAPI**: Swagger documentation with summaries
+- **Minimal APIs**: Feature-based endpoint organization (`src/ClercqIt.Api/Features/`)
+- **Endpoints**: see [API Endpoints](#api-endpoints)
+- **Authentication**: JWT bearer tokens from Keycloak, role-based policies (see [Authentication](#authentication))
+- **OpenAPI**: `MapOpenApi` and the Scalar UI, mapped in Development only
+- **Feature flags**: `src/ClercqIt.Api/FeatureFlags/` (see [Feature flags](#feature-flags))
 - **DI Configuration**: Clean Architecture layer registration
 
 **Key Principles:**
@@ -141,71 +141,49 @@ Exposes HTTP endpoints and handles web concerns.
 
 ## Database Schema
 
-### Projects Table
-- `Id` (GUID, Primary Key)
-- `Title` (varchar(200), required)
-- `ShortDescription` (varchar(500), required)
-- `LongDescription` (text, required)
-- `Image` (text, required) - Base64 encoded
-- `StartDate` (timestamp, required)
-- `EndDate` (timestamp, required)
-- `Featured` (boolean, required)
-- `Skills` (text, required) - Semicolon-separated values
+EF Core maps the aggregates in `src/Clercq.It.Infrastructure/Data/Configurations/`; migrations live in `src/Clercq.It.Infrastructure/EF/Migrations/` (see [Migrations](./migrations.md)).
 
-### Blogs Table
-- `Id` (GUID, Primary Key)
-- `Title` (varchar(200), required) - added by `AddBlogTitle`, backfilled from `ShortDescription`
-- `ShortDescription` (varchar(500), required)
-- `LongDescription` (text, required) - Markdown content
-- `Image` (text, required) - URL to Scaleway Object Storage
-- `CreatedDate` (timestamp, required)
-- `PublishDate` (timestamp, required)
-- `Tags` (text, required) - Semicolon-separated values
+| Table | Holds |
+|-------|-------|
+| `Projects` | `Title` (200), `ShortDescription` (500), `LongDescription` (Markdown), `Image` (URL), `StartDate`, `EndDate`, `Featured`, `Skills` (semicolon-separated) |
+| `Blogs` | `Title` (200, added by `AddBlogTitle`), `ShortDescription` (500), `LongDescription` (Markdown), `Image` (URL), `CreatedDate`, `PublishDate`, `Tags` (semicolon-separated) |
+| `Certifications` | `Title`, `Issuer`, `IssueDate`, `ExpiryDate` (optional), `CredentialId`, `CredentialUrl`, `Description`, `Image` |
+| `MyZenSessions` | The owner's encrypted MyZen session (see [MyZen](./myzen.md)) |
+| `StatsSalts`, `StatsPageVisits`, `StatsDailyPages`, `StatsDays` | Cookieless visitor statistics (see [Visitor statistics](./statistics.md)) |
+
+Detail page URLs use a slug built from the title plus the id, not a stored column (see [SEO](./seo.md)).
 
 ## API Endpoints
 
-### Projects
-- `GET /api/projects` - Get all projects
-- `GET /api/projects/featured` - Get featured projects only
-- `POST /api/projects/images` - Upload a project image (requires authentication)
-  - Accepts multipart/form-data with:
-    - `image`: Image file (jpg, jpeg, png, gif, webp)
-  - Returns the image URL for use in project creation
-- `POST /api/projects` - Create a new project (requires authentication)
-  - Accepts multipart/form-data with:
-    - `title`: Project title (max 200 chars)
-    - `shortDescription`: Brief description (max 500 chars)
-    - `longDescription`: Full markdown content
-    - `imageUrl`: URL of previously uploaded image (from `/api/projects/images`)
-    - `startDate`: Project start date (ISO 8601 format)
-    - `endDate`: Project end date (ISO 8601 format)
-    - `featured`: Whether the project is featured (true/false, defaults to false)
-    - `skills`: Comma-separated list of skills
+Reads are public; writes need a role (policies in `src/ClercqIt.Api/Program.cs`).
 
-### Blogs
-- `GET /api/blogs` - Get all blogs
-- `POST /api/blogs` - Create a new blog (requires authentication)
-  - Accepts multipart/form-data with:
-    - `shortDescription`: Brief description (max 500 chars)
-    - `longDescription`: Full markdown content
-    - `image`: Image file (jpg, jpeg, png, gif, webp)
-    - `tags`: Comma-separated list of tags
-
-All endpoints return JSON and include OpenAPI documentation.
-
-### MCP
-- `/api/mcp` - Content MCP server for Claude, with tools for projects, certifications and blog posts. It sends the same MediatR commands as the endpoints above. See [MCP](./mcp.md).
+| Route | Methods | Access |
+|-------|---------|--------|
+| `/api/projects`, `/api/projects/featured`, `/api/projects/{id}` | `GET` | Public |
+| `/api/projects`, `/api/projects/{id}` | `POST`, `PUT`, `DELETE` (multipart form, optional `image` file) | `Projects.Contributor` |
+| `/api/blogs`, `/api/blogs/{id}` | `GET` | Public |
+| `/api/blogs`, `/api/blogs/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Blogs.Contributor` |
+| `/api/certifications`, `/api/certifications/{id}` | `GET` | Public |
+| `/api/certifications`, `/api/certifications/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Certifications.Contributor` |
+| `/api/images` | `POST` (multipart `image`), returns the stored URL | `Blogs.Contributor` |
+| `/api/auth/config` | `GET`, Keycloak issuer and public client id for the admin UI | Public |
+| `/api/features` | `GET`, the feature flags | Public |
+| `/api/stats/pageview` | `POST`, records a page view | Public |
+| `/api/stats` | `GET`, statistics summary | `Admin.View` |
+| `/api/myzen/...` | session and time entries | `MyZen.Owner`, behind the `MyZen` feature flag (see [MyZen](./myzen.md)) |
+| `/api/mcp` | Content MCP server for Claude, sends the same MediatR commands (see [MCP](./mcp.md)) | One of the contributor roles or `MyZen.Owner` |
+| `/health`, `/alive` | `GET`, health checks (`Clercq.It.ServiceDefaults`) | Public |
 
 ## Authentication
 
-The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
-
-JWT tokens are generated and signed by **Cloud IAM** (external identity service). The backend validates these tokens using Cloud IAM's Authority for public key discovery.
+The API validates JWT bearer tokens issued by Keycloak: Cloud IAM in production, the Aspire Keycloak container locally. The admin UI signs in with the public `clercqit-web` client (authorization code flow with PKCE); see [Cloud IAM](./ciam.md).
 
 **Configuration:**
-- `CloudIAM:ApiUrl` - Cloud IAM API endpoint (also used as JWT Authority for token validation)
-- `CloudIAM:ApiKey` - API key for authenticating with Cloud IAM
-- `CloudIAM:ClientRedirectUrl` - Frontend URL for OAuth redirects
+- `Keycloak:BaseUrl` - Keycloak base URL (the Aspire service URL wins locally). The API refuses to start without one.
+- `Keycloak:Realm` - Realm, default `clercqit`
+- `Keycloak:ClientId` - Public client the admin UI uses, default `clercqit-web`
+
+Roles: `Admin.View`, `Projects.Contributor`, `Blogs.Contributor`, `Certifications.Contributor`, `MyZen.Owner`.
 
 ## Object Storage
 
@@ -311,10 +289,8 @@ The production deployment uses a single Docker container with multiple services:
 ## Future Enhancements
 
 The architecture is designed to support:
-- **Command Operations**: Create, Update, Delete with validation
 - **Domain Events**: Event-driven architecture with handlers
 - **Caching Strategies**: Redis or in-memory caching
-- **Authentication & Authorization**: JWT-based security
 - **API Versioning**: Support multiple API versions
 - **Background Jobs**: Hangfire or Quartz for scheduled tasks
 - **Real-time Features**: SignalR for live updates
@@ -332,8 +308,9 @@ dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 ### Test Pyramid
 - **Unit Tests**: Domain logic and application handlers
 - **Architecture Tests**: Layering and DDD rules (see [Architecture rules](#architecture-rules))
-- **Integration Tests**: API endpoints and database operations
-- **End-to-End Tests**: Frontend integration (planned)
+- **Integration Tests**: API endpoints against PostgreSQL and Keycloak in Testcontainers (`tests/ClercqIt.Api.Tests`)
+- **Frontend unit tests**: Vitest (`src/ClercqIt.Web`)
+- **End-to-End Tests**: Playwright specs in `src/ClercqIt.Web/e2e/` (see [Testing](./testing.md))
 
 ## Performance Considerations
 
@@ -357,7 +334,7 @@ dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 
 - **Health Checks**: Built-in health endpoints
 - **Structured Logging**: Comprehensive logging throughout
-- **OpenTelemetry**: Ready for distributed tracing (via Aspire in development)
+- **OpenTelemetry**: Logs, metrics and traces through `Clercq.It.ServiceDefaults`; the Aspire dashboard locally, Scaleway Cockpit in production
 - **Metrics**: Performance and business metrics collection
 
 ## References
