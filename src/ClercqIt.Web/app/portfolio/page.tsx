@@ -18,9 +18,9 @@ export default async function PortfolioPage() {
         <div className="max-w-3xl">
           <h1 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">My Portfolio</h1>
           <p className="text-xl leading-relaxed text-slate-600 dark:text-slate-300">
-            A collection of projects showcasing my expertise in full-stack development, cloud
-            technologies, and modern software architecture. Each project demonstrates different
-            aspects of my technical skills and problem-solving approach.
+            A collection of projects showcasing my expertise in solution architecture, software
+            development and cloud technologies. Each project demonstrates different aspects of my
+            technical skills and problem-solving approach.
           </p>
         </div>
       </PageContainer>
