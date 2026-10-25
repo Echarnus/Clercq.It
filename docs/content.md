@@ -35,7 +35,7 @@ A file is YAML front matter between `---` lines, then a Markdown body. The file 
 | `startDate` | yes | `yyyy-MM-dd` |
 | `endDate` | no | `yyyy-MM-dd`, defaults to `startDate` |
 | `featured` | no | `true` shows it on the homepage, default `false` |
-| `image` | no | See [Images](#images), default `/placeholder.svg` |
+| `image` | no | See [Images](#images). Leave it out for no picture |
 | `skills` | no | List of strings |
 | body | no | Markdown long description, defaults to `shortDescription` |
 
@@ -87,7 +87,9 @@ The site renders bodies as GitHub Flavored Markdown: headings, emphasis, lists, 
 `image` can be:
 
 - a path relative to `content/`, e.g. `images/clercqit.png`. The importer uploads it to the `clercq-it-blog-images` bucket under `content/<hash>/<file name>` and stores the public URL. The hash comes from the file bytes, so an unchanged image is not uploaded again, and a changed image gets a new URL.
-- a site path such as `/placeholder.svg`, or a full `https://` URL. These are stored as they are.
+- a site path (starting with `/`) or a full `https://` URL. These are stored as they are.
+
+Without `image`, the importer stores `/placeholder.svg`. The site treats that path, like an empty image, as no picture and shows no image area (see [UX and page layout](./ux.md#layout-rules)).
 
 Paths outside `content/` are rejected.
 

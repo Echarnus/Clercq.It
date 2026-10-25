@@ -8,6 +8,7 @@ import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { fetchProjectBySegment } from "../lib/api";
 import { Markdown } from "@/components/markdown";
+import { imageOrNone } from "@/lib/utils";
 import { JsonLd } from "@/components/json-ld";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: PortfolioDetailPageProps): Pr
     description,
     path,
     type: "article",
-    image: project.image || undefined,
+    image: imageOrNone(project.image),
   });
 }
 
@@ -49,6 +50,8 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
   if (!project) {
     notFound();
   }
+
+  const image = imageOrNone(project.image);
 
   // Old GUID links and stale slugs move permanently to the canonical URL.
   const path = projectPath(project);
@@ -75,7 +78,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
             headline: project.title,
             description: metaDescription(project.shortDescription || project.longDescription),
             dateCreated: project.startDate,
-            ...(project.image ? { image: absoluteUrl(project.image) } : {}),
+            ...(image ? { image: absoluteUrl(image) } : {}),
             keywords: project.skills.join(", "),
             author: personJsonLd(),
           },
@@ -122,13 +125,15 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
         <article className="lg:col-span-3 lg:row-start-2">
           {/* Project Content with Image */}
           <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
-            <BlurImage
-              src={project.image || "/placeholder.svg"}
-              alt={project.title}
-              width={250}
-              height={250}
-              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
-            />
+            {image && (
+              <BlurImage
+                src={image}
+                alt={project.title}
+                width={250}
+                height={250}
+                containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
+              />
+            )}
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               {/* Content files default the body to the summary; do not show it twice. */}

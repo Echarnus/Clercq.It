@@ -8,6 +8,7 @@ import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
 import { fetchBlogBySegment } from "../lib/api";
 import { Markdown } from "@/components/markdown";
+import { imageOrNone } from "@/lib/utils";
 import { JsonLd } from "@/components/json-ld";
 import { notFound, permanentRedirect } from "next/navigation";
 import {
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: BlogDetailPageProps): Promise
       description,
       path,
       type: "article",
-      image: blog.image || undefined,
+      image: imageOrNone(blog.image),
       openGraph: { publishedTime: blog.publishDate, authors: [AUTHOR_NAME], tags: blog.tags },
     }),
     keywords: blog.tags,
@@ -56,6 +57,8 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
   if (!blog) {
     notFound();
   }
+
+  const image = imageOrNone(blog.image);
 
   // Old GUID links and stale slugs move permanently to the canonical URL.
   const path = blogPath(blog);
@@ -84,7 +87,7 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
             description: metaDescription(blog.shortDescription || blog.longDescription),
             datePublished: blog.publishDate,
             dateModified: blog.publishDate,
-            ...(blog.image ? { image: absoluteUrl(blog.image) } : {}),
+            ...(image ? { image: absoluteUrl(image) } : {}),
             keywords: blog.tags.join(", "),
             author: personJsonLd(),
             publisher: personJsonLd(),
@@ -130,13 +133,15 @@ export default async function BlogDetailPage({ params }: BlogDetailPageProps) {
         <article className="lg:col-span-3 lg:row-start-2">
           {/* Blog Content with Image */}
           <div className="rounded-lg bg-white/80 p-8 shadow-lg backdrop-blur-xs dark:bg-slate-800/80">
-            <BlurImage
-              src={blog.image || "/placeholder.svg"}
-              alt={blog.title}
-              width={250}
-              height={250}
-              containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
-            />
+            {image && (
+              <BlurImage
+                src={image}
+                alt={blog.title}
+                width={250}
+                height={250}
+                containerClassName="w-48 h-48 float-left mr-6 mb-4 rounded-lg shadow-md shrink-0"
+              />
+            )}
 
             <div className="leading-relaxed text-slate-600 dark:text-slate-400">
               {/* Content files default the body to the summary; do not show it twice. */}

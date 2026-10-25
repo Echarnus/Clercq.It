@@ -11,6 +11,7 @@ How the public site is laid out, and the UX review that set these rules (issue #
 - **One font.** The system font stack is the Tailwind `--font-sans` token in `globals.css`. Do not add inline `fontFamily` styles.
 - **List pages.** Portfolio and Certifications show a two-column card grid from `lg`; Blogs shows posts in three columns of a four-column grid with the filters in the fourth.
 - **Detail pages.** Blog and project details use the same four-column grid: the title and body take three columns, a details card (dates, tags, skills) takes the fourth, starts at the same top edge as the body card (both sit in the row below the title) and stays in view while you scroll. On phones the details card sits between the title and the body.
+- **Images are optional.** A project, blog post or certification without a picture shows no image area: no placeholder and no empty box. The text fills the card or the detail body, and the page metadata has no image. An empty image or the `/placeholder.svg` default counts as no picture (`imageOrNone` in `src/ClercqIt.Web/lib/utils.ts`).
 - **Sticky elements** sit below the sticky header: use `lg:top-28`, not `top-4`.
 - **Headings and titles.** One `<h1>` per page (the page or item title). The logo is a link to the homepage, not a heading. Top-level pages export `metadata.title`; the root layout turns it into `<title> | Clercq.It`.
 - **Navigation.** The nav highlights the section of the current page, including detail pages (`/blogs/<id>` highlights Blogs), and marks it with `aria-current="page"` (`getActiveNavKey` in `src/ClercqIt.Web/components/navigation.tsx`). Top-level pages have no "Back to Home" button; detail pages keep their back link.
@@ -73,6 +74,8 @@ Fixed in #367:
 | Footer "Featured Projects" swapped its only link for the list once loaded | The list loads above a fixed "View all projects" link |
 
 Fixed in #368: blog posts have a `title` (required, max 200). It is the card heading, the detail page `<h1>` and the browser title; the short description is the summary under it. The `AddBlogTitle` migration fills existing posts with their short description.
+
+Fixed in #388: items without a picture no longer show a placeholder image (portfolio, blogs, home) or a grey icon box (certifications). The image area is left out.
 
 ## Markdown
 

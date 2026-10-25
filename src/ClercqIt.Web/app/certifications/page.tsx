@@ -7,6 +7,7 @@ import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ExternalLink, Calendar, Building2 } from "lucide-react";
+import { imageOrNone } from "@/lib/utils";
 import { fetchAllCertifications } from "./lib/api";
 
 export const metadata: Metadata = pageMetadata({
@@ -53,18 +54,14 @@ export default async function CertificationsPage() {
                   key={cert.id}
                   className="group h-full border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20"
                 >
-                  {cert.image ? (
+                  {imageOrNone(cert.image) && (
                     <BlurImage
-                      src={cert.image}
+                      src={cert.image.trim()}
                       alt={cert.title}
                       width={200}
                       height={200}
                       containerClassName="w-full md:w-48 h-48 md:h-auto md:min-h-48 shrink-0 rounded-t-lg md:rounded-l-lg md:rounded-tr-none"
                     />
-                  ) : (
-                    <div className="flex h-48 w-full shrink-0 items-center justify-center rounded-t-lg bg-slate-100 md:h-auto md:min-h-48 md:w-48 md:rounded-l-lg md:rounded-tr-none dark:bg-slate-700/50">
-                      <Building2 className="h-12 w-12 text-slate-400" />
-                    </div>
                   )}
 
                   <CardContent className="flex flex-col justify-center p-6 md:flex-1">

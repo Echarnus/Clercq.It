@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Code, Cloud, GitBranch } from "lucide-react";
 import Image from "next/image";
+import { imageOrNone } from "@/lib/utils";
 import { fetchFeaturedProjects } from "../portfolio/lib/api";
 import type { Metadata } from "next";
 import { JsonLd } from "@/components/json-ld";
@@ -144,38 +145,43 @@ export default async function HomePage() {
               No featured projects available.
             </div>
           ) : (
-            featuredProjects.slice(0, 3).map((project) => (
-              <Link key={project.id} href={projectPath(project)} className="block">
-                <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
-                  <CardHeader className="p-0">
-                    <div className="relative overflow-hidden rounded-t-lg">
-                      <Image
-                        src={project.image || "/placeholder.svg"}
-                        alt={project.title}
-                        width={300}
-                        height={200}
-                        className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <CardTitle className="mb-2 text-slate-900 dark:text-white">
-                      {project.title}
-                    </CardTitle>
-                    <CardDescription className="mb-4 text-slate-600 dark:text-slate-400">
-                      {project.shortDescription}
-                    </CardDescription>
-                    <div className="flex flex-wrap gap-2">
-                      {project.skills.map((skill) => (
-                        <Badge key={skill} variant="outline" className="text-xs">
-                          {skill}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))
+            featuredProjects.slice(0, 3).map((project) => {
+              const image = imageOrNone(project.image);
+              return (
+                <Link key={project.id} href={projectPath(project)} className="block">
+                  <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
+                    {image && (
+                      <CardHeader className="p-0">
+                        <div className="relative overflow-hidden rounded-t-lg">
+                          <Image
+                            src={image}
+                            alt={project.title}
+                            width={300}
+                            height={200}
+                            className="h-48 w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        </div>
+                      </CardHeader>
+                    )}
+                    <CardContent className="p-6">
+                      <CardTitle className="mb-2 text-slate-900 dark:text-white">
+                        {project.title}
+                      </CardTitle>
+                      <CardDescription className="mb-4 text-slate-600 dark:text-slate-400">
+                        {project.shortDescription}
+                      </CardDescription>
+                      <div className="flex flex-wrap gap-2">
+                        {project.skills.map((skill) => (
+                          <Badge key={skill} variant="outline" className="text-xs">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })
           )}
         </div>
 
