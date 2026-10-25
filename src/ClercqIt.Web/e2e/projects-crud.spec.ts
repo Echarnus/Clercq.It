@@ -3,7 +3,9 @@ import { signInAsAdmin } from "./auth";
 
 // Helper function to navigate to projects tab
 async function navigateToProjectsTab(page: Page) {
-  const projectsTab = page.locator('[role="tab"]:has-text("Projects")');
+  const projectsTab = page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Projects" });
   if (await projectsTab.isVisible()) {
     await projectsTab.click();
     await page.waitForTimeout(1000);

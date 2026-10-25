@@ -3,7 +3,9 @@ import { signInAsAdmin } from "./auth";
 
 // Helper function to navigate to blogs tab
 async function navigateToBlogsTab(page: Page) {
-  const blogsTab = page.locator('[role="tab"]:has-text("Blogs")');
+  const blogsTab = page
+    .getByRole("navigation", { name: "Admin" })
+    .getByRole("link", { name: "Blogs" });
   if (await blogsTab.isVisible()) {
     await blogsTab.click();
     await page.waitForTimeout(1000);
