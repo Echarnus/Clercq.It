@@ -19,6 +19,8 @@ vi.mock("next/navigation", () => ({
 vi.mock("@/lib/auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/auth")>()),
   getUser: vi.fn(),
+  // Feature flags are read with the admin's token (lib/featureFlags.ts, issue #454).
+  getAccessToken: vi.fn(() => Promise.resolve("token")),
   signIn: vi.fn(),
   signOut: vi.fn(),
 }));
