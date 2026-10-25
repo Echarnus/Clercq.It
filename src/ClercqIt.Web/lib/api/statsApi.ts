@@ -1,9 +1,8 @@
 import { z } from "zod";
 import { authFetch } from "./adminApi";
-import { getApiUrl } from "./baseApi";
 
-// Visitor statistics (issue #429, docs/statistics.md). The site sends one
-// cookieless page view per navigation; the admin page reads the totals.
+// Visitor statistics (issue #429, docs/statistics.md): the admin page reads the
+// totals. Page views are sent by pageViewApi.ts, which public pages load instead.
 
 export const DailyStatisticsSchema = z.object({
   date: z.iso.date(),
@@ -31,21 +30,6 @@ export const SiteStatisticsSchema = z.object({
 });
 
 export type SiteStatistics = z.infer<typeof SiteStatisticsSchema>;
-
-/** Counts a view of `path`. Never throws: a lost page view must not break the page. */
-export async function trackPageView(path: string): Promise<void> {
-  try {
-    await fetch(`${getApiUrl()}/api/stats/pageview`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ path }),
-      // Lets the request finish when the visitor navigates away.
-      keepalive: true,
-    });
-  } catch {
-    // Offline, blocked by an extension, or the API is down: nothing to do.
-  }
-}
 
 /** Statistics for the last `days` days, today included (needs the Admin.View role). */
 export async function fetchSiteStatistics(days: number): Promise<SiteStatistics> {

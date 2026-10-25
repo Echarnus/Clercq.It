@@ -3,7 +3,7 @@ import { http, HttpResponse } from "msw";
 import { describe, expect, it, vi } from "vitest";
 import { API } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
-import { fetchSiteStatistics, trackPageView } from "./statsApi";
+import { fetchSiteStatistics } from "./statsApi";
 
 vi.mock("../auth", () => ({ getAccessToken: vi.fn(() => Promise.resolve("token")) }));
 
@@ -18,26 +18,6 @@ const statistics = {
 };
 
 describe("statistics API client", () => {
-  it("sends the page path as JSON", async () => {
-    let body: unknown = null;
-    server.use(
-      http.post(`${API}/api/stats/pageview`, async ({ request }) => {
-        body = await request.json();
-        return new HttpResponse(null, { status: 204 });
-      }),
-    );
-
-    await trackPageView("/blogs");
-
-    expect(body).toEqual({ path: "/blogs" });
-  });
-
-  it("swallows a failed page view", async () => {
-    server.use(http.post(`${API}/api/stats/pageview`, () => HttpResponse.error()));
-
-    await expect(trackPageView("/")).resolves.toBeUndefined();
-  });
-
   it("reads the statistics for a period with the access token", async () => {
     let url = "";
     let auth: string | null = null;

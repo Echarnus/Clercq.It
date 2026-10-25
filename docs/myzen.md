@@ -11,11 +11,11 @@ MyZen's login has a CAPTCHA (sometimes) and MFA, so it cannot sign in unattended
 1. **Admin → MyZen → Connect MyZen.** The API opens MyZen's login page and shows its CAPTCHA, if MyZen shows one.
 2. **Sign in to MyZen.** The API signs in with the stored email and password and the CAPTCHA the owner typed. "Remember me" is always ticked.
 3. **Verify.** When MyZen asks, the owner types the code from his authenticator app. "Remember this device for 30 days" is always ticked.
-4. The session is **Connected**. The tab shows this month's time entries; the arrows move to another month.
+4. The session is **Connected**. The section shows this month's time entries; the arrows move to another month.
 
 ## Managing entries
 
-On the MyZen tab:
+In the MyZen section:
 
 - **Add entry** opens a form: date, duration (`8:00`, or hours such as `7.5`), project, description and invoiced. The project comes from MyZen's own lookup: type two letters and pick one. The lookup also gives the customer the entry must carry; absence projects (Feestdag, Vakantie, Ziekte) have none.
 - The pencil button opens an entry in the same form. The API reads the entry on its own first, so the form has its project and customer IDs.
@@ -23,9 +23,9 @@ On the MyZen tab:
 
 Each change writes one entry. Nothing writes entries in bulk.
 
-Claude can do the same through the site's MCP server: the MyZen tools are listed in [MCP](./mcp.md#tools) and need `MyZen.Owner`. Connecting MyZen stays on this tab.
+Claude can do the same through the site's MCP server: the MyZen tools are listed in [MCP](./mcp.md#tools) and need `MyZen.Owner`. Connecting MyZen stays in this section.
 
-When MyZen drops the session, the next keep-alive or data call notices (MyZen answers with its login page), marks it **Expired**, and the tab offers **Reconnect MyZen**.
+When MyZen drops the session, the next keep-alive or data call notices (MyZen answers with its login page), marks it **Expired**, and the section offers **Reconnect MyZen**.
 
 Only the authenticator-app MFA is supported. SMS and e-mail codes are not.
 
@@ -38,7 +38,7 @@ Only the authenticator-app MFA is supported. SMS and e-mail codes are not.
 | Endpoints | `src/ClercqIt.Api/Features/MyZenEndpoints.cs` |
 | Keep-alive | `src/ClercqIt.Api/MyZenKeepAliveService.cs` |
 | Error mapping (409, 422, 502) | `src/ClercqIt.Api/MyZenExceptionHandler.cs` |
-| Admin tab | `src/ClercqIt.Web/components/admin/MyZenPanel.tsx`, `src/ClercqIt.Web/components/admin/MyZenEntryForm.tsx`, `src/ClercqIt.Web/lib/api/myzenApi.ts` |
+| Admin section | `src/ClercqIt.Web/components/admin/MyZenPanel.tsx`, `src/ClercqIt.Web/components/admin/MyZenEntryForm.tsx`, `src/ClercqIt.Web/lib/api/myzenApi.ts` |
 
 The HTML parsers (`MyZenHtml`) follow MyZen's current markup. When MyZen changes a page, `tests/ClercqIt.Api.Tests/MyZen/MyZenHtmlTests.cs` holds trimmed copies of each page (`MyZenPages.cs`) to update.
 
@@ -87,7 +87,7 @@ The session (MyZen's cookies and the login page's tokens) is stored in the `MyZe
 
 ## Keep-alive
 
-`MyZenKeepAliveService` opens MyZen's time registration page every `MyZen:KeepAliveMinutes` (default 10) while the session is connected and the flag is on. It only runs while the container runs: the site scales to zero, so a quiet night can still end the session. How long MyZen keeps an idle "remember me" session decides whether that matters; check the session's **last seen alive** time on the MyZen tab.
+`MyZenKeepAliveService` opens MyZen's time registration page every `MyZen:KeepAliveMinutes` (default 10) while the session is connected and the flag is on. It only runs while the container runs: the site scales to zero, so a quiet night can still end the session. How long MyZen keeps an idle "remember me" session decides whether that matters; check the session's **last seen alive** time in the MyZen section.
 
 ## Configuration
 
@@ -105,10 +105,10 @@ Locally, MyZen is off unless you set the flag and the `MyZen` settings with `dot
 
 1. Scaleway console → Secret Manager: the secret `myzen-login` holds the MyZen email and password (done 23 October 2026).
 2. Cloud IAM → realm `clercqit` → **Realm roles → Create role** `MyZen.Owner`, add it to the `roles` client scope, and assign it to your user (see [Cloud IAM](./ciam.md#4-create-realm-roles)).
-3. Sign in at `https://www.clercq.it/admin`, open the **MyZen** tab and connect.
+3. Sign in at `https://www.clercq.it/admin`, open **Administration > MyZen** in the menu and connect.
 
 ## Limits and risks
 
 - MyZen's login page loads Cloudflare Turnstile. If it ever challenges a server-side sign-in, the connect flow fails and this design needs another approach.
 - The integration reads MyZen's HTML, so a MyZen redesign can break it. The parsers skip rows they cannot read rather than fail.
-- The save, delete and lookup answers were mapped from MyZen's pages, not tried against MyZen from the server. A change MyZen silently ignores would look saved; the tab reloads the month after each change, so a missing entry shows there.
+- The save, delete and lookup answers were mapped from MyZen's pages, not tried against MyZen from the server. A change MyZen silently ignores would look saved; the section reloads the month after each change, so a missing entry shows there.

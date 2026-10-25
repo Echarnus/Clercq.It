@@ -30,7 +30,7 @@ Labels are defined in `.github/labels.yml` and synced by `.github/workflows/labe
 
 ## Docs rule
 
-Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR.
+Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR. A PR that changes the architecture (a container, an external system, a database login, an API component, the sign-in or MCP flow) also updates the [C4 diagrams](./architecture.md#c4-diagrams).
 
 ### Docs check
 

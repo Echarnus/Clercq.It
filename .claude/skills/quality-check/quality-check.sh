@@ -65,7 +65,13 @@ if command -v pnpm > /dev/null; then
   step "Prettier" pnpm --dir $web format:check
   step "TypeScript" pnpm --dir $web typecheck
   step "Vitest with coverage gate" pnpm --dir $web test:coverage
-  if [ $fast -eq 1 ]; then skip "next build" "--fast"; else step "next build" pnpm --dir $web build; fi
+  if [ $fast -eq 1 ]; then
+    skip "next build" "--fast"
+    skip "Public bundle check" "--fast"
+  else
+    step "next build" pnpm --dir $web build
+    step "Public bundle check" pnpm --dir $web check:public-bundle
+  fi
 else
   skip "Frontend" "pnpm is not installed"
 fi

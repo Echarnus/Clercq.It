@@ -4,7 +4,7 @@ This document provides an overview of the main features available in the Clercq.
 
 ## Visitor Statistics
 
-The admin dashboard's **Statistics** tab shows page views, unique page views and
+The admin dashboard's **Statistics > Visitors** section shows page views, unique page views and
 unique visitors for the last 7, 30 or 90 days, with a daily trend and the top
 pages. Counting is first-party and cookieless; details in
 [Visitor statistics](./statistics.md).
@@ -100,17 +100,23 @@ The system implements fine-grained permissions through five realm roles:
 - **`Blogs.Contributor`**: Create, edit, and delete blog posts
 - **`Projects.Contributor`**: Create, edit, and delete projects
 - **`Certifications.Contributor`**: Create, edit, and delete certifications
-- **`MyZen.Owner`**: The owner's MyZen tab (owner only)
+- **`MyZen.Owner`**: The owner's MyZen section (owner only)
 
 ### Dashboard Features
 
-The admin dashboard provides role-based tab visibility:
-- **Overview** and **Statistics**: `Admin.View`
-- **Blogs**: `Blogs.Contributor`
-- **Projects**: `Projects.Contributor`
-- **Certifications**: `Certifications.Contributor`
-- **MyZen**: `MyZen.Owner`, while the `MyZen` feature flag is on
-- **Settings**: `Admin.View`
+The admin dashboard has a side menu with groups (issue #449). Each section has its own URL, so a link or a reload opens it directly (after sign-in if needed). The menu shows only the sections your roles open:
+
+| Group | Section | URL | Role |
+| --- | --- | --- | --- |
+| | **Overview** | `/admin/dashboard` | `Admin.View` |
+| Portfolio | **Blogs** | `/admin/dashboard/blogs` | `Blogs.Contributor` |
+| Portfolio | **Projects** | `/admin/dashboard/projects` | `Projects.Contributor` |
+| Portfolio | **Certifications** | `/admin/dashboard/certifications` | `Certifications.Contributor` |
+| Statistics | **Visitors** | `/admin/dashboard/visitors` | `Admin.View` |
+| Administration | **MyZen** | `/admin/dashboard/myzen` | `MyZen.Owner`, while the `MyZen` feature flag is on |
+| Administration | **Settings** | `/admin/dashboard/settings` | `Admin.View` |
+
+Without `Admin.View`, `/admin/dashboard` opens the first section you can use. Layout and how to add a section: [UX: admin navigation](./ux.md#admin-navigation).
 
 ### Security Features
 - Sign-in with the authorization code flow and PKCE: Keycloak (Cloud IAM) shows the login page, including MFA; the site never sees a password (issue #257)

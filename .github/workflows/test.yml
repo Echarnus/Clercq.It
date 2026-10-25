@@ -150,6 +150,12 @@ jobs:
           echo "## ✅ Next.js Build Successful" >> $GITHUB_STEP_SUMMARY
           echo "- Production build completed successfully" >> $GITHUB_STEP_SUMMARY
 
+      # What an anonymous visitor downloads holds no admin code, no source maps ship,
+      # and /admin/dashboard only redirects (issue #454, docs/application-security.md#admin-pages)
+      - name: Public bundle check (no admin code for visitors)
+        working-directory: ./src/ClercqIt.Web
+        run: pnpm run check:public-bundle
+
       # Vitest unit and component tests with the coverage gate in vitest.config.mts (issue #246, docs/testing.md)
       - name: Unit tests with coverage gate (Vitest)
         working-directory: ./src/ClercqIt.Web
@@ -300,6 +306,29 @@ jobs:
           SMOKE_ATTEMPTS: 6
           SMOKE_DELAY: 5
         run: .github/scripts/smoke-test.sh http://localhost "$VERSION"
+
+      # The real image keeps the admin closed to visitors (issue #454): the dashboard
+      # redirects to the sign-in page, and admin-only API answers 401 without a token.
+      - name: Admin closed to anonymous visitors
+        run: |
+          failed=0
+          expect() {
+            local want="$1" path="$2" got
+            got=$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 "http://localhost$path")
+            if [ "$got" = "$want" ]; then echo "$path: $got"; else echo "::error::$path: expected $want, got $got"; failed=1; fi
+          }
+          expect 307 /admin/dashboard
+          expect 307 /admin/dashboard/blogs
+          expect 401 /api/features
+          expect 401 /api/auth/session
+          expect 401 /api/stats
+          expect 401 /api/myzen/session
+          location=$(curl -s -o /dev/null -w '%{redirect_url}' http://localhost/admin/dashboard)
+          case "$location" in
+            */admin) echo "redirect: $location" ;;
+            *) echo "::error::/admin/dashboard redirects to '$location', expected /admin"; failed=1 ;;
+          esac
+          exit "$failed"
 
       # ZAP baseline scan (#239) and Playwright e2e (#246) go here, against http://localhost.
 
