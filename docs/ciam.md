@@ -44,6 +44,16 @@ Create a new realm named `clercqit` with the following settings (matching the lo
 
 Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Action > Partial import**, then adjust client redirect URIs for production. This is how the current deployment was built: a copy of that file without users and client secrets, with the production and verify redirect URIs, imported as 5 clients and 4 realm roles. Partial import does not cover client scopes, so step 5 is done by hand: a new realm already has a built-in `roles` scope, and its **realm roles** mapper was changed to token claim name `roles` with ID token, access token and userinfo on.
 
+### Login page branding
+
+The sign-in page uses Keycloak's built-in `keycloak.v2` login theme with the ClercqIt wordmark (issue #423). It follows the visitor's OS light or dark setting. The local realm (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) sets the same values (`displayNameHtml`, `loginTheme`, the `darkMode` attribute). Partial import does not copy them, so set them by hand in Cloud IAM:
+
+1. **Realm settings > General**: set **HTML Display name** to `<strong>C</strong>lercq<strong>I</strong>t`. Keep **Display name** `Clercq.It`.
+2. **Realm settings > Themes**: set **Login theme** to `keycloak.v2` and turn **Dark mode** on. Save.
+3. Open the site, choose **Sign In**, and check the wordmark in both OS colour modes.
+
+The Cloud IAM free plan cannot load custom theme `.jar` files or use its Theme Builder; both need a paid plan. A custom slate theme matching the site was tried and dropped on 2026-10-25 because the owner chose not to upgrade.
+
 ### 3. Create Clients
 
 #### `clercqit-api` (Bearer-Only)

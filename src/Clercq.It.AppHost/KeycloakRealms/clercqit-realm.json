@@ -2,6 +2,11 @@
   "realm": "clercqit",
   "enabled": true,
   "displayName": "Clercq.It Local Development",
+  "displayNameHtml": "<strong>C</strong>lercq<strong>I</strong>t",
+  "loginTheme": "keycloak.v2",
+  "attributes": {
+    "darkMode": "true"
+  },
   "registrationAllowed": false,
   "registrationEmailAsUsername": false,
   "rememberMe": true,
