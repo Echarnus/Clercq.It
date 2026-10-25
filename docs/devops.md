@@ -20,7 +20,7 @@ The repository has 13 workflows in `.github/workflows/`. "Required" means the jo
 | Security Scanning (`security-scan.yml`) | PR, push to `main`, daily 02:00 UTC, by hand | Trivy image and filesystem scans, NuGet and npm vulnerability audits | `Trivy Container Scan`, `Trivy Filesystem Scan`, `.NET Security Scan`, `npm Security Audit` |
 | Deploy Infra (`infra.yml`) | PR or push touching `infra/**`; after every `Deploy to Scaleway` run; by hand | `terraform fmt`, `validate` and plan on PRs (plan posted as a comment); apply on `main` | none (only runs on `infra/` PRs) |
 | build (`build.yml`) | Push to `main`, by hand | Runs `test.yml` again, computes the version, builds and pushes the image to Docker Hub with provenance, Trivy scan | — |
-| Deploy to Scaleway (`deploy.yml`) | After a successful `build` on `main`, by hand | Verify stage, promote the same digest to production, smoke test with rollback, `prod-<version>` tag and release | — |
+| Deploy to Scaleway (`deploy.yml`) | After a successful `build` on `main`, by hand | Production migrations, content import and deploy, smoke test with rollback, `prod-<version>` tag and release | — |
 | OpenSSF Scorecard (`scorecard.yml`) | Push to `main`, Mondays 02:30 UTC, branch protection changes, by hand | Scores the repo and feeds the README badge | — |
 | Repository audit (`repo-audit.yml`) | Mondays 06:00 UTC, by hand | Checks rulesets, repo settings, branches and tags against the rules in [Enforced rules](./contributing.md#enforced-rules) | — |
 | Sync labels (`labels.yml`) | Push to `main` that changes `.github/labels.yml`, by hand | Applies the label list | — |
@@ -37,7 +37,7 @@ Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sas
 The squash commit on `main` starts this chain, with no manual step:
 
 1. `build.yml`: runs the tests again, builds and pushes `echarnus/clercq-it:<version>` with signed provenance. `sast.yml`, `codeql.yml`, `security-scan.yml` and `scorecard.yml` also run on the push.
-2. `deploy.yml` (after a successful build): **verify** (migrate the verify database, import content, deploy the image to `clercq-it-verify`, smoke test), then **promote** the same image digest to production (migrations, content import, deploy, smoke test, roll back on failure), then **release** (`prod-<version>` tag and GitHub Release). A failed verify or smoke test opens a p1 issue.
+2. `deploy.yml` (after a successful build): **deploy** to production (migrations, content import, deploy, smoke test, roll back on failure), then **release** (`prod-<version>` tag and GitHub Release). A failed smoke test opens a p1 issue. The image was already started and smoke-tested in the PR ([Release gates](#release-gates)).
 3. `infra.yml` (after every `Deploy to Scaleway` run that succeeded, or a push that touches `infra/`): `terraform apply` in the `production-terraform` concurrency group.
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md). The rules GitHub enforces on `main` and on release tags, and the weekly audit that checks them, are in [Enforced rules](./contributing.md#enforced-rules).
@@ -54,7 +54,7 @@ Every workflow sets a read-only `permissions` block at the top (`contents: read`
 | `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
 | `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
 | `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
-| `deploy.yml` | `deploy` | `issues` (p1 issue on a failed verify or smoke test) |
+| `deploy.yml` | `deploy` | `issues` (p1 issue on a failed smoke test) |
 | `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
 | `labels.yml` | `sync` | `issues` |
 | `sast.yml` | `semgrep` | `security-events` (SARIF upload) |
@@ -306,9 +306,8 @@ There is no destroy job.
 - **Secrets**: Scaleway Secret Manager (`secrets.tf`, see [Secrets](./secrets.md))
 - **Cockpit**: a token the container uses to send logs and metrics through OpenTelemetry
 
-- **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
-- **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
-- **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
+- **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website container ([versioning.md](./versioning.md#feature-flags))
+- **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)).
 
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
 
@@ -357,9 +356,7 @@ gh workflow run infra.yml
 
 #### deploy
 - Validates the Docker image exists and resolves its digest
-- Reads container IDs, database and bucket names for both environments from the Terraform outputs
-- **Verify stage** (see [Verify stage](#verify-stage)): migrates the verify database, imports content into it, deploys the image to `clercq-it-verify` and smoke-tests it. A failure here opens a p1 issue and stops the run before production is touched
-- Checks the tag still points at the verified digest
+- Reads the container ID, database and bucket names from the Terraform outputs
 - Runs database migrations, then imports `content/` into the database (see [Content](./content.md#how-the-import-runs))
 - Records the image the container runs now (`PREVIOUS_IMAGE`)
 - Sets the new image and forces container recreation to bypass the image cache (scales min_scale: 0→1→0), with `.github/scripts/set-container-image.sh`
@@ -377,41 +374,34 @@ gh workflow run infra.yml
 
 **Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
 
-### Verify stage
+### Release gates
 
-Trunk-based means every merge to `main` goes to production. So before production is touched, `deploy.yml` runs the real image against real infrastructure. It is one pipeline, not a branch or a manual staging step:
+Trunk-based means every merge to `main` goes to production, so the image is tested as a running container before it can merge, not after. There is no separate verify or staging environment: it was removed in #440, once the `Container smoke test` PR job (#439) started the real image against a throwaway Postgres.
 
 ```
+pull request
+  └─ test.yml: unit and integration tests, image build, Container smoke test
+       (image + Postgres service: migrations → content import → smoke test on http://localhost)
+       (ZAP #239 and e2e #246 join here)
 merge to main
   └─ build.yml: tests → image pushed (tag = version, digest D) → migration.sql
        └─ deploy.yml (one job, stops at the first failure)
             1. resolve digest D of echarnus/clercq-it:<version>
-            2. verify: migrate clercqit_verify → import content → deploy image to clercq-it-verify → smoke test
-               (e2e #246 and DAST #239 join here)
-               ✗ → issue "Verify stage failed for <version>" (p1), production untouched, no release
-            3. tag still resolves to D?  ✗ → stop
-            4. production: migrate → import content → deploy image → smoke test
+            2. production: migrate → import content → deploy image → smoke test
                ✗ → roll back, issue "Production smoke test failed for <version>" (p1), no release
-            5. release job: tag prod-<version>
+            3. release job: tag prod-<version>, release notes name digest D
 ```
 
 | Gate | Fails when | Effect |
 |------|------------|--------|
-| Image check | The tag is missing or has no digest | Stop, p1 issue, production untouched |
-| Verify migration / content import | `migration.sql` or a content file breaks against a real PostgreSQL | Stop, p1 issue, production untouched |
-| Verify smoke test | `/version.json`, `/` or `/api/projects` fail on the verify URL | Stop, p1 issue, production untouched |
-| Digest check | The tag moved after verification | Stop, production untouched |
+| `Container smoke test` (PR) | The image does not start, a migration or content file breaks against PostgreSQL, or `/version.json`, `/` or `/api/projects` fail | The PR cannot merge (required check) |
+| Image check | The tag is missing or has no digest | Stop, production untouched |
+| Production migration / content import | `migration.sql` or a content file fails against the production database | Stop before the image changes |
 | Production smoke test | Same checks on https://www.clercq.it | Roll back, p1 issue |
 
-**What verify shares with production**: only the RDB instance and the container namespace. It has its own database (`clercqit_verify`, user `clercqit_verify_user`), bucket (`clercq-it-verify-images`), storage key, Cockpit token and secrets (`/clercq-it/verify`, see [Secrets](./secrets.md#verify-environment-path-clercq-itverify)). It scales to zero, so it costs almost nothing.
+**Running image**: Terraform ignores `registry_image` on the container (`lifecycle.ignore_changes`), so an infra apply never swaps the running image for `:latest`; `deploy.yml` owns it.
 
-**Same image**: production is set to the same tag only after the pipeline checks that the tag still resolves to the digest that passed verification. Terraform ignores `registry_image` on both containers (`lifecycle.ignore_changes`), so an infra apply never swaps the running image for `:latest`.
-
-**Manual deploys** (`workflow_dispatch`) also go through the verify container and its smoke test. As before, they skip migrations and the content import.
-
-**Login on verify** uses its own public PKCE client, `clercqit-web-verify`, configured like `clercqit-web` (see [Cloud IAM](./ciam.md#3-create-clients)) with the verify URL as redirect URI. It has no secret. The smoke test does not need sign-in.
-
-The verify URL is the `verify_container_url` Terraform output (a Scaleway container domain).
+**Manual deploys** (`workflow_dispatch`) skip migrations and the content import, and still end with the smoke test and rollback.
 
 ### Manual Deployment
 
@@ -490,8 +480,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 4. Docker image is built with semantic version
 5. Image is pushed to Docker Hub
 6. Deploy pipeline is triggered automatically
-7. The image is verified in the verify environment ([Verify stage](#verify-stage))
-8. The same digest is deployed to production
+7. The image, already smoke-tested in the PR ([Release gates](#release-gates)), is deployed to production
 
 ### Manual Deployment
 

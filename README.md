@@ -130,7 +130,6 @@ The application uses a **serverless-first architecture** on Scaleway with automa
 - **Managed PostgreSQL**: Scaleway RDB `DB-DEV-S`, PostgreSQL 16 (always on)
 - **Object Storage**: public-read bucket for images
 - **Secret Manager**: application secrets ([Secrets](./docs/secrets.md))
-- **Verify environment**: a second container, database and bucket that test every image before production
 
 ### Infrastructure Management
 - **Terraform**: Infrastructure as Code in `infra/terraform/`
@@ -240,9 +239,8 @@ For detailed security information, see:
 Every merge to `main` deploys to **Scaleway**:
 
 1. **Build**: tests, GitVersion, image pushed to Docker Hub with signed provenance, migration script
-2. **Verify**: the image runs against the verify database and container and must pass a smoke test
-3. **Production**: migrations, content import, new image, smoke test; a failed smoke test rolls back automatically
-4. **Release**: tag `prod-<version>` and a GitHub Release
+2. **Production**: migrations, content import, new image, smoke test; a failed smoke test rolls back automatically
+3. **Release**: tag `prod-<version>` and a GitHub Release
 
 ### Manual Deployment (rollback)
 

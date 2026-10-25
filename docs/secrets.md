@@ -21,25 +21,12 @@ One secret is created by the owner, not Terraform, and only read by it:
 | --- | --- | --- |
 | `myzen-login` (type Username/password) | `MyZen__Email` and `MyZen__Password` on the web/API container ([MyZen](./myzen.md)) | The owner's MyZen login, set in the console. Terraform reads the latest enabled version; to change it, add a new version and run **Deploy Infra**. |
 
-### Verify environment (path `/clercq-it/verify`)
-
-The verify stage (see [DevOps](./devops.md#verify-stage)) has its own secrets, created by `infra/terraform/verify.tf`. It never reads a production secret.
-
-| Name (path `/clercq-it/verify`) | Used by | First value comes from |
-| --- | --- | --- |
-| `db-password` | Verify migration login `clercqit_verify_user`: verify migrations in `deploy.yml` only | generated |
-| `app-password` | Verify runtime login `clercqit_verify_app`: verify connection string and verify content import | generated |
-
-`db-password` is fully Terraform-owned: `random_password.db_verify` writes it as a secret version without `ignore_changes`, so do not edit it in the console (the next apply overwrites it). Scaleway RDB requires at least one digit, uppercase, lowercase and special character; the special characters are limited to `!#%*-_+.` so the value stays safe unquoted in an Npgsql connection string and in `PGPASSWORD`. Verify has no Keycloak secret: its client `clercqit-web-verify` is public, like `clercqit-web`.
-
-The verify container also has its own object storage key (IAM application `clercq-it-verify-storage`) and Cockpit token (`verify-container-logs`).
-
 Other credentials Terraform manages itself, without a Secret Manager entry:
 
 - **Object storage key** for the container: IAM application `clercq-it-app-storage` with `ObjectStorageFullAccess` on this project, and an API key created by Terraform (`iam.tf`). This replaces the account-wide key that used to be passed in.
 - **Cockpit token** for logs and metrics (`scaleway_cockpit_token`).
 
-All of these reach the containers as `secret_environment_variables`, which the Scaleway console does not display.
+All of these reach the container as `secret_environment_variables`, which the Scaleway console does not display.
 
 ## How a value is owned
 
@@ -58,14 +45,9 @@ A placeholder value (`replace-me`) means the secret was created without a seed; 
 
 ## Rotating a Terraform-generated credential
 
-Values Terraform generates itself (`random_password`, IAM API keys) are not rotated in the console. Each one carries a rotation marker: change it and the next apply replaces the value and updates every user of it.
+Values Terraform generates itself (`random_password`, IAM API keys) are not rotated in the console. Give the resource a rotation marker instead: `keepers = { rotation = "<date>" }` on a `random_password`, or a `terraform_data` resource in `lifecycle.replace_triggered_by` of an IAM API key. Change the marker and the next apply replaces the value and updates every user of it.
 
-| Credential | Marker |
-| --- | --- |
-| Verify database password (`/clercq-it/verify/db-password`) | `keepers.rotation` on `random_password.db_verify` in `verify.tf` |
-| Verify object storage key | `input` of `terraform_data.verify_storage_key_rotation` in `verify.tf` |
-
-Both were rotated on 24 October 2026 after they showed up in public job summaries (#435).
+The verify database password and object storage key that showed up in public job summaries (#435) were rotated on 24 October 2026 and then deleted with the verify environment (#440).
 
 ## Access
 
@@ -104,8 +86,8 @@ Each database has two logins, so the running site cannot change the schema (issu
 | Login | Rights | Used by |
 | --- | --- | --- |
 | `clercqit_admin` (instance admin) | Everything | Nothing. Its password is generated at apply time and written once (`password_wo`): it is not in the Terraform state or Secret Manager. Reset it in the Scaleway console if you ever need it. |
-| `clercqit_user` / `clercqit_verify_user` (migration) | Owns the schema of its own database | `deploy.yml` migrations only |
-| `clercqit_app` / `clercqit_verify_app` (runtime) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on tables, read sequences; no DDL, no `TRUNCATE`, no access to `__EFMigrationsHistory` | The containers and the content import |
+| `clercqit_user` (migration) | Owns the schema of `clercqit_portfolio` | `deploy.yml` migrations only |
+| `clercqit_app` (runtime) | `SELECT`, `INSERT`, `UPDATE`, `DELETE` on tables, read sequences; no DDL, no `TRUNCATE`, no access to `__EFMigrationsHistory` | The container and the content import |
 
 Scaleway's `readwrite` privilege covers the tables that exist when Terraform applies it. Right after each migration, `deploy.yml` runs `infra/sql/grant-app-user.sql` as the migration login, which grants the runtime login access to new tables and sets default privileges for later ones.
 
@@ -121,7 +103,6 @@ Scaleway IAM grants object storage per project, so on its own every storage key 
 | --- | --- |
 | `clercq-it-terraform-state` | Terraform only |
 | `clercq-it-blog-images` | Terraform and the deploy pipeline (all actions), the site container's key (`clercq-it-app-storage`: list, read, write, delete objects and set their ACL), everyone (read objects) |
-| `clercq-it-verify-images` | Terraform (all actions), the verify key (`clercq-it-verify-storage`: same object actions), everyone (read objects) |
 
 The container keys' IAM policies are also reduced from `ObjectStorageFullAccess` to the objects-only sets (`ObjectStorageObjectsRead`, `ObjectStorageObjectsWrite`, `ObjectStorageObjectsDelete`), so they cannot change bucket settings or delete buckets.
 

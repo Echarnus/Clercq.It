@@ -1,6 +1,6 @@
 # Versioning & Branching Strategy
 
-Clercq.It uses **trunk-based development with continuous deployment to production** (owner decision, 21 October 2026). There are no release, develop or hotfix branches: `main` is the only long-lived branch, every merge to `main` that passes the pipeline goes straight to production, and each production deploy is tagged and released automatically.
+Clercq.It uses **trunk-based development with continuous deployment to production** (owner decision, 21 October 2026). There are no release, develop or hotfix branches: `main` is the only long-lived branch, every merge to `main` that passes the pipeline goes straight to production (there is no staging or verify environment; the image is started and smoke-tested in PR CI, see [devops.md](./devops.md#release-gates)), and each production deploy is tagged and released automatically.
 
 ## Branching
 

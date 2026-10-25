@@ -495,9 +495,8 @@ Config-driven flags hide unfinished work in production (issue #253). The API own
 | Environment | Container | Database | Bucket | Secrets |
 |-------------|-----------|----------|--------|---------|
 | Production | `clercq-it-app` (www.clercq.it) | `clercqit_portfolio` | `clercq-it-blog-images` | `/clercq-it` |
-| Verify | `clercq-it-verify` (Scaleway domain, scales to zero) | `clercqit_verify` | `clercq-it-verify-images` | `/clercq-it/verify` |
 
-Both run the same image and share only the RDB instance `portfolio-db` and the container namespace. Every image runs in verify before it reaches production; see [DevOps: Verify stage](./devops.md#verify-stage). Verify is defined in `infra/terraform/verify.tf`.
+Production is the only Scaleway environment. Every image is started and smoke-tested as a container in PR CI against a throwaway Postgres before it can merge; see [DevOps: Release gates](./devops.md#release-gates). The separate verify environment was removed in #440.
 
 ### Production Container Architecture
 
@@ -516,7 +515,7 @@ The production deployment uses a single Docker container with multiple services:
 5. nginx starts after all services are healthy
 6. The script then supervises all three and exits with code 1 as soon as one stops, printing the last 50 lines of that service's log, so Scaleway restarts the container (#222)
 
-**Non-root (#280):** the image ends with `USER clercqit` (uid 10001), so nginx, the API and Next.js all run unprivileged and no process has uid 0. nginx still listens on port 80, which Terraform sets as the container port, because its binary carries the `cap_net_bind_service` file capability. Its pid file is `/tmp/nginx.pid`, and `/var/cache/nginx`, `/var/log/api.log` and `/var/log/frontend.log` belong to `clercqit`. If a runtime ever ignores file capabilities, nginx fails to bind port 80 and the verify stage stops the deploy; the fix then is to listen on 8080 and change `port` on both containers in Terraform.
+**Non-root (#280):** the image ends with `USER clercqit` (uid 10001), so nginx, the API and Next.js all run unprivileged and no process has uid 0. nginx still listens on port 80, which Terraform sets as the container port, because its binary carries the `cap_net_bind_service` file capability. Its pid file is `/tmp/nginx.pid`, and `/var/cache/nginx`, `/var/log/api.log` and `/var/log/frontend.log` belong to `clercqit`. If a runtime ever ignores file capabilities, nginx fails to bind port 80 and the `Container smoke test` PR check fails; the fix then is to listen on 8080 and change `port` on the container in Terraform.
 
 **Patched and slim (#281):** the final stage runs `apt-get upgrade` on the `nginx:1.30-trixie` base (the stable nginx line on Debian 13, the same Debian release as the .NET 10 runtime image), so each build picks up the Debian security fixes released since that image was published, and it copies only the `node` binary from `node:24-slim` (no npm or npx; `start.sh` runs `node server.js`). It installs `libicu76` explicitly: the .NET runtime copied from `mcr.microsoft.com/dotnet/aspnet` needs ICU, the trixie base does not include it, and without it the API exits at startup and the container never listens on port 80 (#383). Trivy blocks on fixable HIGH and CRITICAL findings in the image.
 
