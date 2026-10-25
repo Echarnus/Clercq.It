@@ -146,8 +146,6 @@ resource "scaleway_container" "portfolio_app" {
     "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web"
-    # Public origin for the MCP server's OAuth metadata (docs/mcp.md); behind nginx the API only sees http.
-    "Mcp__PublicBaseUrl" = "https://www.clercq.it"
     # The database's TLS certificate: the API pins it (SSL Mode VerifyCA, docs/secrets.md#database-logins).
     "Database__CaCertificate" = scaleway_rdb_instance.portfolio_db.certificate
   }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })

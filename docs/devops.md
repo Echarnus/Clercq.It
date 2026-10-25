@@ -308,7 +308,7 @@ There is no destroy job.
 - **Cockpit**: a token the container uses to send logs and metrics through OpenTelemetry
 
 - **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
-- **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
+- **HTTPS behind nginx**: Scaleway's edge terminates TLS. nginx passes the edge's `X-Forwarded-Proto` on to the API (`src/nginx.conf`), which the content MCP server's OAuth metadata depends on ([mcp.md](./mcp.md)).
 - **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
 
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.

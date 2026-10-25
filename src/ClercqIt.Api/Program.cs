@@ -7,6 +7,7 @@ using Clercq.It.Api.Features.Mcp;
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Scalar.AspNetCore;
 
@@ -96,7 +97,7 @@ if (useKeycloak)
 
     builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(ConfigureBearer)
-        .AddMcpAuthentication(ConfigureBearer, keycloakAuthority, builder.Configuration["Mcp:PublicBaseUrl"]);
+        .AddMcpAuthentication(ConfigureBearer, keycloakAuthority);
 
     // The admin UI's authorization code + PKCE settings (GET /api/auth/config)
     builder.Services.AddSingleton(new KeycloakClientSettings(
@@ -170,6 +171,9 @@ var app = builder.Build();
 // DO NOT add app.Services.GetRequiredService<DbContext>().Database.Migrate() or similar code here.
 
 // Configure the HTTP request pipeline
+// nginx terminates TLS and proxies over http on localhost (a default known proxy), so take the
+// scheme from X-Forwarded-Proto. The MCP OAuth metadata URLs depend on it (docs/mcp.md).
+app.UseForwardedHeaders(new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedProto });
 app.UseExceptionHandler();
 app.MapDefaultEndpoints(); // Aspire health checks and telemetry
 
