@@ -158,11 +158,11 @@ pnpm test:coverage      # with the coverage gate CI uses; HTML report in coverag
 
 The `Test Next.js Frontend` job runs `pnpm test:coverage` and fails below the thresholds in `vitest.config.mts`. It uploads the report as the `frontend-coverage` artifact.
 
-Thresholds over `lib/`, `hooks/` and `components/` (without `components/ui/`), measured coverage rounded down. Started 21 October 2026; raised 23 October 2026 with the MyZen tab (#345) and again with tests for `useIsClient` and `StoreProvider` (#351; Vite 8 counts a few more statements than Vite 7):
+Thresholds over `lib/`, `hooks/` and `components/` (without `components/ui/`), measured coverage rounded down. Started 21 October 2026; raised 23 October 2026 with the MyZen tab (#345) and again with tests for `useIsClient` and `StoreProvider` (#351; Vite 8 counts a few more statements than Vite 7), and on 24 October 2026 with the admin sidebar (#449):
 
 | Scope | Lines | Branches | Functions | Statements |
 | --- | ---: | ---: | ---: | ---: |
 | `lib/api/**` | 100% | 95% | 100% | 99% |
-| Total | 64% | 56% | 54% | 63% |
+| Total | 81% | 74% | 76% | 81% |
 
 The same ratchet rule as the backend applies: raise the numbers when coverage rises, and never lower one without a reason in the PR body.
