@@ -62,7 +62,7 @@ Both limits are partitioned by the connection's remote address. In the container
 
 #### Admin sign-in (authorization code + PKCE)
 - The admin UI signs in with the OAuth 2.1 authorization code flow and PKCE (S256) against Keycloak, using `oidc-client-ts` (`src/ClercqIt.Web/lib/auth.ts`, issue #257). Keycloak's own login page handles passwords, MFA, brute-force protection and required actions.
-- No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id.
+- No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id. `GET /api/auth/identity-provider` (`Admin.View` only) adds the Keycloak base URL, console links, the MCP client id and role names for the admin Settings page; it never returns a password or client secret (`src/ClercqIt.Api/Features/Auth/IdentityProviderSettings.cs`).
 - Tokens stay in memory (never `localStorage`); only the PKCE verifier and state sit in `sessionStorage` during the redirect. The return address after sign-in must be an `/admin` path. A copy of the access token sits in an httpOnly cookie for `/admin/dashboard` only, so the server can refuse the dashboard to visitors ([Admin pages](#admin-pages)).
 - The CSP `connect-src` allows `https://*.cloud-iam.com`, so the browser can call Keycloak's token endpoint.
 

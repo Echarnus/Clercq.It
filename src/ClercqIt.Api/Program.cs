@@ -103,6 +103,12 @@ if (useKeycloak)
     builder.Services.AddSingleton(new KeycloakClientSettings(
         keycloakAuthority, builder.Configuration["Keycloak:ClientId"] ?? "clercqit-web"));
 
+    // What the admin Settings page shows about the identity provider (GET /api/auth/identity-provider)
+    builder.Services.AddSingleton(IdentityProviderSettings.Create(
+        effectiveKeycloakUrl!, keycloakRealm, isLocalKeycloak,
+        builder.Configuration["Keycloak:ClientId"] ?? "clercqit-web",
+        builder.Configuration["Keycloak:McpClientId"] ?? "clercqit-mcp"));
+
     // Log which Keycloak is being used
     Console.WriteLine($"[Auth] Using {(isLocalKeycloak ? "local" : "external")} Keycloak at: {effectiveKeycloakUrl}");
 }
