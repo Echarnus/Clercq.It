@@ -69,7 +69,7 @@ The entry body:
 
 `durationMinutes` is 1 to 1440, `customerId` is `null` for a project without a customer, and `description` is at most 1000 characters. Invalid bodies get 400 and are never sent to MyZen.
 
-A data call answers **409** when the session must be reconnected, **422** when MyZen refuses a change (the problem's `detail` is MyZen's reason, when it gives one) and **502** when MyZen cannot be reached, answers with an error status, or is not configured.
+A data call answers **409** when the session must be reconnected, **422** when MyZen refuses a change (the problem's `detail` is MyZen's reason, when it gives one) and **502** when MyZen cannot be reached, answers with an error status, or is not configured. The admin tab shows the problem's `detail` next to its own message (for example "Could not load the time entries. MyZen could not be reached."), and clears it once a month loads.
 
 ### MyZen calls behind the changes
 
@@ -79,7 +79,7 @@ A data call answers **409** when the session must be reconnected, **422** when M
 | Add or edit | `POST /TimeRegistration/TimeRegistrationEntryDetails` with `TimeRegistrationID` (empty for a new entry), `ProjectID`, `CustomerID`, `Date` (dd/MM/yyyy), `Duration` (seconds), `Description`, `Invoiced` |
 | Delete | `POST /TimeRegistration/DeleteTimeRegistration` with `ID` |
 
-Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
+Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. The token is `rawcsrfToken` in the page's `<script id="layoutmainconfig">` JSON: the HTML MyZen serves has no hidden `__RequestVerificationToken` input, MyZen's scripts only add those in the browser (issue #448). A hidden input is still read as a fallback. The time-entry list uses the same token. Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
 
 ## Session storage
 

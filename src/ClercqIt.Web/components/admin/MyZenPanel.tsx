@@ -42,6 +42,7 @@ import {
   fetchMyZenTimeEntry,
   MyZenNotConnectedError,
   MyZenRejectedError,
+  MyZenRequestError,
   startMyZenLogin,
   submitMyZenLogin,
   submitMyZenMfaCode,
@@ -102,14 +103,21 @@ export function MyZenPanel({ today }: { today?: Date }) {
     void loadStatus();
   }, [loadStatus]);
 
-  /** Shows what went wrong; a lost session reloads the status, so the Reconnect button appears. */
+  /**
+   * Shows what went wrong, with the API's reason when it gave one; a lost
+   * session reloads the status, so the Reconnect button appears.
+   */
   const fail = useCallback(
     (e: unknown, message: string) => {
       if (e instanceof MyZenNotConnectedError) {
         setEditing(null);
         void loadStatus();
+      } else if (e instanceof MyZenRejectedError) {
+        setError(e.message);
+      } else if (e instanceof MyZenRequestError) {
+        setError(`${message} ${e.message}`);
       } else {
-        setError(e instanceof MyZenRejectedError ? e.message : message);
+        setError(`${message} Try again in a moment.`);
       }
     },
     [loadStatus],
@@ -118,8 +126,14 @@ export function MyZenPanel({ today }: { today?: Date }) {
   const loadEntries = useCallback(
     () =>
       fetchMyZenTimeEntries(month.from, month.to)
-        .then(setEntries)
-        .catch((e: unknown) => fail(e, "Could not load the time entries.")),
+        .then((loaded) => {
+          setEntries(loaded);
+          setError(null);
+        })
+        .catch((e: unknown) => {
+          setEntries(null);
+          fail(e, "Could not load the time entries.");
+        }),
     [month, fail],
   );
 

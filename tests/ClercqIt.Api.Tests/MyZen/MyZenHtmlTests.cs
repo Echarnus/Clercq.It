@@ -57,6 +57,39 @@ public class MyZenHtmlTests
         MyZenHtml.ParseTimeEntryFilter("<html></html>").Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "The request token comes from the layout config even without a hidden input (#448)")]
+    public void ParseRequestVerificationToken_ConfigOnly()
+    {
+        // Arrange: MyZen serves no hidden token input; its scripts add them in the browser.
+        MyZenPages.TimeRegistrationIndex.Should().NotContain("<input name=\"__RequestVerificationToken\"");
+
+        // Act
+        var token = MyZenHtml.ParseRequestVerificationToken(MyZenPages.TimeRegistrationIndex);
+
+        // Assert
+        token.Should().Be("page-token");
+    }
+
+    [Theory(DisplayName = "Without a usable layout config the request token comes from a hidden input")]
+    [InlineData("")]
+    [InlineData("""<script type="application/json" id="layoutmainconfig">not json</script>""")]
+    [InlineData("""<script type="application/json" id="layoutmainconfig">{"rawcsrfToken":""}</script>""")]
+    public void ParseRequestVerificationToken_FallsBackToHiddenInput(string config)
+    {
+        // Act
+        var token = MyZenHtml.ParseRequestVerificationToken(
+            $"""<html><body>{config}<form><input name="__RequestVerificationToken" value="fallback" /></form></body></html>""");
+
+        // Assert
+        token.Should().Be("fallback");
+    }
+
+    [Fact(DisplayName = "A page without any request token gives none")]
+    public void ParseRequestVerificationToken_None()
+    {
+        MyZenHtml.ParseRequestVerificationToken("<html><body><form id=\"gridform\"></form></body></html>").Should().BeNull();
+    }
+
     [Fact(DisplayName = "The time entry list gives each row and whether a next page exists")]
     public void ParseTimeEntryList_RowsAndPaging()
     {
