@@ -28,10 +28,10 @@ A feature flag lets unfinished work merge to `main` and ship to production switc
 
 - API endpoint or group: `.RequireFeature("NewBlogEditor")`. While the flag is off it answers 404, as if the endpoint did not exist. In a handler or service, inject `IFeatureFlags` and call `IsEnabled("NewBlogEditor")`.
 - MCP tool or authorization policy: `.AddRequirements(new FeatureFlagRequirement("NewBlogEditor"))` on the policy (`src/ClercqIt.Api/FeatureFlags/FeatureFlagRequirement.cs`). The policy fails while the flag is off, so the MCP server hides the tool.
-- Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` (cached for a minute; off when the API is unreachable). Hide a page in a server component with `if (!(await isEnabled("NewBlogEditor"))) notFound();`, and hide links to it the same way.
+- Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` with the signed-in admin's token, so it only works in the admin UI (off when nobody is signed in or the API is unreachable). Hide a section or link of the admin UI with `isEnabled("NewBlogEditor")`. A public page cannot read flags: if one ever needs to, add a separate public endpoint for just that flag.
 - Name flags in PascalCase after the feature, not after a ticket. Names are case-insensitive.
 
-Flags are public (`GET /api/features` is anonymous) and are not access control: admin features still need their authorization policy.
+`GET /api/features` needs an admin role (issue #454): anonymous visitors get 401, so flag names do not tell them what is being built. Flags are still not access control: admin features need their own authorization policy.
 
 **Remove a flag** once the feature is live: delete the `RequireFeature` and `isEnabled` calls, the entry in `infra/terraform/feature_flags.tf` and any local settings, in one PR. A flag that stays on for more than a few weeks is dead code.
 

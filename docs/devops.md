@@ -12,7 +12,7 @@ The repository has 13 workflows in `.github/workflows/`. "Required" means the jo
 
 | Workflow | Runs on | What it does | Required checks |
 | --- | --- | --- | --- |
-| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build, Docker build without push, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts` |
+| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build and the public bundle check, Docker build without push, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts` |
 | Docs check (`docs-check.yml`) | PR to `main` (also on label changes) | Fails code changes without a `docs/` change | `Docs updated` |
 | PR conventions (`pr-conventions.yml`) | PR to `main` (also on edit) | Branch name `<type>/<issue>-<slug>` and `Closes #<n>` in the body | `PR conventions` |
 | SAST (`sast.yml`) | PR, push to `main`, by hand | Semgrep (ERROR findings block) and gitleaks | `Semgrep`, `gitleaks` |
@@ -105,6 +105,7 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - A `postgres:17-alpine` service container is the throwaway database. The job applies the idempotent migration script with `psql` and runs the content import (`src/Clercq.It.ContentImport`), the same steps as `deploy.yml`.
 - `docker run --network host`: the container reaches Postgres on `localhost:5432` and serves the site on `http://localhost`. `Keycloak__BaseUrl` is a dummy (`https://keycloak.invalid`): the API needs a URL to start and only fetches the Keycloak metadata when someone signs in. Object storage is not configured, so image uploads are not covered.
 - The start step fails as soon as the container stops, and waits up to 120 s for `http://localhost/`. Then `.github/scripts/smoke-test.sh http://localhost 0.0.0-ci` runs the same checks as after a production deploy. On failure the job prints `docker logs` and the API and frontend logs from inside the container.
+- `Admin closed to anonymous visitors` then checks the real image: `/admin/dashboard` answers `307` to `/admin`, and `/api/features`, `/api/auth/session`, `/api/stats` and `/api/myzen/session` answer `401` without a token (issue #454, [application-security.md](./application-security.md#admin-pages)).
 - ZAP (#239) and Playwright e2e (#246) are meant to run as steps after the smoke test, against the same running container.
 
 Run the same check locally (needs Docker; from the repo root):

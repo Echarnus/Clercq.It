@@ -52,6 +52,38 @@ public class AuthEndpointTests : IAsyncLifetime
 
     private sealed record AuthConfig(string Authority, string ClientId);
 
+    [Fact(DisplayName = "GET /api/auth/session without a token returns 401")]
+    public async Task Session_Anonymous_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/auth/session");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "GET /api/auth/session for a user without an admin role returns 403")]
+    public async Task Session_UserWithoutRoles_ReturnsForbidden()
+    {
+        var client = await _factory.CreateClientForUserAsync("test");
+
+        var response = await client.GetAsync("/api/auth/session");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Theory(DisplayName = "GET /api/auth/session returns 204 for any admin role")]
+    [InlineData("admin")]
+    [InlineData("blogger")]
+    [InlineData("projects")]
+    [InlineData("certs")]
+    public async Task Session_AdminRole_ReturnsNoContent(string username)
+    {
+        var client = await _factory.CreateClientForUserAsync(username);
+
+        var response = await client.GetAsync("/api/auth/session");
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
     [Theory(DisplayName = "Social login endpoints do not exist")]
     [InlineData("/api/auth/github")]
     [InlineData("/api/auth/github/callback?code=x&state=y")]

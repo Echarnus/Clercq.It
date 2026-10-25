@@ -1,17 +1,34 @@
 import { http, HttpResponse, type JsonBodyType } from "msw";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { API } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
+import { getAccessToken } from "./auth";
 import { fetchFeatureFlags, isEnabled } from "./featureFlags";
+
+vi.mock("./auth", () => ({ getAccessToken: vi.fn(() => Promise.resolve("token")) }));
 
 const flags = (body: JsonBodyType, status = 200) =>
   server.use(http.get(`${API}/api/features`, () => HttpResponse.json(body, { status })));
 
 describe("fetchFeatureFlags", () => {
-  it("returns the flags from the API", async () => {
-    flags({ NewBlogEditor: true, Search: false });
+  it("returns the flags from the API, asked with the admin's token", async () => {
+    let auth: string | null = null;
+    server.use(
+      http.get(`${API}/api/features`, ({ request }) => {
+        auth = request.headers.get("Authorization");
+        return HttpResponse.json({ NewBlogEditor: true, Search: false });
+      }),
+    );
 
     await expect(fetchFeatureFlags()).resolves.toEqual({ NewBlogEditor: true, Search: false });
+    expect(auth).toBe("Bearer token");
+  });
+
+  it("returns no flags when nobody is signed in", async () => {
+    vi.mocked(getAccessToken).mockResolvedValueOnce(null);
+    flags({ NewBlogEditor: true });
+
+    await expect(fetchFeatureFlags()).resolves.toEqual({});
   });
 
   it.each([

@@ -36,7 +36,7 @@ dotnet build Clercq.It.CI.slnf -c Release              # warnings are errors
 dotnet test Clercq.It.CI.slnf -c Release --no-build
 
 # Frontend
-cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build
+cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm check:public-bundle
 
 # Infra
 cd infra/terraform && terraform fmt -check && terraform validate

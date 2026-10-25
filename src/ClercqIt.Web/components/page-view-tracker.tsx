@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { trackPageView } from "@/lib/api/statsApi";
+import { trackPageView } from "@/lib/api/pageViewApi";
 
 /**
  * Counts one page view per navigation on the public site (docs/statistics.md).
