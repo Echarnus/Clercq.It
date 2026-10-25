@@ -52,4 +52,46 @@ public class MyZenValidatorsTests
     {
         new SubmitMyZenLoginCommandValidator().Validate(new SubmitMyZenLoginCommand(captcha)).IsValid.Should().Be(valid);
     }
+
+    public static TheoryData<MyZenTimeEntryInput, bool> Entries => new()
+    {
+        { ValidEntry, true },
+        { ValidEntry with { CustomerId = null, Description = null }, true },
+        { ValidEntry with { DurationMinutes = 24 * 60 }, true },
+        { ValidEntry with { DurationMinutes = 0 }, false },
+        { ValidEntry with { DurationMinutes = 24 * 60 + 1 }, false },
+        { ValidEntry with { ProjectId = 0 }, false },
+        { ValidEntry with { CustomerId = 0 }, false },
+        { ValidEntry with { Date = new DateOnly(1999, 12, 31) }, false },
+        { ValidEntry with { Description = new string('a', 1001) }, false },
+    };
+
+    [Theory(DisplayName = "A time entry needs a project, a duration of up to 24 hours and a short description")]
+    [MemberData(nameof(Entries))]
+    public void TimeEntry_Validated(MyZenTimeEntryInput entry, bool valid)
+    {
+        new CreateMyZenTimeEntryCommandValidator().Validate(new CreateMyZenTimeEntryCommand(entry)).IsValid.Should().Be(valid);
+        new UpdateMyZenTimeEntryCommandValidator().Validate(new UpdateMyZenTimeEntryCommand(3, entry)).IsValid.Should().Be(valid);
+    }
+
+    [Theory(DisplayName = "Updating and deleting need a positive entry ID")]
+    [InlineData(1, true)]
+    [InlineData(0, false)]
+    public void ChangeId_MustBePositive(long id, bool valid)
+    {
+        new UpdateMyZenTimeEntryCommandValidator().Validate(new UpdateMyZenTimeEntryCommand(id, ValidEntry)).IsValid.Should().Be(valid);
+        new DeleteMyZenTimeEntryCommandValidator().Validate(new DeleteMyZenTimeEntryCommand(id)).IsValid.Should().Be(valid);
+    }
+
+    [Theory(DisplayName = "A project search is 2 to 50 characters")]
+    [InlineData("we", true)]
+    [InlineData(" w ", false)]
+    [InlineData("", false)]
+    public void ProjectSearch_Length(string query, bool valid)
+    {
+        new SearchMyZenProjectsQueryValidator().Validate(new SearchMyZenProjectsQuery(query)).IsValid.Should().Be(valid);
+        new SearchMyZenProjectsQueryValidator().Validate(new SearchMyZenProjectsQuery(new string('a', 51))).IsValid.Should().BeFalse();
+    }
+
+    private static readonly MyZenTimeEntryInput ValidEntry = new(new DateOnly(2026, 9, 1), 480, 5, 7, "Work", false);
 }

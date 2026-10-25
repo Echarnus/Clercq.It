@@ -27,10 +27,11 @@ A feature flag lets unfinished work merge to `main` and ship to production switc
 **Add and use a flag**
 
 - API endpoint or group: `.RequireFeature("NewBlogEditor")`. While the flag is off it answers 404, as if the endpoint did not exist. In a handler or service, inject `IFeatureFlags` and call `IsEnabled("NewBlogEditor")`.
-- Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` (cached for a minute; off when the API is unreachable). Hide a page in a server component with `if (!(await isEnabled("NewBlogEditor"))) notFound();`, and hide links to it the same way.
+- MCP tool or authorization policy: `.AddRequirements(new FeatureFlagRequirement("NewBlogEditor"))` on the policy (`src/ClercqIt.Api/FeatureFlags/FeatureFlagRequirement.cs`). The policy fails while the flag is off, so the MCP server hides the tool.
+- Frontend: `isEnabled()` from `src/ClercqIt.Web/lib/featureFlags.ts` reads `GET /api/features` with the signed-in admin's token, so it only works in the admin UI (off when nobody is signed in or the API is unreachable). Hide a section or link of the admin UI with `isEnabled("NewBlogEditor")`. A public page cannot read flags: if one ever needs to, add a separate public endpoint for just that flag.
 - Name flags in PascalCase after the feature, not after a ticket. Names are case-insensitive.
 
-Flags are public (`GET /api/features` is anonymous) and are not access control: admin features still need their authorization policy.
+`GET /api/features` needs an admin role (issue #454): anonymous visitors get 401, so flag names do not tell them what is being built. Flags are still not access control: admin features need their own authorization policy.
 
 **Remove a flag** once the feature is live: delete the `RequireFeature` and `isEnabled` calls, the entry in `infra/terraform/feature_flags.tf` and any local settings, in one PR. A flag that stays on for more than a few weeks is dead code.
 
@@ -44,7 +45,7 @@ Versions are calculated by [GitVersion](https://gitversion.net) (`GitVersion.yml
 | Work branch | `{Major}.{Minor}.{Commits}-{label}` (label from GitVersion, or the branch type) | `1.0.190-fix` |
 
 - The patch number is the number of commits on `main` since the last `v`-tag. With squash merges, each merged PR adds one.
-- **Major and minor** are bumped by pushing a `v`-tag by hand, for example `v1.1.0` or `v2.0.0`. Only do this for a deliberate version jump.
+- **Major and minor** are bumped with a new `v`-tag, for example `v1.1.0` or `v2.0.0`. Only do this for a deliberate version jump. The `prod-tags` ruleset ([Enforced rules](./contributing.md#enforced-rules)) lets only GitHub Actions create, move or delete `v*` tags, so a tag pushed by hand is rejected. An admin has to disable that ruleset for the push and enable it again.
 - The build pipeline creates `v1.0.0` if no `v`-tag exists, because GitVersion needs a baseline.
 
 ## Production releases
@@ -52,7 +53,17 @@ Versions are calculated by [GitVersion](https://gitversion.net) (`GitVersion.yml
 After every successful automatic deploy, the `release` job in `.github/workflows/deploy.yml` creates:
 
 - a tag `prod-<version>` on the deployed commit, for example `prod-1.0.190`;
-- a GitHub Release titled `<version>` with notes generated from the merged PRs.
+- a GitHub Release titled `<version>` with the image digest and notes generated from the merged PRs;
+- two release assets with the image's signed SLSA build provenance (#403): `clercq-it-<version>.intoto.jsonl` (the in-toto statements as DSSE envelopes) and `clercq-it-<version>.sigstore.json` (the full Sigstore bundle).
+
+The provenance is the attestation `build.yml` creates with `actions/attest-build-provenance`; the release job fetches it from the repository's attestations API by image digest. If none is found, the release is still created, without assets, and the run shows a warning. To check a release against the image:
+
+```bash
+gh attestation verify oci://docker.io/echarnus/clercq-it@<digest> \
+  --repo Echarnus/Clercq.It --bundle clercq-it-<version>.sigstore.json
+```
+
+OpenSSF Scorecard's Signed-Releases check reads these assets on the last five releases.
 
 The `prod-` prefix is deliberate: GitVersion treats `v`-tags as version sources, so tagging each deploy with `v1.0.190` would reset the commit count and make the next version `1.0.1`. Tags without the `v` prefix that do not parse as a version are ignored by GitVersion.
 
@@ -84,5 +95,5 @@ dotnet gitversion /showConfig
 ## Troubleshooting
 
 - **Version did not increment**: a commit that carries a `v`-tag shows that tag's version; the next commit increments. Check that no one pushed a `v`-tag by accident (`git tag -l 'v*'`).
-- **Version jumped back to a low patch number**: a new `v`-tag was created. Remove it if it was a mistake (`git push --delete origin vX.Y.Z`), or accept it as the new baseline.
+- **Version jumped back to a low patch number**: a new `v`-tag was created. Accept it as the new baseline, or have an admin remove it (`git push --delete origin vX.Y.Z` is blocked by the `prod-tags` ruleset until it is disabled).
 - **Branch gets an odd label**: the branch name does not start with one of the types above; rename it.

@@ -85,6 +85,10 @@ dotnet test tests/ClercqIt.Api.Tests
 
 In CI they are a separate step, `API integration tests`, after `Unit tests` in the `Test .NET API` job (Docker is built into `ubuntu-latest`). In a Claude Code cloud session the Docker daemon is installed but not running: start it with `dockerd > /tmp/dockerd.log 2>&1 &`. If Docker Hub answers `429 Too Many Requests`, pull through Google's mirror and retag, for example `docker pull mirror.gcr.io/keycloak/keycloak:26.4 && docker tag mirror.gcr.io/keycloak/keycloak:26.4 keycloak/keycloak:26.4`. `quay.io` is not reachable from the cloud session.
 
+## Container smoke test
+
+The `Container smoke test` job in `.github/workflows/test.yml` starts the production image on every PR against a throwaway Postgres with migrations and content applied, and runs `.github/scripts/smoke-test.sh` against `http://localhost`. It catches what unit and integration tests cannot: a broken image, a missing runtime library, nginx or `src/start.sh` failing. Details and the local commands: [devops.md](./devops.md#container-test-container-smoke-test). ZAP (#239) and e2e (#246) will run against the same container.
+
 ## Coverage
 
 The `Test .NET API` job fails when line coverage is below `tests/coverage-thresholds.json`, per assembly and in total. It prints a table in the job summary and uploads the HTML report as the `coverage-report` artifact. Coverage also still goes to Codecov.
@@ -120,6 +124,7 @@ The frontend tests live next to the code in `src/ClercqIt.Web` (issue #246). The
 | Matchers | `@testing-library/jest-dom` (set up in `test/setup.ts`) |
 | API mocking | MSW: default handlers in `test/msw/handlers.ts`, fixtures in `test/msw/fixtures.ts` |
 | Coverage | `@vitest/coverage-v8` |
+| Property-based tests | `fast-check` |
 
 Conventions:
 
@@ -128,6 +133,18 @@ Conventions:
 - Query the DOM the way a user does: by role and accessible name, label or text. If an element has no accessible name, give it one (an `aria-label`) rather than reaching for test ids.
 - Unit-test `lib/`, hooks and components with logic (forms, inputs, conditional rendering). Whole pages, routing and the real API belong to Playwright e2e (`e2e/`).
 - `components/ui/` is generated shadcn/ui code and is excluded from coverage.
+
+### Property-based tests (fuzzing)
+
+Code that handles untrusted input also gets property-based tests with [fast-check](https://fast-check.dev/) (issue #402). Instead of a few hand-picked examples, a property test states a rule that must hold for every input, and fast-check generates hundreds of inputs (and shrinks a failure to the smallest one) to try to break it. They run with the other Vitest tests, so CI runs them on every PR.
+
+| Test | Property |
+| --- | --- |
+| `lib/auth.property.test.ts` | the post-sign-in return address is always a same-origin path under `/admin` |
+| `app/blogs/lib/filters.property.test.ts` | the blog filters never throw and match exactly the posts they should |
+| `components/markdown.property.test.tsx` | rendered Markdown never contains scripts, event handlers or `javascript:` URLs |
+
+Name them `<file>.property.test.ts(x)` beside the code they test. Add one when you write a parser, a validator, a sanitiser or a redirect check. These tests are also what OpenSSF Scorecard's Fuzzing check looks for (an import of `fast-check`); .NET fuzzers are not detected by Scorecard.
 
 Running, from `src/ClercqIt.Web`:
 
@@ -141,11 +158,11 @@ pnpm test:coverage      # with the coverage gate CI uses; HTML report in coverag
 
 The `Test Next.js Frontend` job runs `pnpm test:coverage` and fails below the thresholds in `vitest.config.mts`. It uploads the report as the `frontend-coverage` artifact.
 
-Thresholds over `lib/`, `hooks/` and `components/` (without `components/ui/`), measured coverage rounded down. Started 21 October 2026; raised 23 October 2026 with the MyZen tab (#345) and again with tests for `useIsClient` and `StoreProvider` (#351; Vite 8 counts a few more statements than Vite 7):
+Thresholds over `lib/`, `hooks/` and `components/` (without `components/ui/`), measured coverage rounded down. Started 21 October 2026; raised 23 October 2026 with the MyZen tab (#345) and again with tests for `useIsClient` and `StoreProvider` (#351; Vite 8 counts a few more statements than Vite 7), and on 24 October 2026 with the admin sidebar (#449):
 
 | Scope | Lines | Branches | Functions | Statements |
 | --- | ---: | ---: | ---: | ---: |
 | `lib/api/**` | 100% | 95% | 100% | 99% |
-| Total | 64% | 56% | 54% | 63% |
+| Total | 81% | 74% | 76% | 81% |
 
 The same ratchet rule as the backend applies: raise the numbers when coverage rises, and never lower one without a reason in the PR body.

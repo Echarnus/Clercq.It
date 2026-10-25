@@ -10,6 +10,269 @@ The project follows **Clean Architecture** principles with **Domain-Driven Desig
 - **Testability**: Business logic is isolated and easily testable
 - **Maintainability**: Clear boundaries make the system easier to understand and modify
 
+## C4 diagrams
+
+These diagrams follow the [C4 model](https://c4model.com) and are written in [Mermaid](https://mermaid.js.org/syntax/c4.html), so GitHub renders them in place. They show production as it runs now; the code-level layers are under [Layer Structure](#layer-structure).
+
+**Keep them current.** A PR that adds, removes or renames a container, an external system, a database login, an API component or a route group, or changes how sign-in or the MCP server works, updates the diagrams here in the same PR. Check that they still parse before you push (see [Rendering the diagrams locally](#rendering-the-diagrams-locally)).
+
+### System context
+
+Who uses the site and which outside systems it depends on.
+
+```mermaid
+C4Context
+  title System context: www.clercq.it
+
+  Person(visitor, "Visitor", "Reads the portfolio, blog and certifications")
+  Person(owner, "Owner", "Kenneth: manages content and MyZen time entries in the admin UI")
+  System_Ext(claude, "Claude", "AI agent with the Clercq.It custom connector")
+
+  System(site, "Clercq.It", "Personal website, admin UI, REST API and content MCP server")
+
+  System_Ext(ciam, "Cloud IAM", "Hosted Keycloak, realm clercqit: sign-in, MFA, roles")
+  System_Ext(myzen, "MyZen", "TrustTeam time registration, owner's account")
+  System_Ext(cockpit, "Scaleway Cockpit", "Logs, metrics and traces")
+  System_Ext(github, "GitHub", "Code, issues, Actions: build, deploy, Terraform")
+
+  Rel(visitor, site, "Browses", "HTTPS")
+  Rel(owner, site, "Manages content", "HTTPS")
+  Rel(owner, ciam, "Signs in", "OIDC")
+  Rel(claude, site, "Calls tools", "MCP over HTTPS")
+  Rel(claude, ciam, "Gets a token", "OAuth 2.1 + PKCE")
+  Rel(site, ciam, "Validates tokens", "OIDC discovery, JWKS")
+  Rel(site, myzen, "Reads and writes time entries", "HTTPS, cookie session")
+  Rel(site, cockpit, "Sends telemetry", "OTLP gRPC")
+  Rel(github, site, "Builds, migrates, imports content, deploys")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+### Containers
+
+One Docker image (`src/Dockerfile`) runs nginx, the Next.js app and the API in a single Scaleway serverless container; see [Production Container Architecture](#production-container-architecture). The browser loads images straight from the public bucket. The API connects with the runtime login `clercqit_app`, which can read and write rows but not change the schema ([database logins](./secrets.md#database-logins)).
+
+```mermaid
+C4Container
+  title Containers: Clercq.It
+
+  Boundary(users, "Users") {
+    Person(visitor, "Visitor")
+    Person(owner, "Owner")
+    System_Ext(claude, "Claude", "MCP client")
+  }
+
+  System_Boundary(site, "Clercq.It") {
+    Container_Boundary(image, "Docker image echarnus/clercq-it, container clercq-it-app") {
+      Container(nginx, "nginx", "nginx 1.30, port 80", "Reverse proxy, rate limits, security headers")
+      Container(web, "Web app", "Next.js 16, React 19, port 3000", "Public pages (server-rendered) and the admin UI")
+      Container(api, "API", ".NET 10 minimal API, port 5000", "REST endpoints, auth policies, MCP server at /api/mcp")
+    }
+    ContainerDb(db, "Database", "PostgreSQL 16, Scaleway RDB", "Database clercqit_portfolio: content, MyZen session, statistics")
+    ContainerDb(bucket, "Image bucket", "Scaleway Object Storage", "clercq-it-blog-images, public read")
+  }
+
+  Boundary(ext, "External services") {
+    System_Ext(ciam, "Cloud IAM", "Keycloak")
+    System_Ext(myzen, "MyZen")
+    System_Ext(cockpit, "Scaleway Cockpit")
+  }
+
+  Rel(visitor, nginx, "Browses", "HTTPS")
+  Rel(owner, nginx, "Uses the admin UI", "HTTPS")
+  Rel(claude, nginx, "Calls /api/mcp", "HTTPS")
+  Rel(visitor, bucket, "Loads images", "HTTPS")
+  Rel(owner, ciam, "Signs in", "Code flow + PKCE")
+  Rel(nginx, web, "Everything else", "HTTP")
+  Rel(nginx, api, "/api, /.well-known/oauth-protected-resource", "HTTP")
+  Rel(web, api, "Server-side reads", "HTTP localhost:5000")
+  Rel(api, db, "Reads and writes rows as clercqit_app", "Npgsql, TLS VerifyCA")
+  Rel(api, bucket, "Uploads images", "S3 API")
+  Rel(api, ciam, "Validates JWTs", "JWKS")
+  Rel(api, myzen, "Time entries", "HTTPS")
+  Rel(api, cockpit, "Telemetry", "OTLP gRPC")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+### Components of the API
+
+Endpoint modules and the MCP tools never touch the DbContext: they send MediatR commands and queries, and the handlers reach Infrastructure through the contracts in Domain and Application. The architecture tests enforce this ([Architecture rules](#architecture-rules)).
+
+```mermaid
+C4Component
+  title Components: API
+
+  Boundary(callers, "Callers") {
+    Container(nginx, "nginx", "Reverse proxy")
+    Container(web, "Web app", "Next.js")
+  }
+
+  Container_Boundary(api, "API (ClercqIt.Api and the layers it composes)") {
+    Component(pipeline, "HTTP pipeline", "ASP.NET Core", "Rate limiter, JWT bearer and MCP auth, role policies, exception handlers")
+    Component(endpoints, "Endpoint modules", "Minimal APIs, Features/*Endpoints.cs", "Projects, blogs, certifications, images, auth config, stats, MyZen, feature flags")
+    Component(mcp, "Content MCP server", "ModelContextProtocol.AspNetCore, Features/Mcp", "Stateless tools per role")
+    Component(keepalive, "MyZen keep-alive", "Hosted service", "Keeps the MyZen session open")
+    Component(mediatr, "MediatR pipeline", "Application", "ValidationBehavior runs the FluentValidation validators")
+    Component(handlers, "Handlers", "Application/Features", "Commands and queries, DTOs")
+    Component(domain, "Domain model", "Domain", "Project, Blog, Certification aggregates, repository contracts")
+    Component(repos, "Repositories and unit of work", "Infrastructure, EF Core 10", "ApplicationDbContext")
+    Component(storage, "Object storage service", "Infrastructure, AWS SDK", "IObjectStorageService")
+    Component(stats, "Site statistics", "Infrastructure", "Cookieless page views, daily salts, rollup")
+    Component(gateway, "MyZen gateway", "Infrastructure", "MyZen client, encrypted session store")
+  }
+
+  Boundary(deps, "Dependencies") {
+    ContainerDb(db, "Database", "PostgreSQL")
+    ContainerDb(bucket, "Image bucket", "Object Storage")
+    System_Ext(myzen, "MyZen")
+    System_Ext(ciam, "Cloud IAM")
+  }
+
+  Rel(nginx, pipeline, "HTTP")
+  Rel(web, pipeline, "HTTP")
+  Rel(pipeline, endpoints, "Routes")
+  Rel(pipeline, mcp, "Routes /api/mcp")
+  Rel(pipeline, ciam, "JWKS")
+  Rel(endpoints, mediatr, "Send")
+  Rel(mcp, mediatr, "Send, same commands")
+  Rel(keepalive, gateway, "KeepAliveAsync, IMyZenGateway")
+  Rel(mediatr, handlers, "Dispatch")
+  Rel(handlers, domain, "Uses")
+  Rel(handlers, repos, "Through Domain contracts")
+  Rel(handlers, storage, "Through IObjectStorageService")
+  Rel(handlers, stats, "Through ISiteStatistics")
+  Rel(handlers, gateway, "Through IMyZenGateway")
+  Rel(repos, db, "SQL")
+  Rel(stats, db, "SQL")
+  Rel(gateway, db, "Session row")
+  Rel(gateway, myzen, "HTTPS")
+  Rel(storage, bucket, "S3 API")
+
+  UpdateLayoutConfig($c4ShapeInRow="4", $c4BoundaryInRow="1")
+```
+
+### Deployment
+
+What runs where in production. Terraform in `infra/terraform/` defines the Scaleway resources, except the container namespace `portfolio`, which it only reads. The deploy pipeline is described in [DevOps](./devops.md). The migration login `clercqit_user` is only used by `deploy.yml`; the admin login `clercqit_admin` is used by nothing. The verify environment is not shown: PR #446 removes it.
+
+```mermaid
+C4Deployment
+  title Deployment: production
+
+  Deployment_Node(gh, "GitHub", "github.com/Echarnus/Clercq.It") {
+    Container(actions, "GitHub Actions", "build.yml, deploy.yml, infra.yml", "Builds and scans the image, runs migrations and content import, deploys, runs Terraform")
+  }
+
+  Deployment_Node(hub, "Docker Hub") {
+    Container(registry, "echarnus/clercq-it", "Container image", "Tagged with the GitVersion version")
+  }
+
+  Deployment_Node(scw, "Scaleway, fr-par", "Project clercq-it") {
+    Deployment_Node(ns, "Serverless Containers", "Namespace portfolio") {
+      Deployment_Node(app, "clercq-it-app", "0 to 1 instances, 512 MB, 500 mvCPU") {
+        Container(proc, "nginx, Next.js, API", "start.sh supervises all three", "Non-root user clercqit")
+      }
+    }
+    Deployment_Node(rdb, "Managed Database", "portfolio-db, DB-DEV-S, PostgreSQL 16") {
+      ContainerDb(pg, "clercqit_portfolio", "PostgreSQL", "Logins: clercqit_user (migrations), clercqit_app (runtime)")
+    }
+    Deployment_Node(os, "Object Storage") {
+      ContainerDb(images, "clercq-it-blog-images", "Bucket", "Public read")
+      ContainerDb(tfstate, "clercq-it-terraform-state", "Bucket", "Terraform state")
+    }
+    Deployment_Node(sm, "Secret Manager", "Path /clercq-it") {
+      Container(secrets, "Secrets", "Scaleway secrets", "DB passwords, Keycloak URL, MyZen login, session key")
+    }
+    Deployment_Node(ck, "Cockpit") {
+      Container(otel, "Logs, metrics, traces", "OTLP endpoint")
+    }
+  }
+
+  Deployment_Node(ciamNode, "Cloud IAM", "Scaleway nl-ams, Keycloak 26") {
+    Container(kc, "Realm clercqit", "Keycloak", "Clients clercqit-web, clercqit-mcp")
+  }
+
+  Rel(actions, registry, "Pushes image")
+  Rel(actions, proc, "Deploys image by digest", "scw CLI")
+  Rel(actions, pg, "migration.sql as clercqit_user, content import as clercqit_app", "psql, TLS")
+  Rel(actions, tfstate, "Terraform state", "S3")
+  Rel(registry, proc, "Image pulled by Scaleway")
+  Rel(proc, pg, "clercqit_app", "TLS VerifyCA")
+  Rel(proc, images, "Uploads", "S3")
+  Rel(proc, kc, "JWKS")
+  Rel(proc, otel, "OTLP gRPC")
+  Rel(secrets, proc, "Secret env vars, set by Terraform")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="2")
+```
+
+### Admin sign-in
+
+The admin UI uses the authorization code flow with PKCE against Cloud IAM (`src/ClercqIt.Web/lib/auth.ts`, [Cloud IAM](./ciam.md)). The API never sees a password.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor Owner
+  participant UI as Admin UI (browser, oidc-client-ts)
+  participant API as API
+  participant KC as Cloud IAM (Keycloak)
+
+  Owner->>UI: Open /admin
+  UI->>API: GET /api/auth/config
+  API-->>UI: issuer and public client id clercqit-web
+  UI->>UI: Create PKCE verifier and state (sessionStorage)
+  UI->>KC: Redirect to /auth with code_challenge
+  Owner->>KC: Password, MFA
+  KC-->>UI: Redirect to /admin/callback with code
+  UI->>KC: POST /token with code and code_verifier
+  KC-->>UI: Access token with roles claim (kept in memory)
+  UI->>API: Write request, Authorization: Bearer token
+  API->>KC: Signing keys (JWKS, cached)
+  API->>API: Validate token, check role policy
+  API-->>UI: 200, or 401 without a valid token, 403 without the role
+```
+
+### Content MCP server call
+
+How Claude finds the login, gets a token and calls a tool on `/api/mcp` ([MCP](./mcp.md)).
+
+```mermaid
+sequenceDiagram
+  autonumber
+  participant C as Claude (MCP client)
+  participant API as API /api/mcp
+  participant KC as Cloud IAM (Keycloak)
+  participant M as MediatR handlers
+  participant DB as PostgreSQL
+
+  C->>API: POST /api/mcp without a token
+  API-->>C: 401, WWW-Authenticate with resource_metadata
+  C->>API: GET /.well-known/oauth-protected-resource/api/mcp
+  API-->>C: Authorization server: realm clercqit
+  C->>KC: Sign in with client clercqit-mcp (code flow + PKCE)
+  KC-->>C: Access token with roles
+  C->>API: tools/list with Bearer token
+  API-->>C: Only the tools the caller's roles allow
+  C->>API: tools/call create_blog_post
+  API->>M: Same command as the admin endpoint
+  M->>M: FluentValidation
+  M->>DB: Insert row
+  M-->>API: Result
+  API-->>C: Tool result, or a tool error with the validation messages
+```
+
+### Rendering the diagrams locally
+
+GitHub renders the diagrams in a PR's file view, which is the quickest check. To check that every diagram parses from the command line, run mermaid-cli on this page:
+
+```bash
+npx -y @mermaid-js/mermaid-cli -i docs/architecture.md -o /tmp/architecture.md
+```
+
+It writes one SVG per diagram next to the output file and fails on a syntax error. mermaid-cli drives a headless Chromium through Puppeteer. Where Puppeteer cannot download one, as in Claude Code cloud sessions, point it at the installed browser with `-p puppeteer.json`, a file containing `{"executablePath": "/opt/pw-browsers/chromium-1243/chrome-linux64/chrome", "args": ["--no-sandbox"]}`. Mermaid's C4 layout is automatic: element order and `UpdateLayoutConfig` are the only levers, so group related elements in a `Boundary` to keep the picture readable.
+
 ## Layer Structure
 
 Dependencies point inwards. Domain knows nothing about the other layers; the
@@ -72,10 +335,10 @@ in this table in the same PR.
 The core of the application containing business logic and domain models.
 
 **Components:**
-- **Entities**: `Project` and `Blog` aggregate roots
+- **Entities**: `Project`, `Blog` and `Certification` aggregate roots
 - **Value Objects**: `Skills` and `Tags` collections for complex domain concepts
-- **Abstractions**: `IAggregateRoot`, `IRepository<T>`, `IUnitOfWork`
-- **Repository Interfaces**: `IProjectRepository`, `IBlogRepository`
+- **Abstractions**: `IAggregateRoot`, `IRepository<T>`, `IUnitOfWork`, `IObjectStorageService`
+- **Repository Interfaces**: `IProjectRepository`, `IBlogRepository`, `ICertificationRepository`
 
 **Key Principles:**
 - No dependencies on other layers
@@ -88,11 +351,10 @@ The core of the application containing business logic and domain models.
 Orchestrates application workflows and use cases.
 
 **Components:**
-- **Features**: Organized by aggregate (Projects, Blogs)
-- **Queries**: `GetAllProjectsQuery`, `GetFeaturedProjectsQuery`, `GetAllBlogsQuery`
-- **Commands**: `CreateProjectCommand`, `CreateBlogCommand` for creating projects and blog posts with images
+- **Features**: Organized by area (`Projects`, `Blogs`, `Certifications`, `MyZen`, `Statistics`)
+- **Queries and commands**: list, get by id, create, update and delete for projects, blogs and certifications; image upload; MyZen session and time entries; page views and the statistics summary
 - **Handlers**: MediatR query and command handlers implementing CQRS pattern
-- **DTOs**: `ProjectDto`, `BlogDto` for data transfer
+- **DTOs**: `ProjectDto`, `BlogDto`, `CertificationDto` and per-feature DTOs for data transfer
 - **Validation**: FluentValidation validators run for every MediatR request through `ValidationBehavior` (Application/Common/Behaviors); a failure becomes a 400 validation problem via `ValidationExceptionHandler` in the API
 
 **Key Principles:**
@@ -111,8 +373,9 @@ Implements external concerns and data persistence.
 - **Repositories**: Generic `Repository<T>` and specific implementations
 - **Unit of Work**: Transaction management and change tracking
 - **Object Storage**: S3-compatible service for Scaleway Object Storage (blog images)
+- **Statistics**: cookieless visitor statistics in PostgreSQL, daily salts and rollup (`Statistics/`, see [Visitor statistics](./statistics.md))
 - **MyZen**: client for the owner's MyZen account and its encrypted session store (`MyZen/`, see [MyZen](./myzen.md))
-- **Configuration**: Settings for object storage and authentication
+- **Configuration**: Settings for object storage (`ObjectStorageSettings`)
 
 **Key Principles:**
 - Implements repository interfaces from Domain
@@ -125,10 +388,11 @@ Implements external concerns and data persistence.
 Exposes HTTP endpoints and handles web concerns.
 
 **Components:**
-- **Minimal APIs**: Feature-based endpoint organization
-- **Endpoints**: `/api/projects`, `/api/blogs`
-- **Authentication**: JWT Bearer authentication for protected endpoints
-- **OpenAPI**: Swagger documentation with summaries
+- **Minimal APIs**: Feature-based endpoint organization (`src/ClercqIt.Api/Features/`)
+- **Endpoints**: see [API Endpoints](#api-endpoints)
+- **Authentication**: JWT bearer tokens from Keycloak, role-based policies (see [Authentication](#authentication))
+- **OpenAPI**: `MapOpenApi` and the Scalar UI, mapped in Development only
+- **Feature flags**: `src/ClercqIt.Api/FeatureFlags/` (see [Feature flags](#feature-flags))
 - **DI Configuration**: Clean Architecture layer registration
 
 **Key Principles:**
@@ -140,68 +404,50 @@ Exposes HTTP endpoints and handles web concerns.
 
 ## Database Schema
 
-### Projects Table
-- `Id` (GUID, Primary Key)
-- `Title` (varchar(200), required)
-- `ShortDescription` (varchar(500), required)
-- `LongDescription` (text, required)
-- `Image` (text, required) - Base64 encoded
-- `StartDate` (timestamp, required)
-- `EndDate` (timestamp, required)
-- `Featured` (boolean, required)
-- `Skills` (text, required) - Semicolon-separated values
+EF Core maps the aggregates in `src/Clercq.It.Infrastructure/Data/Configurations/`; migrations live in `src/Clercq.It.Infrastructure/EF/Migrations/` (see [Migrations](./migrations.md)).
 
-### Blogs Table
-- `Id` (GUID, Primary Key)
-- `Title` (varchar(200), required) - added by `AddBlogTitle`, backfilled from `ShortDescription`
-- `ShortDescription` (varchar(500), required)
-- `LongDescription` (text, required) - Markdown content
-- `Image` (text, required) - URL to Scaleway Object Storage
-- `CreatedDate` (timestamp, required)
-- `PublishDate` (timestamp, required)
-- `Tags` (text, required) - Semicolon-separated values
+| Table | Holds |
+|-------|-------|
+| `Projects` | `Title` (200), `ShortDescription` (500), `LongDescription` (Markdown), `Image` (URL), `StartDate`, `EndDate`, `Featured`, `Skills` (semicolon-separated) |
+| `Blogs` | `Title` (200, added by `AddBlogTitle`), `ShortDescription` (500), `LongDescription` (Markdown), `Image` (URL), `CreatedDate`, `PublishDate`, `Tags` (semicolon-separated) |
+| `Certifications` | `Title`, `Issuer`, `IssueDate`, `ExpiryDate` (optional), `CredentialId`, `CredentialUrl`, `Description`, `Image` |
+| `MyZenSessions` | The owner's encrypted MyZen session (see [MyZen](./myzen.md)) |
+| `StatsSalts`, `StatsPageVisits`, `StatsDailyPages`, `StatsDays` | Cookieless visitor statistics (see [Visitor statistics](./statistics.md)) |
+
+Detail page URLs use a slug built from the title plus the id, not a stored column (see [SEO](./seo.md)).
 
 ## API Endpoints
 
-### Projects
-- `GET /api/projects` - Get all projects
-- `GET /api/projects/featured` - Get featured projects only
-- `POST /api/projects/images` - Upload a project image (requires authentication)
-  - Accepts multipart/form-data with:
-    - `image`: Image file (jpg, jpeg, png, gif, webp)
-  - Returns the image URL for use in project creation
-- `POST /api/projects` - Create a new project (requires authentication)
-  - Accepts multipart/form-data with:
-    - `title`: Project title (max 200 chars)
-    - `shortDescription`: Brief description (max 500 chars)
-    - `longDescription`: Full markdown content
-    - `imageUrl`: URL of previously uploaded image (from `/api/projects/images`)
-    - `startDate`: Project start date (ISO 8601 format)
-    - `endDate`: Project end date (ISO 8601 format)
-    - `featured`: Whether the project is featured (true/false, defaults to false)
-    - `skills`: Comma-separated list of skills
+Reads are public; writes need a role (policies in `src/ClercqIt.Api/Program.cs`).
 
-### Blogs
-- `GET /api/blogs` - Get all blogs
-- `POST /api/blogs` - Create a new blog (requires authentication)
-  - Accepts multipart/form-data with:
-    - `shortDescription`: Brief description (max 500 chars)
-    - `longDescription`: Full markdown content
-    - `image`: Image file (jpg, jpeg, png, gif, webp)
-    - `tags`: Comma-separated list of tags
-
-All endpoints return JSON and include OpenAPI documentation.
+| Route | Methods | Access |
+|-------|---------|--------|
+| `/api/projects`, `/api/projects/featured`, `/api/projects/{id}` | `GET` | Public |
+| `/api/projects`, `/api/projects/{id}` | `POST`, `PUT`, `DELETE` (multipart form, optional `image` file) | `Projects.Contributor` |
+| `/api/blogs`, `/api/blogs/{id}` | `GET` | Public |
+| `/api/blogs`, `/api/blogs/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Blogs.Contributor` |
+| `/api/certifications`, `/api/certifications/{id}` | `GET` | Public |
+| `/api/certifications`, `/api/certifications/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Certifications.Contributor` |
+| `/api/images` | `POST` (multipart `image`), returns the stored URL | `Blogs.Contributor` |
+| `/api/auth/config` | `GET`, Keycloak issuer and public client id for the admin UI | Public |
+| `/api/features` | `GET`, the feature flags | Public |
+| `/api/stats/pageview` | `POST`, records a page view | Public |
+| `/api/stats` | `GET`, statistics summary | `Admin.View` |
+| `/api/myzen/...` | session and time entries | `MyZen.Owner`, behind the `MyZen` feature flag (see [MyZen](./myzen.md)) |
+| `/.well-known/oauth-protected-resource/api/mcp` | `GET`, OAuth metadata for the MCP server | Public |
+| `/api/mcp` | Content MCP server for Claude, sends the same MediatR commands (see [MCP](./mcp.md)) | One of the contributor roles or `MyZen.Owner` |
+| `/health`, `/alive` | `GET`, health checks (`Clercq.It.ServiceDefaults`) | Public |
 
 ## Authentication
 
-The API uses JWT Bearer token authentication for protected endpoints (blog and project creation).
-
-JWT tokens are generated and signed by **Cloud IAM** (external identity service). The backend validates these tokens using Cloud IAM's Authority for public key discovery.
+The API validates JWT bearer tokens issued by Keycloak: Cloud IAM in production, the Aspire Keycloak container locally. The admin UI signs in with the public `clercqit-web` client (authorization code flow with PKCE); see [Cloud IAM](./ciam.md).
 
 **Configuration:**
-- `CloudIAM:ApiUrl` - Cloud IAM API endpoint (also used as JWT Authority for token validation)
-- `CloudIAM:ApiKey` - API key for authenticating with Cloud IAM
-- `CloudIAM:ClientRedirectUrl` - Frontend URL for OAuth redirects
+- `Keycloak:BaseUrl` - Keycloak base URL (the Aspire service URL wins locally). The API refuses to start without one.
+- `Keycloak:Realm` - Realm, default `clercqit`
+- `Keycloak:ClientId` - Public client the admin UI uses, default `clercqit-web`
+
+Roles: `Admin.View`, `Projects.Contributor`, `Blogs.Contributor`, `Certifications.Contributor`, `MyZen.Owner`.
 
 ## Object Storage
 
@@ -238,7 +484,7 @@ Config-driven flags hide unfinished work in production (issue #253). The API own
 
 ### Infrastructure & DevOps
 - **Docker** - Multi-stage containerization
-- **nginx** - Reverse proxy and load balancing
+- **nginx** - Reverse proxy, rate limits and security headers
 - **GitHub Actions** - CI/CD automation
 - **GitVersion** - Semantic versioning
 - **Scaleway** - Cloud hosting platform
@@ -307,10 +553,8 @@ The production deployment uses a single Docker container with multiple services:
 ## Future Enhancements
 
 The architecture is designed to support:
-- **Command Operations**: Create, Update, Delete with validation
 - **Domain Events**: Event-driven architecture with handlers
 - **Caching Strategies**: Redis or in-memory caching
-- **Authentication & Authorization**: JWT-based security
 - **API Versioning**: Support multiple API versions
 - **Background Jobs**: Hangfire or Quartz for scheduled tasks
 - **Real-time Features**: SignalR for live updates
@@ -328,8 +572,9 @@ dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 ### Test Pyramid
 - **Unit Tests**: Domain logic and application handlers
 - **Architecture Tests**: Layering and DDD rules (see [Architecture rules](#architecture-rules))
-- **Integration Tests**: API endpoints and database operations
-- **End-to-End Tests**: Frontend integration (planned)
+- **Integration Tests**: API endpoints against PostgreSQL and Keycloak in Testcontainers (`tests/ClercqIt.Api.Tests`)
+- **Frontend unit tests**: Vitest (`src/ClercqIt.Web`)
+- **End-to-End Tests**: Playwright specs in `src/ClercqIt.Web/e2e/` (see [Testing](./testing.md))
 
 ## Performance Considerations
 
@@ -347,13 +592,13 @@ dotnet test Clercq.It.CI.slnf --collect:"XPlat Code Coverage"
 - **CORS**: Configurable for frontend integration
 - **Container Security**: Non-root execution, minimal attack surface
 - **JWT Authentication**: Secure token-based authentication for protected endpoints
-- **File Upload Validation**: Strict validation of file types and sizes for blog images
+- **File Upload Validation**: Strict validation of file types and sizes for uploaded images
 
 ## Monitoring & Observability
 
 - **Health Checks**: Built-in health endpoints
 - **Structured Logging**: Comprehensive logging throughout
-- **OpenTelemetry**: Ready for distributed tracing (via Aspire in development)
+- **OpenTelemetry**: Logs, metrics and traces through `Clercq.It.ServiceDefaults`; the Aspire dashboard locally, Scaleway Cockpit in production
 - **Metrics**: Performance and business metrics collection
 
 ## References

@@ -23,7 +23,7 @@ Everything goes issue → branch → PR → green checks → auto-merge → prod
 
 ## Quality gates
 
-Rules in `.claude/rules/` load the conventions for the files you touch; hooks in `.claude/hooks/` format and check files as you edit (registered by the owner, #304). Before opening or updating a PR, run the `quality-check` skill (`.claude/skills/quality-check/quality-check.sh`) and open the PR only when a full run passes; `fix-quality` applies the auto-fixers. Details: [docs/development.md#quality-gates](docs/development.md#quality-gates).
+Rules in `.claude/rules/` load the conventions for the files you touch; hooks in `.claude/hooks/` format and check files as you edit once the owner registers them in `.claude/settings.json` (#304; only `SessionStart` is registered so far). Before opening or updating a PR, run the `quality-check` skill (`.claude/skills/quality-check/quality-check.sh`) and open the PR only when a full run passes; `fix-quality` applies the auto-fixers. Details: [docs/development.md#quality-gates](docs/development.md#quality-gates).
 
 ## Commands
 
@@ -36,7 +36,7 @@ dotnet build Clercq.It.CI.slnf -c Release              # warnings are errors
 dotnet test Clercq.It.CI.slnf -c Release --no-build
 
 # Frontend
-cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build
+cd src/ClercqIt.Web && pnpm install --frozen-lockfile && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build && pnpm check:public-bundle
 
 # Infra
 cd infra/terraform && terraform fmt -check && terraform validate

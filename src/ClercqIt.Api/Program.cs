@@ -3,6 +3,7 @@ using Clercq.It.Api;
 using Clercq.It.Api.FeatureFlags;
 using Clercq.It.Api.Features;
 using Clercq.It.Api.Features.Auth;
+using Clercq.It.Api.Features.Mcp;
 using Clercq.It.Application;
 using Clercq.It.Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -74,25 +75,28 @@ if (useKeycloak)
     var keycloakAuthority = $"{effectiveKeycloakUrl}/realms/{keycloakRealm}";
     var isLocalKeycloak = !string.IsNullOrEmpty(keycloakServiceUrl);
 
-    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
+    void ConfigureBearer(JwtBearerOptions options)
+    {
+        options.Authority = keycloakAuthority;
+        // Keep claim names as Keycloak sends them, so RoleClaimType "roles" matches
+        // (the default inbound map renames "roles" and every role policy would fail).
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            options.Authority = keycloakAuthority;
-            // Keep claim names as Keycloak sends them, so RoleClaimType "roles" matches
-            // (the default inbound map renames "roles" and every role policy would fail).
-            options.MapInboundClaims = false;
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                ValidIssuer = keycloakAuthority,
-                RoleClaimType = "roles" // Use our custom roles claim
-            };
-            // Only disable HTTPS for local development Keycloak
-            options.RequireHttpsMetadata = !isLocalKeycloak;
-        });
+            ValidateIssuer = true,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = keycloakAuthority,
+            RoleClaimType = "roles" // Use our custom roles claim
+        };
+        // Only disable HTTPS for local development Keycloak
+        options.RequireHttpsMetadata = !isLocalKeycloak;
+    }
+
+    builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+        .AddJwtBearer(ConfigureBearer)
+        .AddMcpAuthentication(ConfigureBearer, keycloakAuthority, builder.Configuration["Mcp:PublicBaseUrl"]);
 
     // The admin UI's authorization code + PKCE settings (GET /api/auth/config)
     builder.Services.AddSingleton(new KeycloakClientSettings(
@@ -116,8 +120,19 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
     options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
     options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
+    // The admin pages and what only they need (session check, feature flags): any admin role (issue #454)
+    options.AddPolicy(AuthEndpoints.AdminAreaPolicy, policy => policy
+        .RequireRole("Admin.View", "Blogs.Contributor", "Projects.Contributor", "Certifications.Contributor"));
     // MyZen reaches the owner's own MyZen account, so it has its own role (docs/myzen.md)
     options.AddPolicy(MyZenEndpoints.OwnerPolicy, policy => policy.RequireRole("MyZen.Owner"));
+    // MCP tools have no endpoint filter, so the flag is part of their policy
+    options.AddPolicy(MyZenTools.Policy, policy => policy
+        .RequireRole("MyZen.Owner")
+        .AddRequirements(new FeatureFlagRequirement(MyZenEndpoints.FeatureFlag)));
+    // The MCP server: any content contributor or the MyZen owner; each tool then checks its own role (docs/mcp.md)
+    options.AddPolicy(McpEndpoints.Policy, policy => policy
+        .AddAuthenticationSchemes(McpEndpoints.BearerScheme)
+        .RequireRole("Projects.Contributor", "Certifications.Contributor", "Blogs.Contributor", "MyZen.Owner"));
 });
 
 // Add Clean Architecture layers
@@ -145,6 +160,7 @@ else
 }
 
 builder.Services.AddHostedService<MyZenKeepAliveService>();
+builder.Services.AddContentMcpServer();
 
 var app = builder.Build();
 
@@ -212,7 +228,9 @@ app.MapProjectsEndpoints();
 app.MapBlogsEndpoints();
 app.MapCertificationsEndpoints();
 app.MapMyZenEndpoints();
+app.MapStatisticsEndpoints();
 app.MapFeatureFlagEndpoints();
+app.MapContentMcp();
 
 app.Run();
 

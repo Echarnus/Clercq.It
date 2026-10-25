@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Security.Claims;
 using Clercq.It.Api.FeatureFlags;
 using FluentAssertions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
@@ -52,6 +54,28 @@ public class ConfigurationFeatureFlagsTests
 
         // Assert
         all.Should().BeEquivalentTo(new Dictionary<string, bool> { ["Search"] = true, ["NewBlogEditor"] = false });
+    }
+}
+
+public class FeatureFlagAuthorizationHandlerTests
+{
+    [Theory(DisplayName = "A feature flag requirement holds only while the flag is on")]
+    [InlineData("true", true)]
+    [InlineData("false", false)]
+    public async Task Requirement_FollowsFlag(string value, bool succeeds)
+    {
+        // Arrange
+        var flags = new ConfigurationFeatureFlags(new ConfigurationBuilder()
+            .AddInMemoryCollection([new KeyValuePair<string, string?>("FeatureFlags:MyZen", value)])
+            .Build());
+        var requirement = new FeatureFlagRequirement("MyZen");
+        var context = new AuthorizationHandlerContext([requirement], new ClaimsPrincipal(), resource: null);
+
+        // Act
+        await new FeatureFlagAuthorizationHandler(flags).HandleAsync(context);
+
+        // Assert
+        context.HasSucceeded.Should().Be(succeeds);
     }
 }
 
@@ -112,8 +136,11 @@ public class FeatureFlagEndpointTests(CustomWebApplicationFactory factory)
     [Fact(DisplayName = "GET /api/features returns no flags in production by default")]
     public async Task GetFeatures_NoFlagsConfigured_ReturnsEmpty()
     {
+        // Arrange
+        var client = await factory.CreateClientForUserAsync("admin");
+
         // Act
-        var flags = await factory.CreateClient().GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
+        var flags = await client.GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
 
         // Assert
         flags.Should().BeEmpty();
@@ -128,11 +155,36 @@ public class FeatureFlagEndpointTests(CustomWebApplicationFactory factory)
             builder.UseSetting("FeatureFlags:Search", "true");
             builder.UseSetting("FeatureFlags:NewBlogEditor", "false");
         });
+        var client = app.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", await factory.GetTokenAsync("blogger"));
 
         // Act
-        var flags = await app.CreateClient().GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
+        var flags = await client.GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
 
         // Assert
         flags.Should().BeEquivalentTo(new Dictionary<string, bool> { ["Search"] = true, ["NewBlogEditor"] = false });
+    }
+
+    [Fact(DisplayName = "GET /api/features without a token returns 401, so visitors do not learn the flag names")]
+    public async Task GetFeatures_Anonymous_ReturnsUnauthorized()
+    {
+        // Act
+        var response = await factory.CreateClient().GetAsync("/api/features");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "GET /api/features for a user without an admin role returns 403")]
+    public async Task GetFeatures_UserWithoutRoles_ReturnsForbidden()
+    {
+        // Arrange
+        var client = await factory.CreateClientForUserAsync("test");
+
+        // Act
+        var response = await client.GetAsync("/api/features");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

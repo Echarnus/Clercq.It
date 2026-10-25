@@ -2,6 +2,16 @@
 
 This document provides an overview of the main features available in the Clercq.It application.
 
+## Visitor Statistics
+
+The admin dashboard's **Statistics > Visitors** section shows page views, unique page views and
+unique visitors for the last 7, 30 or 90 days, with a daily trend and the top
+pages. Counting is first-party and cookieless; details in
+[Visitor statistics](./statistics.md).
+
+- `POST /api/stats/pageview` - Count a page view (public, sent by the site)
+- `GET /api/stats?days=30` - Statistics for a period (`Admin.View`)
+
 ## Blog Management
 
 The Blog Management feature allows administrators to create, manage, and publish blog posts with rich markdown content and images.
@@ -11,11 +21,14 @@ The Blog Management feature allows administrators to create, manage, and publish
 - **Image Upload**: Direct image upload to Scaleway Object Storage with automatic URL generation
 - **Tagging System**: Support for up to 10 tags per blog post for better organization and searchability
 - **Public API**: Publicly accessible endpoint for retrieving blog posts
-- **Protected Creation**: Blog creation requires authentication via JWT tokens
+- **Protected Changes**: Creating, updating and deleting needs the `Blogs.Contributor` role
 
 ### API Endpoints
-- `GET /api/blogs` - Retrieve all published blogs (public)
-- `POST /api/blogs` - Create a new blog post with image (authenticated)
+- `GET /api/blogs`, `GET /api/blogs/{id}` - Retrieve blog posts (public)
+- `POST /api/blogs` - Create a blog post with an `image` file (multipart form)
+- `PUT /api/blogs/{id}` - Update a blog post
+- `DELETE /api/blogs/{id}` - Delete a blog post
+- `POST /api/images` - Upload an image for use inside Markdown, returns its URL
 
 ### Validation Rules
 - Title: Required, max 200 characters
@@ -34,30 +47,29 @@ The Blog Management feature allows administrators to create, manage, and publish
 The Project Portfolio feature enables administrators to showcase their work through a structured project catalog with rich descriptions, images, and skill tags.
 
 ### Key Capabilities
-- **Two-Step Creation**: Separate image upload and project creation for better control
 - **Project Timeline**: Start and end date tracking for each project
 - **Featured Projects**: Mark important projects as featured for homepage display
 - **Skills Tracking**: Associate projects with relevant technologies and skills
 - **Rich Descriptions**: Full markdown support for detailed project documentation
 
 ### API Endpoints
-- `GET /api/projects` - Retrieve all projects (public)
+- `GET /api/projects`, `GET /api/projects/{id}` - Retrieve projects (public)
 - `GET /api/projects/featured` - Retrieve only featured projects (public)
-- `POST /api/projects/images` - Upload a project image (authenticated)
-- `POST /api/projects` - Create a new project (authenticated)
+- `POST /api/projects` - Create a project (multipart form, optional `image` file; `Projects.Contributor`)
+- `PUT /api/projects/{id}` - Update a project (`Projects.Contributor`). Send a new `image` file to replace the image, or `removeImage=true` to clear it; send neither to keep it
+- `DELETE /api/projects/{id}` - Delete a project (`Projects.Contributor`)
 
 ### Validation Rules
 - Title: Required, max 200 characters
 - Short description: Required, max 500 characters
 - Long description: Required, max 50,000 characters, supports full markdown
-- Image URL: Required, must be a valid HTTP/HTTPS URL from the image upload endpoint
+- Image: Optional. A project without an image shows no picture on the site
 - Start/End dates: Required, valid ISO 8601 format, end date must be >= start date
 - Skills: At least 1 skill required, maximum 20 skills
 - Featured flag: Optional, defaults to false
 
-### Workflow
-1. Upload project image via `POST /api/projects/images` to get the image URL
-2. Create project with the returned image URL via `POST /api/projects`
+### Admin image field
+In the admin project dialog, the red X on the current image removes it; saving then stores the project without an image (issue #405). Blog posts and certifications need an image, so their dialogs show **Replace image** instead of an X. The `/placeholder.svg` import default counts as no image.
 
 ### Storage
 - Project images stored separately in Scaleway Object Storage
@@ -70,15 +82,7 @@ The Admin Backoffice is a secure, role-based content management system accessibl
 
 ### Authentication
 
-The system uses **Cloud IAM (KeyCloak-based) Identity as a Service** for comprehensive authentication:
-
-#### Supported Authentication Methods
-1. **Username/Password Login**: Credentials-based authentication with automatic MFA detection. This is the only login method.
-
-#### Multi-Factor Authentication (MFA)
-- Automatic detection of MFA-enabled accounts
-- TOTP (Time-based One-Time Password) support via authenticator apps
-- Dynamic UI that shows MFA input only when required
+The system uses **Cloud IAM (hosted Keycloak)** for authentication. **Sign In** on `/admin` sends the browser to Keycloak's login page (authorization code flow with PKCE); Keycloak handles the password, MFA (TOTP) and brute-force protection, then returns to `/admin/callback`. The site never sees a password. Details: [Cloud IAM](./ciam.md).
 
 ### User Management
 
@@ -90,21 +94,29 @@ Registration is closed. The owner creates admin users and assigns roles in the C
 
 #### Role-Based Access Control (RBAC)
 
-The system implements fine-grained permissions through three distinct roles:
+The system implements fine-grained permissions through five realm roles:
 
-- **`Admin.View`**: Access admin area and view content
+- **`Admin.View`**: Access admin area, overview, statistics and settings
 - **`Blogs.Contributor`**: Create, edit, and delete blog posts
 - **`Projects.Contributor`**: Create, edit, and delete projects
-
-Users can have individual roles or be added to an "Admin" group that includes all three roles.
+- **`Certifications.Contributor`**: Create, edit, and delete certifications
+- **`MyZen.Owner`**: The owner's MyZen section (owner only)
 
 ### Dashboard Features
 
-The admin dashboard provides role-based tab visibility:
-- **Overview**: Visible to users with `Admin.View` role
-- **Blogs**: Visible to users with `Blogs.Contributor` role
-- **Projects**: Visible to users with `Projects.Contributor` role
-- **Settings**: Visible to users with `Admin.View` role
+The admin dashboard has a side menu with groups (issue #449). Each section has its own URL, so a link or a reload opens it directly (after sign-in if needed). The menu shows only the sections your roles open:
+
+| Group | Section | URL | Role |
+| --- | --- | --- | --- |
+| | **Overview** | `/admin/dashboard` | `Admin.View` |
+| Portfolio | **Blogs** | `/admin/dashboard/blogs` | `Blogs.Contributor` |
+| Portfolio | **Projects** | `/admin/dashboard/projects` | `Projects.Contributor` |
+| Portfolio | **Certifications** | `/admin/dashboard/certifications` | `Certifications.Contributor` |
+| Statistics | **Visitors** | `/admin/dashboard/visitors` | `Admin.View` |
+| Administration | **MyZen** | `/admin/dashboard/myzen` | `MyZen.Owner`, while the `MyZen` feature flag is on |
+| Administration | **Settings** | `/admin/dashboard/settings` | `Admin.View` |
+
+Without `Admin.View`, `/admin/dashboard` opens the first section you can use. Layout and how to add a section: [UX: admin navigation](./ux.md#admin-navigation).
 
 ### Security Features
 - Sign-in with the authorization code flow and PKCE: Keycloak (Cloud IAM) shows the login page, including MFA; the site never sees a password (issue #257)
@@ -114,8 +126,8 @@ The admin dashboard provides role-based tab visibility:
 - No access for users without assigned roles
 
 ### Protected Routes
-All blog and project creation/modification endpoints require valid JWT tokens with appropriate roles.
+Every create, update and delete endpoint, and every MyZen and statistics read, needs a valid token with the matching role. The full list is in [Architecture](./architecture.md#api-endpoints).
 
 ## MyZen time registration
 
-The owner can connect his own MyZen (TrustTeam / Billit) account from the admin dashboard and see his MyZen projects and time entries on clercq.it. He types MyZen's CAPTCHA and MFA code himself; the site keeps the session and shows **Reconnect MyZen** when MyZen ends it. Owner only (`MyZen.Owner`), behind the `MyZen` feature flag. Details: [MyZen](./myzen.md).
+The owner can connect his own MyZen (TrustTeam / Billit) account from the admin dashboard, see his MyZen projects and time entries on clercq.it, and add, edit and delete entries one at a time. He types MyZen's CAPTCHA and MFA code himself; the site keeps the session and shows **Reconnect MyZen** when MyZen ends it. Owner only (`MyZen.Owner`), behind the `MyZen` feature flag. Details: [MyZen](./myzen.md).

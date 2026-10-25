@@ -17,9 +17,12 @@ We take the security of Clercq.It seriously. If you believe you have found a sec
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them via:
-- **Email**: Send details to the repository owner
-- **GitHub Security Advisories**: Use the [Security tab](https://github.com/Echarnus/Clercq.It/security/advisories) to privately report vulnerabilities
+Instead, report them privately through GitHub private vulnerability reporting:
+
+- **Report a vulnerability**: https://github.com/Echarnus/Clercq.It/security/advisories/new
+- How it works: [Privately reporting a security vulnerability](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability)
+
+Only the maintainer sees the report until an advisory is published.
 
 ### What to Include
 
@@ -63,7 +66,7 @@ The project uses multiple automated security scanning tools:
   - Integrated into build pipeline
 
 #### Secret Detection
-- **TruffleHog**: Scans for accidentally committed secrets and credentials
+- **gitleaks** (`.github/workflows/sast.yml`): Scans every PR's commits and the full history on `main` for committed secrets; blocking
 - **GitHub Secret Scanning**: Native GitHub secret detection
 
 #### Security Scoring & Compliance
@@ -78,15 +81,15 @@ The project uses multiple automated security scanning tools:
 ### CI/CD Security
 
 - **Build Attestation**: All container images have signed build provenance
-- **Multi-platform Builds**: Support for AMD64 and ARM64 architectures
+- **Single platform**: `linux/amd64`, the architecture Scaleway serverless containers run
 - **Least Privilege**: GitHub Actions use minimal required permissions
-- **Secret Management**: Sensitive data stored in GitHub Secrets
+- **Secret Management**: Application secrets in Scaleway Secret Manager, pipeline credentials in GitHub Secrets (see [Secrets](./docs/secrets.md))
 - **Automated Scanning**: Security scans run on every push and pull request
 
 ### Container Security
 
 - **Non-root Execution**: Containers run with non-privileged users
-- **Minimal Base Images**: Alpine and Debian slim-based images with minimal packages
+- **Minimal Base Images**: Debian slim based images (`node:24-slim`, `nginx:1.30-trixie`), pinned by digest
 - **Health Checks**: Built-in container health monitoring
 - **Image Signing**: Container images are signed with attestations
 
@@ -221,8 +224,8 @@ Current security posture: [![OpenSSF Scorecard](https://api.securityscorecards.d
 
 ## Contact
 
-For security concerns, please contact the repository maintainers through GitHub Security Advisories or via the repository owner's contact information.
+For security concerns, open a private report at https://github.com/Echarnus/Clercq.It/security/advisories/new. Published advisories are listed at https://github.com/Echarnus/Clercq.It/security/advisories.
 
 ---
 
-**Last Updated**: 2024-01-08
+**Last Updated**: 2026-10-24

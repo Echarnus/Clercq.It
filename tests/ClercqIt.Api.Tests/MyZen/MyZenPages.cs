@@ -84,4 +84,8 @@ internal static class MyZenPages
         </tbody></table>
         <ul class="pagination">{string.Concat(pages.Select(p => $"<li><a data-page=\"{p}\">{p + 1}</a></li>"))}</ul>
         """;
+
+    public const string ProjectSuggestions = """
+        [{"value":"20788","label":"Acme Website[~][~]777[~]Acme NV"},{"value":23200,"label":"Vakantie[~][~][~]"}]
+        """;
 }

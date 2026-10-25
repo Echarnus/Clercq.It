@@ -152,36 +152,16 @@ The build workflow generates an idempotent migration SQL script:
 
 ### Deploy Workflow (`deploy.yml`)
 
-The deploy workflow executes the migration script on the production database. Migration steps only run when the deploy workflow is triggered by the `build` workflow (not when triggered by the `Deploy Infra` workflow):
+The deploy workflow downloads `migration.sql` from the `build` run that triggered it and runs it twice with `psql -v ON_ERROR_STOP=1`:
 
-```yaml
-- name: Download migration script
-  if: >-
-    github.event_name == 'workflow_run' &&
-    github.event.workflow_run.name == 'build'
-  uses: actions/download-artifact@v8
-  with:
-    name: migration-script
-    github-token: ${{ secrets.GITHUB_TOKEN }}
-    run-id: ${{ github.event.workflow_run.id }}
+1. **Verify** (`Verify: migrate database`): against `clercqit_verify` as `clercqit_verify_user`, with the password from the Terraform output `verify_database_password`. A failure stops the run before production is touched ([Verify stage](./devops.md#verify-stage)).
+2. **Production** (`Execute database migrations`): against `clercqit_portfolio` as `clercqit_user`, with the password from the Terraform output `database_migrator_password`.
 
-- name: Execute database migrations
-  if: >-
-    github.event_name == 'workflow_run' &&
-    github.event.workflow_run.name == 'build'
-  run: |
-    # Get database credentials from Terraform outputs
-    terraform init
-    DB_HOST=$(terraform output -raw database_endpoint)
-    DB_PORT=$(terraform output -raw database_port)
-    DB_NAME=$(terraform output -raw database_name)
-    
-    # Execute migration script
-    PGPASSWORD="$DB_PASSWORD" psql -h "$DB_HOST" -p "$DB_PORT" \
-      -U "$DB_USER" -d "$DB_NAME" -f migration.sql
-```
+After each run, the same login runs `infra/sql/grant-app-user.sql`, so the runtime login (`clercqit_verify_app`, `clercqit_app`) can use new tables. Both runs use TLS with the pinned instance certificate (`PGSSLMODE=verify-ca`).
 
-**Note:** Migrations are only executed when the deploy workflow is triggered by the `build` workflow. When triggered by the `Deploy Infra` workflow or manually, migrations are skipped.
+The host, port and database names come from the Terraform outputs (`database_endpoint`, `database_port`, `database_name`, `verify_database_name`), read once in the `Read infrastructure outputs` step. Sensitive values are masked in the log.
+
+**Note:** Migrations run only when `deploy.yml` is triggered by the `build` workflow. A manual deploy (`workflow_dispatch`) skips them, and the content import too.
 
 ### Database Connection (Production)
 
@@ -209,7 +189,8 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   is_ha_cluster  = false
   disable_backup = false
   user_name      = "clercqit_admin"
-  password       = var.database_password
+  password       = local.secrets["db-app-password"]
+  load_balancer {}
 }
 
 resource "scaleway_rdb_database" "portfolio_app_db" {
@@ -220,7 +201,7 @@ resource "scaleway_rdb_database" "portfolio_app_db" {
 resource "scaleway_rdb_user" "portfolio_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
-  password    = var.database_password
+  password    = local.secrets["db-app-password"]
   is_admin    = false
 }
 
@@ -233,10 +214,11 @@ resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
 ```
 
 **Key Points:**
-- The `clercqit_admin` user is the instance admin created during database instance creation
-- The `clercqit_user` is the application user with limited privileges (non-admin)
-- The `scaleway_rdb_privilege` resource grants the application user full permissions (CONNECT, CREATE, etc.) on the `clercqit_portfolio` database
-- This privilege grant is essential for running migrations and accessing the database from the application
+- The migration login's password comes from the `db-app-password` secret in Scaleway Secret Manager ([Secrets](./secrets.md)); `DATABASE_PASSWORD` only seeded it
+- The `clercqit_admin` user is the instance admin. Nothing uses it; its password is write-only and not stored anywhere.
+- `clercqit_user` is the **migration login**: it owns the schema and runs `migration.sql` in `deploy.yml`. No container has its password.
+- `clercqit_app` is the **runtime login** the site and the content import use: rows only, no DDL. After each migration `deploy.yml` runs `infra/sql/grant-app-user.sql` so it can use new tables.
+- All connections require TLS and pin the instance certificate. See [Secrets](./secrets.md#database-logins).
 
 ### Accessing Production Database
 
@@ -253,9 +235,10 @@ For troubleshooting or manual operations:
    cd infra/terraform
    terraform output database_endpoint
    terraform output database_port
-   
-   # Connect
-   psql -h <endpoint> -p <port> -U clercqit_user -d clercqit_portfolio
+   terraform output -raw database_ca_certificate > rdb-ca.pem
+
+   # Connect (TLS with the pinned certificate; use clercqit_app for read/write only)
+   PGSSLMODE=verify-ca PGSSLROOTCERT=rdb-ca.pem psql -h <endpoint> -p <port> -U clercqit_user -d clercqit_portfolio
    ```
 
 3. **Via Migration Console (Manual):**
@@ -285,7 +268,7 @@ For troubleshooting or manual operations:
 **Problem:** "Could not connect to database" errors.
 
 **Solution:**
-1. Check Aspire is running: `http://localhost:15888`
+1. Check Aspire is running: the dashboard at `https://localhost:17266`
 2. Verify PostgreSQL service is healthy in dashboard
 3. Check connection string in migration console logs
 
@@ -316,7 +299,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 2. Verify "Generate migration SQL script" step succeeded
 3. Ensure artifact was uploaded (check workflow logs)
 4. Verify deploy workflow has `actions: read` permission to access artifacts from the build workflow
-5. Ensure the deploy workflow was triggered by the `build` workflow, not the `Deploy Infra` workflow (migrations are only downloaded when triggered by build)
+5. Ensure the deploy workflow was triggered by the `build` workflow, not by hand (a manual deploy skips migrations)
 
 #### Migration Execution Failed
 
@@ -324,7 +307,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 
 **Solution:**
 1. Check Terraform outputs are accessible
-2. Verify database credentials secret (`DATABASE_PASSWORD`)
+2. Check the Terraform outputs `database_migrator_user` and `database_migrator_password` (Secret Manager `db-app-password`)
 3. Review migration SQL for syntax errors
 4. Check database logs in Scaleway console
 
@@ -333,7 +316,7 @@ dotnet ef migrations add YourMigrationName --startup-project ../ClercqIt.Api
 **Problem:** Migration fails with "User does not have CONNECT privilege" or similar permission errors.
 
 **Solution:**
-1. Ensure the `scaleway_rdb_privilege` resource is defined in Terraform (grants `clercqit_user` permissions on `clercqit_portfolio` database)
+1. Ensure the `scaleway_rdb_privilege` resources are defined in Terraform (`all` for the migration login `clercqit_user`, `readwrite` for the runtime login `clercqit_app`). A runtime "permission denied" on a new table means `infra/sql/grant-app-user.sql` did not run after the migration.
 2. Run the infrastructure workflow to apply the privilege changes
 3. Verify the user has the correct permissions by connecting to the database with an admin user and checking privileges:
    ```sql
@@ -361,7 +344,7 @@ The following secrets must be configured in GitHub repository settings:
 | `SCALEWAY_SECRET_KEY` | Scaleway API secret key | Infrastructure, Deploy |
 | `SCALEWAY_ORGANIZATION_ID` | Scaleway organization ID | Infrastructure, Deploy |
 | `SCALEWAY_PROJECT_ID` | Scaleway project ID | Infrastructure, Deploy |
-| `DATABASE_PASSWORD` | PostgreSQL database password | Infrastructure, Deploy |
+| `DATABASE_PASSWORD` | Seed for the migration login's secret (`db-app-password`) on first creation | Infrastructure |
 
 ## Manual Migration Rollback
 
@@ -374,7 +357,7 @@ cd src/Clercq.It.Infrastructure
 
 # Rollback to specific migration
 dotnet ef database update PreviousMigrationName --startup-project ../ClercqIt.Api \
-  --connection "Host=<prod-host>;Port=<port>;Database=clercqit_portfolio;Username=clercqit_user;Password=<password>"
+  --connection "Host=<prod-host>;Port=<port>;SSL Mode=Require;Database=clercqit_portfolio;Username=clercqit_user;Password=<password>"
 ```
 
 ### Option 2: Via SQL Script
@@ -385,7 +368,7 @@ cd src/Clercq.It.Infrastructure
 dotnet ef migrations script CurrentMigration PreviousMigration --startup-project ../ClercqIt.Api
 
 # Execute manually via psql
-PGPASSWORD="<password>" psql -h <host> -p <port> -U clercqit_user -d clercqit_portfolio -f rollback.sql
+PGSSLMODE=verify-ca PGSSLROOTCERT=rdb-ca.pem PGPASSWORD="<password>" psql -h <host> -p <port> -U clercqit_user -d clercqit_portfolio -f rollback.sql
 ```
 
 ### Option 3: Remove Migration (Development Only)
@@ -453,17 +436,16 @@ dotnet ef migrations remove --startup-project ../ClercqIt.Api
 │  deploy.yml (triggered by build.yml completion)                   │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │ 1. Download migration script artifact (from build)        │  │
-│  │ 2. Get DB credentials from Terraform outputs             │  │
-│  │ 3. Execute migration script on Scaleway PostgreSQL       │  │
-│  │ 4. Deploy container to Scaleway                          │  │
-│  │ 5. Run health checks                                     │  │
+│  │ 2. Read DB host and names from Terraform outputs          │  │
+│  │ 3. Migrate the verify database, deploy and smoke-test     │  │
+│  │ 4. Migrate the production database                        │  │
+│  │ 5. Deploy container to Scaleway, smoke test               │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
-│  deploy.yml (triggered by Deploy Infra completion)               │
+│  deploy.yml (manual workflow_dispatch)                            │
 │  ┌──────────────────────────────────────────────────────────┐  │
-│  │ 1. Deploy container to Scaleway                          │  │
-│  │ 2. Run health checks                                     │  │
-│  │    (migrations skipped - no artifact available)           │  │
+│  │ 1. Deploy the chosen version (verify, then production)    │  │
+│  │    (migrations and content import skipped)                │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                   │
 └─────────────────────────────────────────────────────────────────┘

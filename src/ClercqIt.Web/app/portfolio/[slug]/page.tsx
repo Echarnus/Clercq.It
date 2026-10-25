@@ -6,33 +6,58 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
 import { ArrowLeft, Calendar } from "lucide-react";
-import { fetchProjectById } from "../lib/api";
+import { fetchProjectBySegment } from "../lib/api";
 import { Markdown } from "@/components/markdown";
-import { notFound } from "next/navigation";
 import { imageOrNone } from "@/lib/utils";
+import { JsonLd } from "@/components/json-ld";
+import { notFound, permanentRedirect } from "next/navigation";
+import {
+  absoluteUrl,
+  breadcrumbJsonLd,
+  metaDescription,
+  pageMetadata,
+  personJsonLd,
+  projectPath,
+} from "@/lib/seo";
 
 interface PortfolioDetailPageProps {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }
 
 // The page and its metadata need the same item; cache() fetches it once per request.
-const getProject = cache(fetchProjectById);
+const getProject = cache(fetchProjectBySegment);
 
 export async function generateMetadata({ params }: PortfolioDetailPageProps): Promise<Metadata> {
-  const { id } = await params;
-  const project = await getProject(id);
-  return project ? { title: project.title, description: project.shortDescription } : {};
+  const { slug } = await params;
+  const project = await getProject(slug);
+  if (!project) return {};
+
+  const description = metaDescription(project.shortDescription || project.longDescription);
+  const path = projectPath(project);
+  return pageMetadata({
+    title: project.title,
+    description,
+    path,
+    type: "article",
+    image: imageOrNone(project.image),
+  });
 }
 
 export default async function PortfolioDetailPage({ params }: PortfolioDetailPageProps) {
-  const { id } = await params;
-  const project = await getProject(id);
+  const { slug } = await params;
+  const project = await getProject(slug);
 
   if (!project) {
     notFound();
   }
 
   const image = imageOrNone(project.image);
+
+  // Old GUID links and stale slugs move permanently to the canonical URL.
+  const path = projectPath(project);
+  if (`/portfolio/${slug}` !== path) {
+    permanentRedirect(path);
+  }
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -43,6 +68,27 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
   return (
     <PageContainer as="section" className="py-16">
+      <JsonLd
+        data={[
+          {
+            "@type": "CreativeWork",
+            "@id": absoluteUrl(path),
+            url: absoluteUrl(path),
+            name: project.title,
+            headline: project.title,
+            description: metaDescription(project.shortDescription || project.longDescription),
+            dateCreated: project.startDate,
+            ...(image ? { image: absoluteUrl(image) } : {}),
+            keywords: project.skills.join(", "),
+            author: personJsonLd(),
+          },
+          breadcrumbJsonLd([
+            { name: "Home", path: "/" },
+            { name: "Portfolio", path: "/portfolio" },
+            { name: project.title, path },
+          ]),
+        ]}
+      />
       <Button asChild variant="ghost" className="mb-8">
         <Link href="/portfolio">
           <ArrowLeft className="mr-2 h-4 w-4" />
@@ -57,7 +103,7 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
         </h1>
 
         {/* Project details */}
-        <aside className="lg:col-start-4 lg:row-span-2 lg:row-start-1">
+        <aside className="lg:col-start-4 lg:row-start-2">
           <div className="space-y-4 rounded-lg bg-white/80 p-6 shadow-lg backdrop-blur-xs lg:sticky lg:top-28 dark:bg-slate-800/80">
             <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
               <Calendar className="h-4 w-4 shrink-0" />

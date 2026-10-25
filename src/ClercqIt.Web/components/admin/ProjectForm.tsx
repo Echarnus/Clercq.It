@@ -32,6 +32,7 @@ const projectFormSchema = z.object({
     .min(1, "Long description is required")
     .max(50000, "Long description must not exceed 50,000 characters"),
   image: z.instanceof(File).nullable(),
+  removeImage: z.boolean(),
   startDate: z.string().min(1, "Start date is required"),
   endDate: z.string().min(1, "End date is required"),
   featured: z.boolean(),
@@ -65,6 +66,7 @@ export function ProjectForm({
       shortDescription: project?.shortDescription || "",
       longDescription: project?.longDescription || "",
       image: null,
+      removeImage: false,
       startDate: project?.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
       endDate: project?.endDate ? new Date(project.endDate).toISOString().split("T")[0] : "",
       featured: project?.featured || false,
@@ -142,10 +144,13 @@ export function ProjectForm({
                   value={field.value}
                   onChange={field.onChange}
                   existingImageUrl={project?.image || undefined}
+                  onRemoveExisting={() => form.setValue("removeImage", true)}
                   label="Project Image (Optional)"
                 />
               </FormControl>
-              <FormDescription>Leave empty to use a placeholder image.</FormDescription>
+              <FormDescription>
+                Optional. Without an image the project shows no picture on the site.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

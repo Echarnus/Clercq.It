@@ -165,6 +165,83 @@ namespace Clercq.It.Infrastructure.EF.Migrations
                     b.ToTable("MyZenSessions", (string)null);
                 });
 
+            modelBuilder.Entity("Clercq.It.Infrastructure.Statistics.StatsDailyPageRecord", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Path")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<long>("UniqueViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Views")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Day", "Path");
+
+                    b.ToTable("StatsDailyPages", (string)null);
+                });
+
+            modelBuilder.Entity("Clercq.It.Infrastructure.Statistics.StatsDayRecord", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<long>("UniqueViews")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Views")
+                        .HasColumnType("bigint");
+
+                    b.Property<long>("Visitors")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Day");
+
+                    b.ToTable("StatsDays", (string)null);
+                });
+
+            modelBuilder.Entity("Clercq.It.Infrastructure.Statistics.StatsPageVisitRecord", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Path")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("VisitorHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
+
+                    b.Property<int>("Views")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Day", "Path", "VisitorHash");
+
+                    b.ToTable("StatsPageVisits", (string)null);
+                });
+
+            modelBuilder.Entity("Clercq.It.Infrastructure.Statistics.StatsSaltRecord", b =>
+                {
+                    b.Property<DateOnly>("Day")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character(64)")
+                        .IsFixedLength();
+
+                    b.HasKey("Day");
+
+                    b.ToTable("StatsSalts", (string)null);
+                });
+
             modelBuilder.Entity("Clercq.It.Domain.Entities.Blog", b =>
                 {
                     b.OwnsOne("Clercq.It.Domain.ValueObjects.Tags", "Tags", b1 =>

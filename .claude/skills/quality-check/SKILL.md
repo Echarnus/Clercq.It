@@ -1,6 +1,6 @@
 ---
 name: quality-check
-description: Run every gate a Clercq.It PR needs (docs check, dotnet format/build/tests with coverage, ESLint, Prettier, tsc, Vitest, next build, terraform fmt/validate) and report a pass/fail table. Use before opening or updating a PR, and when asked whether a change is done.
+description: Run every gate a Clercq.It PR needs (docs check, dotnet format/build/tests with coverage, ESLint, Prettier, tsc, Vitest, next build, public bundle check, terraform fmt/validate) and report a pass/fail table. Use before opening or updating a PR, and when asked whether a change is done.
 ---
 
 # Quality check

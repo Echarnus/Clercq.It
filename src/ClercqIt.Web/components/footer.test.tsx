@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { project } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
 import { Footer } from "./footer";
+import { projectPath } from "@/lib/seo";
 
 describe("Footer", () => {
   it("lists featured projects above a link to all projects", async () => {
@@ -16,7 +17,7 @@ describe("Footer", () => {
     );
     expect(await screen.findByRole("link", { name: project.title })).toHaveAttribute(
       "href",
-      `/portfolio/${project.id}`,
+      projectPath(project),
     );
     expect(screen.getByRole("link", { name: "View all projects" })).toBeInTheDocument();
   });

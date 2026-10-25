@@ -4,10 +4,16 @@ import { PageContainer } from "@/components/page-container";
 import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BlurImage } from "@/components/ui/blur-image";
-import { imageOrNone } from "@/lib/utils";
 import { fetchAllProjects } from "./lib/api";
+import { imageOrNone } from "@/lib/utils";
+import { pageMetadata, projectPath } from "@/lib/seo";
 
-export const metadata: Metadata = { title: "Portfolio" };
+export const metadata: Metadata = pageMetadata({
+  title: "Portfolio",
+  description:
+    "Projects by Kenneth De Clercq in solution architecture, .NET and TypeScript development and cloud technologies.",
+  path: "/portfolio",
+});
 
 export default async function PortfolioPage() {
   const projects = await fetchAllProjects();
@@ -19,9 +25,9 @@ export default async function PortfolioPage() {
         <div className="max-w-3xl">
           <h1 className="mb-6 text-4xl font-bold text-slate-900 dark:text-white">My Portfolio</h1>
           <p className="text-xl leading-relaxed text-slate-600 dark:text-slate-300">
-            A collection of projects showcasing my expertise in full-stack development, cloud
-            technologies, and modern software architecture. Each project demonstrates different
-            aspects of my technical skills and problem-solving approach.
+            A collection of projects showcasing my expertise in solution architecture, software
+            development and cloud technologies. Each project demonstrates different aspects of my
+            technical skills and problem-solving approach.
           </p>
         </div>
       </PageContainer>
@@ -38,7 +44,7 @@ export default async function PortfolioPage() {
               projects.map((project) => {
                 const image = imageOrNone(project.image);
                 return (
-                  <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
+                  <Link key={project.id} href={projectPath(project)} className="block">
                     <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl md:flex md:flex-row dark:bg-slate-800/80 dark:shadow-slate-900/20">
                       {image && (
                         <BlurImage

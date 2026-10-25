@@ -39,12 +39,12 @@ This action takes GitVersion outputs and calculates a clean semantic version usi
 
 ```yaml
 - name: Install GitVersion
-  uses: gittools/actions/gitversion/setup@v4
+  uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
   with:
     versionSpec: '6.8.x'
 
 - name: Determine Version
-  uses: gittools/actions/gitversion/execute@v4
+  uses: gittools/actions/gitversion/execute@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
   id: gitversion
 
 - name: Calculate commit-based version

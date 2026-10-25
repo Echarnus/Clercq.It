@@ -1,12 +1,14 @@
 using Amazon.Runtime;
 using Amazon.S3;
 using Clercq.It.Application.Features.MyZen;
+using Clercq.It.Application.Features.Statistics;
 using Clercq.It.Domain.Abstractions;
 using Clercq.It.Infrastructure.Configuration;
 using Clercq.It.Infrastructure.Data;
 using Clercq.It.Infrastructure.MyZen;
 using Clercq.It.Infrastructure.Repositories;
 using Clercq.It.Infrastructure.Services;
+using Clercq.It.Infrastructure.Statistics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -28,10 +30,12 @@ public static class DependencyInjection
             // NOTE: MigrationsAssembly is configured for EF Core tooling (dotnet ef) only.
             // Migrations are NEVER executed at runtime in production.
             // Production migrations are applied via SQL scripts in the deployment pipeline.
+            var caCertificate = configuration[DatabaseTls.CaCertificateKey];
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseNpgsql(
                     configuration.GetConnectionString("DefaultConnection"),
-                    x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+                    x => x.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)
+                        .ConfigureDataSource(dataSource => DatabaseTls.Configure(dataSource, caCertificate))));
         }
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -77,6 +81,10 @@ public static class DependencyInjection
         services.AddSingleton<IMyZenHttpHandlerFactory, MyZenHttpHandlerFactory>();
         services.AddScoped<IMyZenSessionStore, EfMyZenSessionStore>();
         services.AddScoped<IMyZenGateway, MyZenGateway>();
+
+        // Visitor statistics (issue #429, docs/statistics.md)
+        services.AddSingleton<StatisticsState>();
+        services.AddScoped<ISiteStatistics, EfSiteStatistics>();
 
         return services;
     }

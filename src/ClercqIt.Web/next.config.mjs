@@ -4,6 +4,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Never publish source maps of the browser code (issue #454); the public-bundle check
+  // (scripts/check-public-bundle.mjs) fails the build if any .map file ships.
+  productionBrowserSourceMaps: false,
   // Bank-grade security headers
   async headers() {
     const isDevelopment = process.env.NODE_ENV === "development";

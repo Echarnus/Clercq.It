@@ -20,23 +20,26 @@ env:
   TF_IN_AUTOMATION: true
   TF_INPUT: false
 
+# Read-only by default; the plan job asks for write access to comment on the PR (#397).
 permissions:
   contents: read
-  pull-requests: write
-  issues: write
 
 jobs:
   terraform-plan:
     name: Terraform Plan
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
     if: github.event_name == 'pull_request'
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
@@ -92,13 +95,12 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
-          TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
-          TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
+          TF_VAR_terraform_access_key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
 
       - name: Comment PR
         if: always()
         continue-on-error: true
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
             const fs = require('fs');
@@ -148,10 +150,10 @@ jobs:
     
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v4
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
@@ -196,8 +198,7 @@ jobs:
           TF_VAR_database_password: ${{ secrets.DATABASE_PASSWORD }}
           TF_VAR_keycloak_base_url: ${{ secrets.KEYCLOAK_BASE_URL }}
           TF_VAR_keycloak_realm: ${{ secrets.KEYCLOAK_REALM || 'clercqit' }}
-          TF_VAR_keycloak_admin_client_secret: ${{ secrets.KEYCLOAK_ADMIN_CLIENT_SECRET }}
-          TF_VAR_administration_database_password: ${{ secrets.ADMINISTRATION_DATABASE_PASSWORD }}
+          TF_VAR_terraform_access_key: ${{ secrets.SCALEWAY_ACCESS_KEY }}
 
       - name: Terraform Output
         if: success()
@@ -205,9 +206,11 @@ jobs:
           cd infra/terraform
           echo "## 🎉 Infrastructure Deployment Successful" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### Outputs:" >> $GITHUB_STEP_SUMMARY
+          echo "### Outputs (sensitive outputs left out):" >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
-          terraform output -json >> $GITHUB_STEP_SUMMARY
+          # Never print sensitive outputs: `terraform output -json` shows them in
+          # plain text, and this repository's job summaries are public (#435).
+          terraform output -json | jq 'with_entries(select(.value.sensitive | not) | .value |= .value)' >> $GITHUB_STEP_SUMMARY
           echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.SCALEWAY_ACCESS_KEY }}

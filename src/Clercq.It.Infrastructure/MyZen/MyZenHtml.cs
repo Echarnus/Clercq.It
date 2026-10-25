@@ -25,6 +25,7 @@ public static class MyZenHtml
     public const string DateFormat = "dd/MM/yyyy";
 
     private static readonly HtmlParser Parser = new();
+    private static readonly string[] ErrorProperties = ["Message", "Error", "ErrorMessage"];
 
     public static MyZenLoginPage ParseLoginPage(string html)
     {
@@ -172,6 +173,78 @@ public static class MyZenHtml
         }
 
         return (projects, HasPage(document, page + 1));
+    }
+
+    /// <summary>
+    /// Reads MyZen's project lookup: <c>[{ value: id, label }]</c>, where the label is
+    /// <c>Name[~]...[~]CustomerID[~]CustomerName</c>.
+    /// </summary>
+    public static IReadOnlyList<MyZenProjectOptionDto> ParseProjectSuggestions(string json)
+    {
+        try
+        {
+            using var document = JsonDocument.Parse(json);
+            if (document.RootElement.ValueKind != JsonValueKind.Array)
+            {
+                return [];
+            }
+
+            var options = new List<MyZenProjectOptionDto>();
+            foreach (var item in document.RootElement.EnumerateArray())
+            {
+                if (item.ValueKind != JsonValueKind.Object
+                    || !item.TryGetProperty("value", out var value)
+                    || ParseId(value.ValueKind == JsonValueKind.Number ? value.GetRawText() : value.GetString()) is not { } id)
+                {
+                    continue;
+                }
+
+                var label = item.TryGetProperty("label", out var l) && l.ValueKind == JsonValueKind.String ? l.GetString()! : string.Empty;
+                var parts = label.Split("[~]");
+                var customerId = parts.Skip(1).Select(ParseId).FirstOrDefault(p => p is not null);
+                var customer = parts.Length > 2 && ParseId(parts[^1]) is null ? Clean(parts[^1]) : string.Empty;
+                options.Add(new MyZenProjectOptionDto(id, Clean(parts[0]), customerId, customer));
+            }
+            return options;
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>Reads MyZen's answer to a save or delete.</summary>
+    /// <returns>MyZen's reason when it refused the change, or null when it accepted it.</returns>
+    public static string? ParseChangeError(string body)
+    {
+        var trimmed = body.TrimStart();
+        if (trimmed.StartsWith('{'))
+        {
+            try
+            {
+                using var json = JsonDocument.Parse(trimmed);
+                var root = json.RootElement;
+                if (root.TryGetProperty("Success", out var success) && success.ValueKind == JsonValueKind.False)
+                {
+                    var message = ErrorProperties
+                        .Select(name => root.TryGetProperty(name, out var m) && m.ValueKind == JsonValueKind.String ? m.GetString() : null)
+                        .FirstOrDefault(m => !string.IsNullOrWhiteSpace(m));
+                    return Truncate(Clean(message ?? "MyZen refused the change."), 300);
+                }
+                return null;
+            }
+            catch (JsonException)
+            {
+                return null;
+            }
+        }
+
+        var error = Parser.ParseDocument(body)
+            .QuerySelectorAll(".field-validation-error, .validation-summary-errors li, .alert-danger:not(.d-none)")
+            .Select(e => Clean(e.TextContent))
+            .Where(text => text.Length > 0)
+            .ToList();
+        return error.Count == 0 ? null : Truncate(string.Join(" ", error.Distinct()), 300);
     }
 
     private static bool HasPage(IDocument document, int page) =>

@@ -6,7 +6,7 @@ This document describes how to configure [Cloud IAM](https://www.cloud-iam.com) 
 
 Because Cloud IAM is standard Keycloak, local development (the Aspire Keycloak container) and production use the same code; the only difference is the base URL.
 
-The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`.
+The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`. After sign-in the web server keeps a short-lived admin session cookie and only serves `/admin/dashboard` while `GET /api/auth/session` accepts it; an account without one of the four admin roles gets "Your account has no access to the admin." ([application-security.md](./application-security.md#admin-pages)).
 
 ## Current Deployment
 
@@ -44,6 +44,16 @@ Create a new realm named `clercqit` with the following settings (matching the lo
 
 Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) directly via the admin console under **Realm Settings > Action > Partial import**, then adjust client redirect URIs for production. This is how the current deployment was built: a copy of that file without users and client secrets, with the production and verify redirect URIs, imported as 5 clients and 4 realm roles. Partial import does not cover client scopes, so step 5 is done by hand: a new realm already has a built-in `roles` scope, and its **realm roles** mapper was changed to token claim name `roles` with ID token, access token and userinfo on.
 
+### Login page branding
+
+The sign-in page uses Keycloak's built-in `keycloak.v2` login theme with the ClercqIt wordmark (issue #423). It follows the visitor's OS light or dark setting. The local realm (`src/Clercq.It.AppHost/KeycloakRealms/clercqit-realm.json`) sets the same values (`displayNameHtml`, `loginTheme`, the `darkMode` attribute). Partial import does not copy them, so set them by hand in Cloud IAM:
+
+1. **Realm settings > General**: set **HTML Display name** to `<strong>C</strong>lercq<strong>I</strong>t`. Keep **Display name** `Clercq.It`.
+2. **Realm settings > Themes**: set **Login theme** to `keycloak.v2` and turn **Dark mode** on. Save.
+3. Open the site, choose **Sign In**, and check the wordmark in both OS colour modes.
+
+The Cloud IAM free plan cannot load custom theme `.jar` files or use its Theme Builder; both need a paid plan. A custom slate theme matching the site was tried and dropped on 2026-10-25 because the owner chose not to upgrade.
+
 ### 3. Create Clients
 
 #### `clercqit-api` (Bearer-Only)
@@ -63,6 +73,29 @@ Alternatively, import the local realm JSON (`src/Clercq.It.AppHost/KeycloakRealm
 - **Valid Post Logout Redirect URIs**: `https://www.clercq.it/admin`
 - **Web Origins**: `https://www.clercq.it` (lets the browser call the token endpoint)
 - **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
+
+#### `clercqit-web-verify` (Public, Standard Flow)
+
+The verify container (`Keycloak__ClientId` in `infra/terraform/verify.tf`) signs in with its own client. Configure it like `clercqit-web`, with the verify URL (Terraform output `verify_container_url`) in **Valid Redirect URIs** (`https://<verify-url>/admin/callback`), **Valid Post Logout Redirect URIs** and **Web Origins**.
+
+#### MCP clients
+
+The content MCP server (`/api/mcp`, see [MCP](./mcp.md)) accepts any realm token with a contributor role. Two clients give Claude such a token. They are not in the deployment yet; the owner creates them in the Cloud IAM console.
+
+`clercqit-mcp` (public, standard flow) is for the Claude custom connector: you sign in once in the browser and Claude acts as you.
+- **Client ID**: `clercqit-mcp`
+- **Client Authentication**: Off (public client)
+- **Standard Flow**: Enabled; **Direct Access Grants**: Disabled
+- **Advanced > Proof Key for Code Exchange Code Challenge Method**: `S256`
+- **Valid Redirect URIs**: `https://claude.ai/api/mcp/auth_callback`, `https://claude.com/api/mcp/auth_callback`
+- **Default Client Scopes**: `web-origins`, `acr`, `roles`, `profile`, `email`
+
+`clercqit-mcp-agent` (confidential, service account) is optional, for agents that run without a browser (client credentials grant). Only create it if the owner decides agents may write content unattended.
+- **Client ID**: `clercqit-mcp-agent`
+- **Client Authentication**: On; **Service Accounts**: Enabled; **Standard Flow** and **Direct Access Grants**: Disabled
+- **Service account roles**: `Projects.Contributor`, `Certifications.Contributor`, `Blogs.Contributor`
+- **Default Client Scopes**: `roles` (so the token carries the `roles` claim)
+- Its client secret goes in Scaleway Secret Manager, never in an issue or chat.
 
 ### 4. Create Realm Roles
 
@@ -115,7 +148,7 @@ Keycloak__Realm=clercqit
 Keycloak__ClientId=clercqit-web
 ```
 
-When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client stays for now, because the separate `administration-api` container in `infra/terraform/main.tf` is still configured with it.
+When `Keycloak:BaseUrl` is set (and no Aspire service reference exists), the API validates tokens against `{BaseUrl}/realms/{Realm}` and returns that issuer and `Keycloak:ClientId` from `GET /api/auth/config`. `clercqit-web` is a public client, so the site needs no client secret. The site's old `Keycloak:ClientSecret`, `Keycloak:AdminClientId` and `Keycloak:AdminClientSecret` settings, the local `clercqit-admin` client and the verify secrets were removed after the password grant went away (#257, #346). If the Cloud IAM realm still has a `clercqit-admin-verify` client, delete it under **Clients**; nothing uses it. The Cloud IAM `clercqit-admin` client can go too: its last user, the `administration-api` container, was removed in #387.
 
 ### Scaleway Container Deployment
 

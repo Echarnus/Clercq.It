@@ -48,8 +48,14 @@ resource "scaleway_rdb_instance" "portfolio_db" {
   is_ha_cluster  = false
   disable_backup = false
   user_name      = "clercqit_admin"
-  password       = local.secrets["db-app-password"]
   region         = var.scaleway_region
+
+  # Nothing uses the admin login, so its password is generated on the fly and
+  # written once: it is not in the state, Secret Manager or anywhere else
+  # (issue #416). If you ever need it, reset it in the Scaleway console, or
+  # bump password_wo_version to have Terraform set a new random one.
+  password_wo         = ephemeral.random_password.db_admin.result
+  password_wo_version = 1
 
   # Public endpoint the serverless containers connect to. Declared explicitly:
   # without it the provider leaves load_balancer empty and every
@@ -63,7 +69,8 @@ resource "scaleway_rdb_database" "portfolio_app_db" {
   name        = "clercqit_portfolio"
 }
 
-# Database user for the application (managed by Terraform)
+# Migration login: owns the schema and runs migration.sql in deploy.yml. The
+# containers never get this password (issue #416).
 resource "scaleway_rdb_user" "portfolio_app_user" {
   instance_id = scaleway_rdb_instance.portfolio_db.id
   name        = "clercqit_user"
@@ -71,12 +78,30 @@ resource "scaleway_rdb_user" "portfolio_app_user" {
   is_admin    = false
 }
 
-# Grant privileges to the application user on the database
+# Full rights on its own database only
 resource "scaleway_rdb_privilege" "portfolio_app_user_privilege" {
   instance_id   = scaleway_rdb_instance.portfolio_db.id
   user_name     = scaleway_rdb_user.portfolio_app_user.name
   database_name = scaleway_rdb_database.portfolio_app_db.name
   permission    = "all"
+}
+
+# Runtime login for the website container and the content import: read and
+# write rows, no DDL (issue #416). Scaleway grants readwrite on the tables
+# that exist when it applies; deploy.yml also runs infra/sql/grant-app-user.sql
+# as the migration login after each migration, so new tables are covered too.
+resource "scaleway_rdb_user" "portfolio_runtime_user" {
+  instance_id = scaleway_rdb_instance.portfolio_db.id
+  name        = "clercqit_app"
+  password    = random_password.db_runtime.result
+  is_admin    = false
+}
+
+resource "scaleway_rdb_privilege" "portfolio_runtime_user_privilege" {
+  instance_id   = scaleway_rdb_instance.portfolio_db.id
+  user_name     = scaleway_rdb_user.portfolio_runtime_user.name
+  database_name = scaleway_rdb_database.portfolio_app_db.name
+  permission    = "readwrite"
 }
 
 # Reference the existing Serverless Container Namespace
@@ -88,6 +113,9 @@ data "scaleway_container_namespace" "portfolio" {
 
 # Serverless Container for the application
 resource "scaleway_container" "portfolio_app" {
+  # The runtime login must exist with its rights before the container uses it.
+  depends_on = [scaleway_rdb_privilege.portfolio_runtime_user_privilege]
+
   name           = "clercq-it-app"
   namespace_id   = data.scaleway_container_namespace.portfolio.id
   registry_image = var.container_image
@@ -118,6 +146,10 @@ resource "scaleway_container" "portfolio_app" {
     "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web"
+    # Public origin for the MCP server's OAuth metadata (docs/mcp.md); behind nginx the API only sees http.
+    "Mcp__PublicBaseUrl" = "https://www.clercq.it"
+    # The database's TLS certificate: the API pins it (SSL Mode VerifyCA, docs/secrets.md#database-logins).
+    "Database__CaCertificate" = scaleway_rdb_instance.portfolio_db.certificate
   }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
 
   # Secret values come from Scaleway Secret Manager (secrets.tf) and the
@@ -125,7 +157,7 @@ resource "scaleway_container" "portfolio_app" {
   secret_environment_variables = {
     "ObjectStorage__AccessKey"             = scaleway_iam_api_key.app_storage.access_key
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
-    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=clercqit_user;Password=${local.secrets["db-app-password"]}"
+    "ConnectionStrings__DefaultConnection" = "${local.db_connection_base};Database=${scaleway_rdb_database.portfolio_app_db.name};Username=${scaleway_rdb_user.portfolio_runtime_user.name};Password=${random_password.db_runtime.result}"
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "MyZen__Email"                         = local.myzen_login.username
     "MyZen__Password"                      = local.myzen_login.password
@@ -180,78 +212,4 @@ resource "scaleway_cockpit_token" "portfolio_logs_token" {
     query_metrics = true
     write_metrics = true
   }
-}
-
-# =============================================================================
-# Administration API Resources
-# =============================================================================
-
-# Database user for the Administration application
-# Uses the same database instance but will be restricted to the 'administration' schema
-resource "scaleway_rdb_user" "administration_app_user" {
-  instance_id = scaleway_rdb_instance.portfolio_db.id
-  name        = var.administration_database_user
-  password    = local.secrets["db-administration-password"]
-  is_admin    = false
-}
-
-# Grant privileges to the Administration user on the portfolio database
-# Note: Schema-level permissions (administration schema only) must be set via SQL migration
-# This grants database-level access; the SQL migration will restrict to the administration schema
-resource "scaleway_rdb_privilege" "administration_app_user_privilege" {
-  instance_id   = scaleway_rdb_instance.portfolio_db.id
-  user_name     = scaleway_rdb_user.administration_app_user.name
-  database_name = scaleway_rdb_database.portfolio_app_db.name
-  permission    = "all"
-}
-
-# Serverless Container for the Administration API
-resource "scaleway_container" "administration_api" {
-  name           = "administration-api"
-  namespace_id   = data.scaleway_container_namespace.portfolio.id
-  registry_image = var.administration_container_image
-  port           = 8080
-  protocol       = "http1"
-  http_option    = "redirected"
-
-  min_scale = 0
-  max_scale = 1
-
-  # Resource limits - API only, lighter than portfolio app
-  memory_limit = 256 # 256MB
-  cpu_limit    = 250 # 250 mvcpu
-
-  timeout = 30
-
-  environment_variables = {
-    # ASP.NET Core settings
-    "ASPNETCORE_ENVIRONMENT" = "Production"
-    "ASPNETCORE_URLS"        = "http://+:8080"
-
-    # OpenTelemetry (shared Cockpit token)
-    "OTEL_EXPORTER_OTLP_ENDPOINT" = "https://cockpit.fr-par.scw.cloud:4317"
-    "OTEL_EXPORTER_OTLP_PROTOCOL" = "grpc"
-    "OTEL_SERVICE_NAME"           = "administration-api"
-
-    # Keycloak (admin client)
-    "Keycloak__BaseUrl"       = local.secrets["keycloak-base-url"]
-    "Keycloak__Realm"         = var.keycloak_realm
-    "Keycloak__ClientId"      = "clercqit-admin"
-    "Keycloak__AdminClientId" = "clercqit-admin"
-  }
-
-  # Secret values come from Scaleway Secret Manager (secrets.tf).
-  secret_environment_variables = {
-    # Database connection (same instance, administration schema via SearchPath)
-    "ConnectionStrings__DefaultConnection" = "Host=${scaleway_rdb_instance.portfolio_db.load_balancer.0.ip};Port=${scaleway_rdb_instance.portfolio_db.load_balancer.0.port};Database=clercqit_portfolio;Username=${scaleway_rdb_user.administration_app_user.name};Password=${local.secrets["db-administration-password"]};SearchPath=administration"
-    "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
-    "Keycloak__ClientSecret"               = local.secrets["keycloak-admin-client-secret"]
-    "Keycloak__AdminClientSecret"          = local.secrets["keycloak-admin-client-secret"]
-  }
-
-  tags = [
-    "project=clercq-it-administration",
-    "environment=production",
-    "namespace=Portfolio"
-  ]
 }

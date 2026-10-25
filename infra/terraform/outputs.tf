@@ -16,6 +16,33 @@ output "database_name" {
   value       = scaleway_rdb_database.portfolio_app_db.name
 }
 
+output "database_ca_certificate" {
+  description = "TLS certificate of the database instance (deploy.yml pins it for psql and the content import)"
+  value       = scaleway_rdb_instance.portfolio_db.certificate
+}
+
+output "database_migrator_user" {
+  description = "Migration login (owns the schema; deploy.yml only)"
+  value       = scaleway_rdb_user.portfolio_app_user.name
+}
+
+output "database_migrator_password" {
+  description = "Migration login password (from Secret Manager)"
+  value       = local.secrets["db-app-password"]
+  sensitive   = true
+}
+
+output "database_app_user" {
+  description = "Runtime login (rows only): the container and the content import"
+  value       = scaleway_rdb_user.portfolio_runtime_user.name
+}
+
+output "database_app_password" {
+  description = "Runtime login password (from Secret Manager)"
+  value       = random_password.db_runtime.result
+  sensitive   = true
+}
+
 output "container_url" {
   description = "Container application URL"
   value       = scaleway_container.portfolio_app.domain_name
@@ -86,53 +113,6 @@ output "object_storage_endpoint" {
 }
 
 # =============================================================================
-# Administration API Outputs
-# =============================================================================
-
-output "administration_container_url" {
-  description = "Administration API container URL"
-  value       = scaleway_container.administration_api.domain_name
-}
-
-output "administration_container_id" {
-  description = "Administration API container ID (use this for GitHub secrets)"
-  value       = scaleway_container.administration_api.id
-}
-
-output "administration_container_name" {
-  description = "Administration API container name"
-  value       = scaleway_container.administration_api.name
-}
-
-output "administration_database_user" {
-  description = "Administration database user name"
-  value       = scaleway_rdb_user.administration_app_user.name
-}
-
-output "administration_infrastructure_summary" {
-  description = "Summary of Administration API infrastructure"
-  sensitive   = true
-  value = {
-    container = {
-      name      = scaleway_container.administration_api.name
-      url       = scaleway_container.administration_api.domain_name
-      id        = scaleway_container.administration_api.id
-      port      = scaleway_container.administration_api.port
-      min_scale = scaleway_container.administration_api.min_scale
-      max_scale = scaleway_container.administration_api.max_scale
-      memory    = "${scaleway_container.administration_api.memory_limit}MB"
-      cpu       = "${scaleway_container.administration_api.cpu_limit}m"
-    }
-    database = {
-      instance = scaleway_rdb_instance.portfolio_db.name
-      database = scaleway_rdb_database.portfolio_app_db.name
-      schema   = "administration"
-      user     = scaleway_rdb_user.administration_app_user.name
-    }
-  }
-}
-
-# =============================================================================
 # Secret Manager and IAM Outputs
 # =============================================================================
 
@@ -169,13 +149,24 @@ output "verify_database_name" {
 }
 
 output "verify_database_user" {
-  description = "Verify database user"
+  description = "Verify migration login (owns the schema)"
   value       = scaleway_rdb_user.verify.name
 }
 
 output "verify_database_password" {
   description = "Verify database password (from Secret Manager)"
   value       = local.verify_secrets["db-password"]
+  sensitive   = true
+}
+
+output "verify_database_app_user" {
+  description = "Verify runtime login (rows only)"
+  value       = scaleway_rdb_user.verify_app.name
+}
+
+output "verify_database_app_password" {
+  description = "Verify runtime login password (from Secret Manager)"
+  value       = local.verify_secrets["app-password"]
   sensitive   = true
 }
 

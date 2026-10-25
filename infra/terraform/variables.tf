@@ -55,33 +55,13 @@ variable "keycloak_realm" {
   default     = "clercqit"
 }
 
-variable "keycloak_admin_client_secret" {
-  description = "Seed for the keycloak-admin-client-secret secret. Only used when the secret is first created."
+
+variable "terraform_access_key" {
+  description = "Access key (not the secret) of the API key Terraform runs with. Its owner is allowed in the bucket policies (storage_policies.tf), so Terraform and the deploy pipeline keep access to the buckets."
   type        = string
-  default     = null
-  sensitive   = true
+
+  validation {
+    condition     = length(var.terraform_access_key) > 0
+    error_message = "Set TF_VAR_terraform_access_key to the access key Terraform uses (the SCW_ACCESS_KEY value)."
+  }
 }
-
-# =============================================================================
-# Administration API Variables
-# =============================================================================
-
-variable "administration_container_image" {
-  description = "Docker image for the Administration API container"
-  type        = string
-  default     = "echarnus/clercq-it-administration:latest"
-}
-
-variable "administration_database_user" {
-  description = "Database user for the Administration app"
-  type        = string
-  default     = "admin_app_user"
-}
-
-variable "administration_database_password" {
-  description = "Seed for the db-administration-password secret. Only used when the secret is first created. Leave unset to generate one."
-  type        = string
-  default     = null
-  sensitive   = true
-}
-

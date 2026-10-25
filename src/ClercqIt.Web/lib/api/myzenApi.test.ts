@@ -4,13 +4,20 @@ import { describe, expect, it, vi } from "vitest";
 import { API } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
 import {
+  createMyZenTimeEntry,
+  deleteMyZenTimeEntry,
   disconnectMyZen,
   fetchMyZenStatus,
   fetchMyZenTimeEntries,
+  fetchMyZenTimeEntry,
+  MyZenEntryNotFoundError,
   MyZenNotConnectedError,
+  MyZenRejectedError,
+  searchMyZenProjects,
   startMyZenLogin,
   submitMyZenLogin,
   submitMyZenMfaCode,
+  updateMyZenTimeEntry,
 } from "./myzenApi";
 
 vi.mock("../auth", () => ({ getAccessToken: vi.fn(() => Promise.resolve("token")) }));
@@ -119,4 +126,79 @@ describe("MyZen API client", () => {
     );
     await expect(disconnectMyZen()).rejects.toThrow("MyZen request failed (500)");
   });
+
+  it("searches projects and reads one entry", async () => {
+    let query = "";
+    server.use(
+      http.get(`${API}/api/myzen/projects/search`, ({ request }) => {
+        query = new URL(request.url).search;
+        return HttpResponse.json([{ id: 5, name: "Website", customerId: 7, customer: "Acme" }]);
+      }),
+      http.get(`${API}/api/myzen/time-entries/7`, () => HttpResponse.json(entry)),
+    );
+
+    expect(await searchMyZenProjects("web site")).toEqual([
+      { id: 5, name: "Website", customerId: 7, customer: "Acme" },
+    ]);
+    expect(query).toBe("?q=web+site");
+    expect(await fetchMyZenTimeEntry(7)).toEqual(entry);
+  });
+
+  it("adds, changes and deletes entries", async () => {
+    const calls: { method: string; path: string; body: unknown }[] = [];
+    const record = async ({ request }: { request: Request }) => {
+      calls.push({
+        method: request.method,
+        path: new URL(request.url).pathname,
+        body: request.method === "DELETE" ? null : await request.json(),
+      });
+      return new HttpResponse(null, { status: 204 });
+    };
+    server.use(
+      http.post(`${API}/api/myzen/time-entries`, record),
+      http.put(`${API}/api/myzen/time-entries/7`, record),
+      http.delete(`${API}/api/myzen/time-entries/7`, record),
+    );
+
+    await createMyZenTimeEntry(input);
+    await updateMyZenTimeEntry(7, { ...input, customerId: null });
+    await deleteMyZenTimeEntry(7);
+
+    expect(calls).toEqual([
+      { method: "POST", path: "/api/myzen/time-entries", body: input },
+      { method: "PUT", path: "/api/myzen/time-entries/7", body: { ...input, customerId: null } },
+      { method: "DELETE", path: "/api/myzen/time-entries/7", body: null },
+    ]);
+  });
+
+  it("does not send an invalid entry", async () => {
+    await expect(createMyZenTimeEntry({ ...input, durationMinutes: 0 })).rejects.toThrow();
+  });
+
+  it("maps 409, 404 and 422 to their errors, with MyZen's reason", async () => {
+    server.use(
+      http.delete(`${API}/api/myzen/time-entries/1`, () => new HttpResponse(null, { status: 409 })),
+      http.delete(`${API}/api/myzen/time-entries/2`, () => new HttpResponse(null, { status: 404 })),
+      http.delete(`${API}/api/myzen/time-entries/3`, () =>
+        HttpResponse.json({ detail: "Invoiced" }, { status: 422 }),
+      ),
+      http.delete(`${API}/api/myzen/time-entries/4`, () => new HttpResponse("x", { status: 422 })),
+      http.delete(`${API}/api/myzen/time-entries/5`, () => new HttpResponse(null, { status: 500 })),
+    );
+
+    await expect(deleteMyZenTimeEntry(1)).rejects.toBeInstanceOf(MyZenNotConnectedError);
+    await expect(deleteMyZenTimeEntry(2)).rejects.toBeInstanceOf(MyZenEntryNotFoundError);
+    await expect(deleteMyZenTimeEntry(3)).rejects.toEqual(new MyZenRejectedError("Invoiced"));
+    await expect(deleteMyZenTimeEntry(4)).rejects.toThrow("MyZen refused the change.");
+    await expect(deleteMyZenTimeEntry(5)).rejects.toThrow("MyZen request failed (500)");
+  });
 });
+
+const input = {
+  date: "2026-09-01",
+  durationMinutes: 480,
+  projectId: 5,
+  customerId: 7,
+  description: "Work",
+  invoiced: false,
+};

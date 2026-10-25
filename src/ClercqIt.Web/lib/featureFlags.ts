@@ -1,20 +1,20 @@
 import { z } from "zod";
-import { getApiUrl } from "./api/baseApi";
+import { authFetch } from "./api/adminApi";
 
 // Feature flags (issue #253). The API owns them: `GET /api/features` returns the
-// `FeatureFlags` configuration section. See docs/versioning.md#feature-flags.
+// `FeatureFlags` configuration section, to signed-in admins only (issue #454), so this
+// is admin-only code. See docs/versioning.md#feature-flags.
 const FeatureFlagsSchema = z.record(z.string(), z.boolean());
 
 export type FeatureFlags = z.infer<typeof FeatureFlagsSchema>;
 
 /**
- * All configured flags. Fails closed: when the API is down or answers with
- * something unexpected, every flag reads as off. Cached for a minute, so a
- * flagged page does not add an API call per render.
+ * All configured flags, read with the admin's token. Fails closed: when nobody is
+ * signed in, the API is down or answers with something unexpected, every flag reads as off.
  */
 export async function fetchFeatureFlags(): Promise<FeatureFlags> {
   try {
-    const response = await fetch(`${getApiUrl()}/api/features`, { next: { revalidate: 60 } });
+    const response = await authFetch("/api/features");
     if (!response.ok) return {};
     const result = FeatureFlagsSchema.safeParse(await response.json());
     return result.success ? result.data : {};

@@ -7,6 +7,25 @@ import { ArrowRight, Code, Cloud, GitBranch } from "lucide-react";
 import Image from "next/image";
 import { imageOrNone } from "@/lib/utils";
 import { fetchFeaturedProjects } from "../portfolio/lib/api";
+import type { Metadata } from "next";
+import { JsonLd } from "@/components/json-ld";
+import {
+  AUTHOR_NAME,
+  pageMetadata,
+  personJsonLd,
+  projectPath,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_URL,
+} from "@/lib/seo";
+
+const HOME_TITLE = `${AUTHOR_NAME} - Developer & Solution Architect`;
+
+// The home page is served at / and /home; both name / as canonical.
+export const metadata: Metadata = {
+  ...pageMetadata({ title: HOME_TITLE, description: SITE_DESCRIPTION, path: "/", type: "profile" }),
+  title: { absolute: `${HOME_TITLE} | ${SITE_NAME}` },
+};
 
 export default async function HomePage() {
   const featuredProjects = await fetchFeaturedProjects();
@@ -14,7 +33,7 @@ export default async function HomePage() {
   const skills = [
     {
       icon: Code,
-      label: "Full Stack Development",
+      label: "Architecture & Development",
       description: ".NET, TypeScript, React, Angular",
     },
     {
@@ -31,15 +50,29 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd
+        data={[
+          personJsonLd(),
+          {
+            "@type": "WebSite",
+            "@id": `${SITE_URL}/#website`,
+            url: SITE_URL,
+            name: SITE_NAME,
+            description: SITE_DESCRIPTION,
+            publisher: { "@id": personJsonLd()["@id"] },
+          },
+        ]}
+      />
       {/* Hero Section */}
       <PageContainer as="section" className="py-16">
         <div className="mx-auto max-w-3xl text-center">
           <h1 className="mb-6 text-5xl font-bold text-slate-900 dark:text-white">
-            Full Stack Developer
+            Developer & Architect
           </h1>
           <p className="mb-8 text-xl leading-relaxed text-slate-600 dark:text-slate-300">
-            Passionate about creating complete digital solutions from A to Z. With expertise in
-            modern technologies, I build scalable applications that solve real-world problems.
+            Passionate about creating complete digital solutions from A to Z. As a solution
+            architect who still writes code, I design and build scalable applications that solve
+            real-world problems.
           </p>
           <div className="mb-8 flex flex-wrap justify-center gap-2">
             {[
@@ -102,7 +135,7 @@ export default async function HomePage() {
           </h2>
           <p className="mx-auto max-w-2xl text-slate-600 dark:text-slate-300">
             Here are some of the projects I&apos;ve been working on, showcasing my expertise in
-            full-stack development and cloud technologies.
+            software architecture, development and cloud technologies.
           </p>
         </div>
 
@@ -115,7 +148,7 @@ export default async function HomePage() {
             featuredProjects.slice(0, 3).map((project) => {
               const image = imageOrNone(project.image);
               return (
-                <Link key={project.id} href={`/portfolio/${project.id}`} className="block">
+                <Link key={project.id} href={projectPath(project)} className="block">
                   <Card className="group h-full cursor-pointer border-0 bg-white/80 shadow-lg backdrop-blur-xs transition-all duration-300 hover:shadow-xl dark:bg-slate-800/80 dark:shadow-slate-900/20">
                     {image && (
                       <CardHeader className="p-0">

@@ -36,4 +36,23 @@ public interface IMyZenGateway
     /// <summary>One time entry with its project and customer IDs, or null when MyZen has none with this ID.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<MyZenTimeEntryDto?> GetTimeEntryAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>The projects whose name matches <paramref name="query"/>, with their customer.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    Task<IReadOnlyList<MyZenProjectOptionDto>> SearchProjectsAsync(string query, CancellationToken cancellationToken);
+
+    /// <summary>Adds one time entry.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the entry.</exception>
+    Task CreateTimeEntryAsync(MyZenTimeEntryInput entry, CancellationToken cancellationToken);
+
+    /// <summary>Replaces one time entry; false when MyZen has none with this ID.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the change.</exception>
+    Task<bool> UpdateTimeEntryAsync(long id, MyZenTimeEntryInput entry, CancellationToken cancellationToken);
+
+    /// <summary>Deletes one time entry; false when MyZen has none with this ID.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the delete.</exception>
+    Task<bool> DeleteTimeEntryAsync(long id, CancellationToken cancellationToken);
 }

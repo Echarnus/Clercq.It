@@ -119,13 +119,76 @@ public class MyZenHandlersTests
         _gateway.Verify(g => g.DisconnectAsync(MoqIt.IsAny<CancellationToken>()), Times.Once);
     }
 
+    [Fact(DisplayName = "Creating an entry passes it to the gateway with a trimmed description")]
+    public async Task CreateTimeEntry_TrimsDescription()
+    {
+        // Arrange
+        var expected = Input() with { Description = "Review" };
+
+        // Act
+        await new CreateMyZenTimeEntryCommandHandler(_gateway.Object)
+            .Handle(new CreateMyZenTimeEntryCommand(Input() with { Description = "  Review  " }), CancellationToken.None);
+
+        // Assert
+        _gateway.Verify(g => g.CreateTimeEntryAsync(expected, MoqIt.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact(DisplayName = "Updating an entry sends an empty description when none is given and returns whether it was found")]
+    public async Task UpdateTimeEntry_ReturnsFound()
+    {
+        // Arrange
+        var expected = Input() with { Description = "" };
+        _gateway.Setup(g => g.UpdateTimeEntryAsync(7, expected, MoqIt.IsAny<CancellationToken>()))
+            .ReturnsAsync(true);
+
+        // Act
+        var found = await new UpdateMyZenTimeEntryCommandHandler(_gateway.Object)
+            .Handle(new UpdateMyZenTimeEntryCommand(7, Input() with { Description = null }), CancellationToken.None);
+
+        // Assert
+        found.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Deleting an entry returns whether it was found")]
+    public async Task DeleteTimeEntry_ReturnsFound()
+    {
+        // Arrange
+        _gateway.Setup(g => g.DeleteTimeEntryAsync(7, MoqIt.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        // Act
+        var found = await new DeleteMyZenTimeEntryCommandHandler(_gateway.Object)
+            .Handle(new DeleteMyZenTimeEntryCommand(7), CancellationToken.None);
+
+        // Assert
+        found.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "The project search sends the trimmed text to the gateway")]
+    public async Task SearchProjects_TrimsQuery()
+    {
+        // Arrange
+        IReadOnlyList<MyZenProjectOptionDto> options = [new(5, "Website", 7, "Acme")];
+        _gateway.Setup(g => g.SearchProjectsAsync("web", MoqIt.IsAny<CancellationToken>())).ReturnsAsync(options);
+
+        // Act
+        var result = await new SearchMyZenProjectsQueryHandler(_gateway.Object)
+            .Handle(new SearchMyZenProjectsQuery(" web "), CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(options);
+    }
+
     [Fact(DisplayName = "The MyZen exceptions say what the owner must do")]
     public void Exceptions_HaveMessages()
     {
         new MyZenNotConnectedException().Message.Should().Contain("Connect it again");
         new MyZenUnavailableException("down").Message.Should().Be("down");
+        new MyZenRejectedException("no").Message.Should().Be("no");
     }
 
     private static MyZenTimeEntryDto Entry(long id) =>
         new(id, new DateOnly(2026, 9, 1), "Work", null, "Website", null, "Acme", TimeSpan.FromHours(8), false);
+
+    private static MyZenTimeEntryInput Input() =>
+        new(new DateOnly(2026, 9, 1), 480, 5, 7, "Work", false);
 }

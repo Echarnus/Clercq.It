@@ -1,6 +1,6 @@
 # Content in the repository
 
-Projects, blog posts and certifications can be added with a pull request instead of the admin UI. Each item is a Markdown file under `content/`. After the PR merges, the deploy pipeline imports it into the database and it shows on the site.
+Projects, blog posts and certifications are managed in the admin UI or through the [content MCP server](./mcp.md); that is the preferred route. They can also be added with a pull request. Each item is a Markdown file under `content/`. After the PR merges, the deploy pipeline imports it into the database and it shows on the site.
 
 ```
 content/
@@ -9,6 +9,18 @@ content/
 ├── certifications/  one file per certification
 └── images/          images referenced by the files above
 ```
+
+## Page copy that lives in code
+
+Some text is not content in the database. It is part of the frontend and changes with a pull request:
+
+| Text | File |
+|------|------|
+| Home hero title ("Developer & Architect"), intro, skill cards | `src/ClercqIt.Web/app/home/page.tsx` |
+| Site description (search results and link previews) | `src/ClercqIt.Web/app/layout.tsx` |
+| Portfolio intro | `src/ClercqIt.Web/app/portfolio/page.tsx` |
+
+`src/ClercqIt.Web/app/home/page.test.tsx` checks the hero title and the site description.
 
 ## File format
 
