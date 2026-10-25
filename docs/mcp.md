@@ -37,7 +37,9 @@ The server accepts the same Keycloak (Cloud IAM) access tokens as the rest of th
 1. The endpoint requires a token with at least one of `Projects.Contributor`, `Certifications.Contributor`, `Blogs.Contributor` or `MyZen.Owner`. No token or an invalid token gives 401; a token without those roles gives 403.
 2. Each tool then checks its own role. A caller only sees, and can only call, the tools for their roles. The MyZen tools' policy (`MyZenMcp`) also needs the `MyZen` feature flag (`FeatureFlagRequirement`), because MCP tools have no endpoint filter.
 
-A 401 carries `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource/api/mcp"`. That metadata names the Keycloak realm as the authorization server, so an MCP client such as a Claude connector can find the login page by itself. Production sets `Mcp__PublicBaseUrl` (`infra/terraform/main.tf`) because behind nginx the API only sees `http`. nginx routes `/.well-known/oauth-protected-resource` to the API (`src/nginx.conf`).
+A 401 carries `WWW-Authenticate: Bearer resource_metadata="…/.well-known/oauth-protected-resource/api/mcp"`. That metadata names the Keycloak realm as the authorization server, so an MCP client such as a Claude connector can find the login page by itself. Both URLs use the origin of the request, so the metadata works for `www.clercq.it` and `clercq.it` alike. Scaleway's edge terminates TLS, so nginx passes the edge's `X-Forwarded-Proto` on to the API, and `UseForwardedHeaders` in `src/ClercqIt.Api/Program.cs` makes the request `https`. nginx routes `/.well-known/oauth-protected-resource` to the API (`src/nginx.conf`).
+
+The metadata URI is relative on purpose: the SDK's handler only serves the metadata when the request URL matches it, and an absolute `https://` URI never matched the `http` request behind nginx, so the link in the 401 was a 404 and Claude fell back to `/authorize` on the site.
 
 The Keycloak clients for the connector and for agents are described in [Cloud IAM](./ciam.md#mcp-clients).
 

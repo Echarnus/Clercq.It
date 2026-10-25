@@ -36,6 +36,23 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
             .Should().Contain("resource_metadata=").And.Contain("/.well-known/oauth-protected-resource/api/mcp");
     }
 
+    [Fact(DisplayName = "The metadata link in the 401 resolves to the metadata for the same origin")]
+    public async Task Mcp_Unauthorized_MetadataLinkResolves()
+    {
+        // Regression: an absolute metadata URI with another scheme or host made the link a 404 (#386)
+        var client = factory.CreateClient();
+        var challenge = await client.PostAsync(McpPath, InitializeBody());
+        var link = System.Text.RegularExpressions.Regex.Match(
+            challenge.Headers.WwwAuthenticate.ToString(), "resource_metadata=\"([^\"]+)\"").Groups[1].Value;
+
+        var response = await client.GetAsync(new Uri(link).PathAndQuery);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var metadata = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
+        metadata.GetProperty("resource").GetString()
+            .Should().Be(new Uri(new Uri(link), McpPath).ToString());
+    }
+
     [Fact(DisplayName = "OAuth protected resource metadata names Keycloak as the authorization server")]
     public async Task ResourceMetadata_ReturnsKeycloakRealm()
     {
