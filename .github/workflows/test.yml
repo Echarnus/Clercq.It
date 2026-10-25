@@ -21,9 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.x'
+        uses: ./.github/actions/setup-dotnet
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
@@ -252,9 +250,7 @@ jobs:
           cache-from: type=gha
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.x'
+        uses: ./.github/actions/setup-dotnet
 
       # Same steps as deploy.yml: the idempotent migration script through psql,
       # then the content import (content/**/*.md has no images, so no bucket).
