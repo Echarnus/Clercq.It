@@ -47,7 +47,7 @@ RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
 RUN dotnet publish Clercq.It.Jobs/Clercq.It.Jobs.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
-FROM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS node-base
+FROM node:26-slim@sha256:36793bcbb160a6a16cede1e62b93f84e26b78a972a8a4c0b879c1c12f22761ec AS node-base
 # Corepack installs the pnpm version (and checks the hash) named in package.json's packageManager.
 RUN corepack enable
 
