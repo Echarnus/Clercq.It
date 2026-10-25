@@ -136,8 +136,11 @@ public class FeatureFlagEndpointTests(CustomWebApplicationFactory factory)
     [Fact(DisplayName = "GET /api/features returns no flags in production by default")]
     public async Task GetFeatures_NoFlagsConfigured_ReturnsEmpty()
     {
+        // Arrange
+        var client = await factory.CreateClientForUserAsync("admin");
+
         // Act
-        var flags = await factory.CreateClient().GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
+        var flags = await client.GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
 
         // Assert
         flags.Should().BeEmpty();
@@ -152,11 +155,36 @@ public class FeatureFlagEndpointTests(CustomWebApplicationFactory factory)
             builder.UseSetting("FeatureFlags:Search", "true");
             builder.UseSetting("FeatureFlags:NewBlogEditor", "false");
         });
+        var client = app.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new("Bearer", await factory.GetTokenAsync("blogger"));
 
         // Act
-        var flags = await app.CreateClient().GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
+        var flags = await client.GetFromJsonAsync<Dictionary<string, bool>>("/api/features");
 
         // Assert
         flags.Should().BeEquivalentTo(new Dictionary<string, bool> { ["Search"] = true, ["NewBlogEditor"] = false });
+    }
+
+    [Fact(DisplayName = "GET /api/features without a token returns 401, so visitors do not learn the flag names")]
+    public async Task GetFeatures_Anonymous_ReturnsUnauthorized()
+    {
+        // Act
+        var response = await factory.CreateClient().GetAsync("/api/features");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "GET /api/features for a user without an admin role returns 403")]
+    public async Task GetFeatures_UserWithoutRoles_ReturnsForbidden()
+    {
+        // Arrange
+        var client = await factory.CreateClientForUserAsync("test");
+
+        // Act
+        var response = await client.GetAsync("/api/features");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
     }
 }

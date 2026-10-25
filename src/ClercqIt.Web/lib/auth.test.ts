@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { API } from "@/test/msw/fixtures";
 import { server } from "@/test/msw/server";
 import {
+  AdminAccessError,
   claimsOf,
   completeSignIn,
   fetchAuthConfig,
@@ -20,6 +21,7 @@ const userManager = vi.hoisted(() => ({
   getUser: vi.fn(),
   removeUser: vi.fn(),
   signoutRedirect: vi.fn(),
+  events: { addUserLoaded: vi.fn() },
 }));
 const UserManager = vi.hoisted(() =>
   vi.fn(function () {
@@ -111,7 +113,43 @@ describe("signIn", () => {
   });
 });
 
+const SESSION = "http://localhost:3000/admin/session";
+
+function recordSessionCalls(status = 204): { method: string; auth: string | null }[] {
+  const calls: { method: string; auth: string | null }[] = [];
+  const record = ({ request }: { request: Request }) => {
+    calls.push({ method: request.method, auth: request.headers.get("Authorization") });
+    return new HttpResponse(null, { status });
+  };
+  server.use(http.post(SESSION, record), http.delete(SESSION, record));
+  return calls;
+}
+
 describe("completeSignIn", () => {
+  it("hands the access token to the server as the admin session", async () => {
+    const calls = recordSessionCalls();
+    const signedIn = user({ state: "/admin/dashboard" });
+    userManager.signinRedirectCallback.mockResolvedValue(signedIn);
+
+    await completeSignIn();
+
+    expect(calls).toEqual([{ method: "POST", auth: `Bearer ${signedIn.access_token}` }]);
+  });
+
+  it("refuses an account without an admin role", async () => {
+    recordSessionCalls(403);
+    userManager.signinRedirectCallback.mockResolvedValue(user());
+
+    await expect(completeSignIn()).rejects.toBeInstanceOf(AdminAccessError);
+  });
+
+  it("fails when the server cannot start the session", async () => {
+    recordSessionCalls(503);
+    userManager.signinRedirectCallback.mockResolvedValue(user());
+
+    await expect(completeSignIn()).rejects.toThrow("The admin session could not start (503)");
+  });
+
   it("returns the stored return address", async () => {
     userManager.signinRedirectCallback.mockResolvedValue(user({ state: "/admin/dashboard?x=1" }));
 
@@ -145,11 +183,43 @@ describe("getUser and getAccessToken", () => {
   });
 });
 
+describe("token renewal", () => {
+  it("renews the admin session once per new token", async () => {
+    const calls = recordSessionCalls();
+    await signIn();
+    const [onUserLoaded] = userManager.events.addUserLoaded.mock.calls[0] as [(u: User) => void];
+    const renewed = user({ access_token: token({ roles: ["Admin.View"], n: 2 }) });
+
+    onUserLoaded(renewed);
+    onUserLoaded(renewed);
+
+    await vi.waitFor(() =>
+      expect(calls).toEqual([{ method: "POST", auth: `Bearer ${renewed.access_token}` }]),
+    );
+  });
+
+  it("logs a failed renewal instead of throwing", async () => {
+    recordSessionCalls(503);
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    await signIn();
+    const [onUserLoaded] = userManager.events.addUserLoaded.mock.calls[0] as [(u: User) => void];
+
+    onUserLoaded(user());
+
+    await vi.waitFor(() =>
+      expect(log).toHaveBeenCalledWith("Admin session renewal failed:", expect.any(Error)),
+    );
+  });
+});
+
 describe("signOut", () => {
-  it("forgets the tokens and ends the Keycloak session", async () => {
+  it("forgets the tokens and the admin session, and ends the Keycloak session", async () => {
+    const calls = recordSessionCalls();
     userManager.getUser.mockResolvedValue(user());
 
     await signOut();
+
+    expect(calls).toEqual([{ method: "DELETE", auth: null }]);
 
     expect(userManager.removeUser).toHaveBeenCalledOnce();
     expect(userManager.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: "id-token" });

@@ -6,7 +6,7 @@ This document describes how to configure [Cloud IAM](https://www.cloud-iam.com) 
 
 Because Cloud IAM is standard Keycloak, local development (the Aspire Keycloak container) and production use the same code; the only difference is the base URL.
 
-The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`.
+The admin UI signs in with the **authorization code flow and PKCE** (issue #257): `/admin` sends the browser to Keycloak's login page, Keycloak handles the password, MFA and brute-force protection, and redirects back to `/admin/callback` with a code that the browser exchanges for tokens. The API only validates the access tokens; it never sees a password. The frontend reads the issuer and client id from `GET /api/auth/config`. After sign-in the web server keeps a short-lived admin session cookie and only serves `/admin/dashboard` while `GET /api/auth/session` accepts it; an account without one of the four admin roles gets "Your account has no access to the admin." ([application-security.md](./application-security.md#admin-pages)).
 
 ## Current Deployment
 

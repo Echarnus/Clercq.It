@@ -63,8 +63,28 @@ Both limits are partitioned by the connection's remote address. In the container
 #### Admin sign-in (authorization code + PKCE)
 - The admin UI signs in with the OAuth 2.1 authorization code flow and PKCE (S256) against Keycloak, using `oidc-client-ts` (`src/ClercqIt.Web/lib/auth.ts`, issue #257). Keycloak's own login page handles passwords, MFA, brute-force protection and required actions.
 - No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id.
-- Tokens stay in memory (never `localStorage`); only the PKCE verifier and state sit in `sessionStorage` during the redirect. The return address after sign-in must be an `/admin` path.
+- Tokens stay in memory (never `localStorage`); only the PKCE verifier and state sit in `sessionStorage` during the redirect. The return address after sign-in must be an `/admin` path. A copy of the access token sits in an httpOnly cookie for `/admin/dashboard` only, so the server can refuse the dashboard to visitors ([Admin pages](#admin-pages)).
 - The CSP `connect-src` allows `https://*.cloud-iam.com`, so the browser can call Keycloak's token endpoint.
+
+#### Admin pages
+Visitors who cannot use the admin do not receive its code (issue #454). What an anonymous visitor can and cannot get:
+
+| Part | Anonymous visitor |
+| --- | --- |
+| Public pages (`/`, `/blogs`, `/portfolio`, `/certifications`) | No admin code. The page-view counter uses `src/ClercqIt.Web/lib/api/pageViewApi.ts`, so the admin API client, `oidc-client-ts` and MyZen code are not in their chunks. |
+| `/admin/dashboard` and everything under it | A `307` to `/admin`, nothing else: no HTML, no chunk names. `src/ClercqIt.Web/proxy.ts` lets a request through only with a live admin session. |
+| `/admin` and `/admin/callback` | Public: they are how an admin signs in. They hold the sign-in code (`lib/auth.ts`), not the dashboard. |
+| `GET /api/features` | `401`; `403` without an admin role. Flag names say what is being built. |
+| Admin API endpoints | `401` or `403` (`EndpointAuthorizationTests`). This is the real protection. |
+| Browser source maps | Never built: `productionBrowserSourceMaps: false` in `src/ClercqIt.Web/next.config.mjs`. |
+| OpenAPI and Scalar | Development only. |
+| `/robots.txt`, `/sitemap.xml` | `/admin` and `/api/` are disallowed and not listed; admin pages are `noindex`. |
+
+Not secret, and not hidden: that `/admin` exists, the Keycloak (Cloud IAM) issuer URL and public client id (`GET /api/auth/config`), the MCP discovery document at `/.well-known/oauth-protected-resource`, and the source code, which is public on GitHub. Hiding code is not access control; the API checks a role on every admin call.
+
+**The admin session.** Tokens still live in memory in the browser. After sign-in, and after each silent token renewal, `lib/auth.ts` sends the access token to `POST /admin/session` (`src/ClercqIt.Web/app/admin/session/route.ts`). That route asks the API (`GET /api/auth/session`, 204 for any admin role) and stores the token in the `clercqit_admin_session` cookie: `HttpOnly`, `Secure` in production, `SameSite=Strict`, `Path=/admin/dashboard`, and it expires with the token (at most an hour). JavaScript cannot read it and the API never receives it: API calls still send the token in the `Authorization` header. On every dashboard request `proxy.ts` checks the cookie with the API again (`src/ClercqIt.Web/lib/adminSession.ts`): a rejected token is cleared and the visitor goes to `/admin`; an account without an admin role goes to `/admin` with "Your account has no access to the admin."; when the API is down the visitor goes to `/admin` with "Sign-in is not available right now". Signing out clears the cookie (`DELETE /admin/session`).
+
+**Checks.** `pnpm check:public-bundle` (`src/ClercqIt.Web/scripts/check-public-bundle.mjs`, run after `pnpm build`) starts the production build, fetches every public page and the sign-in pages as an anonymous visitor, scans their HTML and every chunk they load for admin strings (MyZen, admin endpoints, role names, the sign-in library on public pages), fails on any `.map` file, and checks that `/admin/dashboard` only redirects. It runs in the `Test Next.js Frontend` job. The `Container smoke test` job checks the same redirect and the `401`s against the real image. When you add an admin feature, keep its code under `app/admin/dashboard` or `components/admin`, and never import `lib/api/adminApi.ts`, `lib/api/statsApi.ts`, `lib/api/myzenApi.ts`, `lib/auth.ts` or `lib/featureFlags.ts` from a public page or a component it uses.
 
 #### Closed Registration
 - There is no self-registration. The API has no register or social-login endpoints, the Next.js app has no `/admin/register` page, and the `clercqit` realm has `registrationAllowed: false`.

@@ -21,7 +21,8 @@ we want, and needs nothing from the Scaleway console.
 
 1. `components/page-view-tracker.tsx` runs on every public page (not under
    `/admin`). On each navigation it sends the path with
-   `POST /api/stats/pageview` (`lib/api/statsApi.ts`). The request has a JSON
+   `POST /api/stats/pageview` (`lib/api/pageViewApi.ts`, kept apart from the
+   admin's `lib/api/statsApi.ts` so public pages ship no admin code). The request has a JSON
    body `{ "path": "/blogs" }` and nothing else.
 2. `RecordPageViewCommandHandler`
    (`src/Clercq.It.Application/Features/Statistics/RecordPageViewCommand.cs`)
@@ -94,4 +95,4 @@ Both go through MediatR (`RecordPageViewCommand`, `GetSiteStatisticsQuery`) in
 - `tests/ClercqIt.Api.Tests/Statistics/StatisticsEndpointTests.cs`: the endpoints, 400, 401 and 403.
 - `src/ClercqIt.Web/components/page-view-tracker.test.tsx`,
   `src/ClercqIt.Web/components/admin/StatisticsPanel.test.tsx` and
-  `src/ClercqIt.Web/lib/api/statsApi.test.ts`.
+  `src/ClercqIt.Web/lib/api/statsApi.test.ts` and `src/ClercqIt.Web/lib/api/pageViewApi.test.ts`.

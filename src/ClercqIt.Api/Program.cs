@@ -120,6 +120,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("BlogsContributor", policy => policy.RequireRole("Blogs.Contributor"));
     options.AddPolicy("ProjectsContributor", policy => policy.RequireRole("Projects.Contributor"));
     options.AddPolicy("CertificationsContributor", policy => policy.RequireRole("Certifications.Contributor"));
+    // The admin pages and what only they need (session check, feature flags): any admin role (issue #454)
+    options.AddPolicy(AuthEndpoints.AdminAreaPolicy, policy => policy
+        .RequireRole("Admin.View", "Blogs.Contributor", "Projects.Contributor", "Certifications.Contributor"));
     // MyZen reaches the owner's own MyZen account, so it has its own role (docs/myzen.md)
     options.AddPolicy(MyZenEndpoints.OwnerPolicy, policy => policy.RequireRole("MyZen.Owner"));
     // MCP tools have no endpoint filter, so the flag is part of their policy

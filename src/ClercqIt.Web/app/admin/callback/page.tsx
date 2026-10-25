@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { completeSignIn } from "@/lib/auth";
+import { AdminAccessError, completeSignIn } from "@/lib/auth";
 
 // Keycloak redirects here after sign-in with the authorization code; exchange it
 // (with the PKCE verifier) for tokens and continue to the admin page asked for.
@@ -18,7 +18,9 @@ export default function AdminCallbackPage() {
       .then((returnTo) => router.replace(returnTo))
       .catch((error: unknown) => {
         console.error("Sign-in callback failed:", error);
-        router.replace(`/admin?error=${encodeURIComponent("Sign-in failed. Please try again.")}`);
+        const message =
+          error instanceof AdminAccessError ? error.message : "Sign-in failed. Please try again.";
+        router.replace(`/admin?error=${encodeURIComponent(message)}`);
       });
   }, [router]);
 
