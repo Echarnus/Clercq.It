@@ -157,7 +157,7 @@ resource "scaleway_container" "portfolio_app" {
   secret_environment_variables = {
     "ObjectStorage__AccessKey"             = scaleway_iam_api_key.app_storage.access_key
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
-    "ConnectionStrings__DefaultConnection" = "${local.db_connection_base};Database=${scaleway_rdb_database.portfolio_app_db.name};Username=${scaleway_rdb_user.portfolio_runtime_user.name};Password=${random_password.db_runtime.result}"
+    "ConnectionStrings__DefaultConnection" = local.db_runtime_connection
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "MyZen__Email"                         = local.myzen_login.username
     "MyZen__Password"                      = local.myzen_login.password

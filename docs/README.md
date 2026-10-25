@@ -19,6 +19,7 @@ Every PR keeps these pages current (see [Contributing](./contributing.md#docs-ru
 | [MCP](./mcp.md) | Content MCP server at `/api/mcp`: tools, Keycloak auth, adding it as a Claude connector |
 | [Visitor statistics](./statistics.md) | Cookieless page view and visitor counting, rollup and retention, the admin Statistics section |
 | [MyZen](./myzen.md) | Connecting the owner's MyZen account: login flow, session, keep-alive, managing time entries, API |
+| [Scheduled jobs](./jobs.md) | Timed work on Scaleway Serverless Jobs: how a job runs, the secrets it gets, adding one, running it locally, cost |
 | [Content](./content.md) | Adding projects, blog posts and certifications as Markdown files through PRs |
 | [Portfolio feature](./portfolio-feature.md) | Projects / portfolio pages |
 | [Portfolio implementation summary](./portfolio-implementation-summary.md) | How the portfolio feature was built |

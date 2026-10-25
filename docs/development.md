@@ -36,6 +36,7 @@ Clercq.It/
 │   ├── Clercq.It.Infrastructure/ # Infrastructure layer (EF Core, migrations in EF/Migrations)
 │   ├── Clercq.It.Infrastructure.EF.Migrations/ # Console app that applies migrations (Aspire only)
 │   ├── Clercq.It.ContentImport/ # Imports content/ into the database (deploy pipeline)
+│   ├── Clercq.It.Jobs/          # Scheduled jobs run by Scaleway Serverless Jobs (docs/jobs.md)
 │   ├── Clercq.It.AppHost/       # Aspire orchestration (dev only)
 │   ├── Clercq.It.ServiceDefaults/ # Health checks and OpenTelemetry (also in production)
 │   ├── Dockerfile, start.sh, nginx.conf # Production image
@@ -45,6 +46,7 @@ Clercq.It/
 │   ├── Clercq.It.Application.Tests/
 │   ├── Clercq.It.Architecture.Tests/ # Layering rules
 │   ├── Clercq.It.ContentImport.Tests/
+│   ├── Clercq.It.Jobs.Tests/
 │   └── ClercqIt.Api.Tests/      # API integration tests (Testcontainers)
 ├── content/                     # Markdown content imported on deploy
 ├── infra/terraform/             # Scaleway infrastructure

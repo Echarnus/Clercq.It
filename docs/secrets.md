@@ -10,8 +10,9 @@ The owner keeps personal logins (Scaleway, Cloud IAM, OVHcloud, Docker Hub) in a
 | --- | --- | --- |
 | `db-app-password` | Migration login `clercqit_user` (owns the schema; `deploy.yml` migrations only, never a container). The name predates the split in #416. | `TF_VAR_database_password` (GitHub `DATABASE_PASSWORD`), else generated |
 | `db-runtime-password` | Runtime login `clercqit_app` (rows only): web/API container connection string and the content import | generated; Terraform owns it end to end |
+| `db-runtime-connection` | The runtime login `clercqit_app` as a ready-made connection string, read by the [scheduled jobs](./jobs.md) as `ConnectionStrings__DefaultConnection` (Scaleway jobs take secrets as Secret Manager references, not as variables Terraform sets) | generated; Terraform owns it end to end, from the same values as `db-runtime-password` |
 | `keycloak-base-url` | `Keycloak__BaseUrl` on both containers (current value: `https://lemur-16.cloud-iam.com/auth`, see [ciam.md](./ciam.md#current-deployment)) | `TF_VAR_keycloak_base_url`, else a placeholder |
-| `myzen-session-key` | `MyZen__SessionKey` on the web/API container; encrypts the stored MyZen session ([MyZen](./myzen.md)) | generated |
+| `myzen-session-key` | `MyZen__SessionKey` on the web/API container and on the `myzen-keepalive` job; encrypts the stored MyZen session ([MyZen](./myzen.md)) | generated |
 
 The site signs admins in with the public PKCE client `clercqit-web`, so no container gets a Keycloak secret. The old `keycloak-web-client-secret` (#346), `keycloak-admin-client-secret` and `db-administration-password` (#387) were removed with the clients and the unused `administration-api` container that read them. The GitHub secrets `KEYCLOAK_WEB_CLIENT_SECRET`, `KEYCLOAK_ADMIN_CLIENT_SECRET` and `ADMINISTRATION_DATABASE_PASSWORD` are no longer read and can be deleted.
 

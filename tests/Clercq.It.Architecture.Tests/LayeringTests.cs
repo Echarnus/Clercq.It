@@ -72,8 +72,8 @@ public class LayeringTests
     public void Infrastructure_IsReferencedOnlyByCompositionRoots()
     {
         // Composition roots wire Infrastructure into a running process:
-        // the API, the EF migrations tool and the content import tool.
-        string[] allowed = ["ClercqIt.Api", "Clercq.It.Infrastructure.EF.Migrations", "Clercq.It.ContentImport"];
+        // the API, the EF migrations tool, the content import tool and the scheduled jobs.
+        string[] allowed = ["ClercqIt.Api", "Clercq.It.Infrastructure.EF.Migrations", "Clercq.It.ContentImport", "Clercq.It.Jobs"];
 
         var src = Path.Combine(RepoRoot(), "src");
         var referencing = Directory.GetFiles(src, "*.csproj", SearchOption.AllDirectories)
