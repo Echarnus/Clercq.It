@@ -22,9 +22,12 @@ internal static class MyZenPages
         </body></html>
         """;
 
+    // As MyZen serves it: the token is in the layout config script; the hidden
+    // token inputs only appear once MyZen's scripts run in a browser (issue #448).
     public const string TimeRegistrationIndex = """
         <html><body>
-        <form method="post"><input name="__RequestVerificationToken" type="hidden" value="page-token" /></form>
+        <script type="application/json" id="layoutmainconfig">{"csrfToken":"<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"input-token\" />","rawcsrfToken":"page-token","numberOfDecimals":2}</script>
+        <form id="pageform" method="post"></form>
         <form id="gridform" method="get">
           <input name="F.SortColumn" type="hidden" value="" />
           <input name="F.SortDescending" type="hidden" value="True" />

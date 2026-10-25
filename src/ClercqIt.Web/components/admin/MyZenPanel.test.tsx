@@ -168,8 +168,32 @@ describe("MyZenPanel", () => {
     vi.mocked(api.fetchMyZenTimeEntries).mockRejectedValue(new Error("502"));
     render(<MyZenPanel today={today} />);
     await waitFor(() =>
-      expect(screen.getByText("Could not load the time entries.")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Could not load the time entries. Try again in a moment."),
+      ).toBeInTheDocument(),
     );
+  });
+
+  it("shows the API's reason when the entries do not load, and clears it once a month loads", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchMyZenStatus).mockResolvedValue(connected);
+    vi.mocked(api.fetchMyZenTimeEntries)
+      .mockRejectedValueOnce(
+        new api.MyZenRequestError("MyZen's time registration page has no request token.", 502),
+      )
+      .mockResolvedValue([entry]);
+    render(<MyZenPanel today={today} />);
+
+    expect(
+      await screen.findByText(
+        "Could not load the time entries. MyZen's time registration page has no request token.",
+      ),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Previous month" }));
+
+    expect(await screen.findByText("Sprint review")).toBeInTheDocument();
+    expect(screen.queryByText(/Could not load the time entries/)).not.toBeInTheDocument();
   });
 
   describe("when connected", () => {
@@ -306,7 +330,9 @@ describe("MyZenPanel", () => {
 
       await user.click(await screen.findByRole("button", { name: "Edit entry of 2026-10-01" }));
 
-      expect(await screen.findByText("Could not open the time entry.")).toBeInTheDocument();
+      expect(
+        await screen.findByText("Could not open the time entry. Try again in a moment."),
+      ).toBeInTheDocument();
     });
   });
 });

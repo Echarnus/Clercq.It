@@ -13,6 +13,7 @@ import {
   MyZenEntryNotFoundError,
   MyZenNotConnectedError,
   MyZenRejectedError,
+  MyZenRequestError,
   searchMyZenProjects,
   startMyZenLogin,
   submitMyZenLogin,
@@ -113,6 +114,22 @@ describe("MyZen API client", () => {
       MyZenNotConnectedError,
     );
     await expect(fetchMyZenStatus()).rejects.toThrow("MyZen request failed (502)");
+  });
+
+  it("carries the API's problem detail on other failures", async () => {
+    server.use(
+      http.get(`${API}/api/myzen/time-entries`, () =>
+        HttpResponse.json(
+          { title: "MyZen is unavailable", status: 502, detail: "MyZen could not be reached." },
+          { status: 502 },
+        ),
+      ),
+    );
+
+    const error = await fetchMyZenTimeEntries("2026-09-01", "2026-09-30").catch((e: unknown) => e);
+
+    expect(error).toBeInstanceOf(MyZenRequestError);
+    expect(error).toMatchObject({ message: "MyZen could not be reached.", status: 502 });
   });
 
   it("disconnects, and reports a failed disconnect", async () => {

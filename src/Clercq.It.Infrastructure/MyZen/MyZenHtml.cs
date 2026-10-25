@@ -65,9 +65,39 @@ public static class MyZenHtml
             error is null ? null : Truncate(error, 300));
     }
 
-    /// <summary>The anti-forgery token any signed-in page carries, for MyZen's AJAX calls.</summary>
-    public static string? ParseRequestVerificationToken(string html) =>
-        Parser.ParseDocument(html).QuerySelector("input[name=__RequestVerificationToken]")?.GetAttribute("value");
+    /// <summary>
+    /// The anti-forgery token for MyZen's AJAX calls (the <c>RequestVerificationToken</c> header).
+    /// Signed-in pages carry it as <c>rawcsrfToken</c> in <c>script#layoutmainconfig</c>; their
+    /// hidden token inputs are only added by MyZen's scripts in the browser (issue #448).
+    /// A hidden input in the served HTML is the fallback.
+    /// </summary>
+    public static string? ParseRequestVerificationToken(string html)
+    {
+        var document = Parser.ParseDocument(html);
+        var config = document.QuerySelector("script#layoutmainconfig")?.TextContent;
+        if (!string.IsNullOrWhiteSpace(config))
+        {
+            try
+            {
+                using var json = JsonDocument.Parse(config);
+                if (json.RootElement.ValueKind == JsonValueKind.Object
+                    && json.RootElement.TryGetProperty("rawcsrfToken", out var raw)
+                    && raw.ValueKind == JsonValueKind.String
+                    && raw.GetString() is { Length: > 0 } token)
+                {
+                    return token;
+                }
+            }
+            catch (JsonException)
+            {
+                // Fall back to a hidden input below.
+            }
+        }
+
+        return document.QuerySelector("input[name=__RequestVerificationToken]")?.GetAttribute("value") is { Length: > 0 } value
+            ? value
+            : null;
+    }
 
     /// <summary>The time-entry filter form's current values (it carries the owner's user ID).</summary>
     public static IReadOnlyList<KeyValuePair<string, string>> ParseTimeEntryFilter(string html)
