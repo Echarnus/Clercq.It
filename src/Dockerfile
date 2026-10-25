@@ -24,9 +24,11 @@ COPY Clercq.It.Application/Clercq.It.Application.csproj Clercq.It.Application/pa
 COPY Clercq.It.Infrastructure/Clercq.It.Infrastructure.csproj Clercq.It.Infrastructure/packages.lock.json Clercq.It.Infrastructure/
 COPY Clercq.It.ServiceDefaults/Clercq.It.ServiceDefaults.csproj Clercq.It.ServiceDefaults/packages.lock.json Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ClercqIt.Api.csproj ClercqIt.Api/packages.lock.json ClercqIt.Api/
+COPY Clercq.It.Jobs/Clercq.It.Jobs.csproj Clercq.It.Jobs/packages.lock.json Clercq.It.Jobs/
 
 # Restore dependencies with SSL configuration
 RUN dotnet restore ClercqIt.Api/ClercqIt.Api.csproj --locked-mode --disable-parallel --verbosity minimal
+RUN dotnet restore Clercq.It.Jobs/Clercq.It.Jobs.csproj --locked-mode --disable-parallel --verbosity minimal
 
 # Copy all source code (excluding AppHost - not needed for production)
 COPY Clercq.It.Domain/ Clercq.It.Domain/
@@ -34,10 +36,15 @@ COPY Clercq.It.Application/ Clercq.It.Application/
 COPY Clercq.It.Infrastructure/ Clercq.It.Infrastructure/
 COPY Clercq.It.ServiceDefaults/ Clercq.It.ServiceDefaults/
 COPY ClercqIt.Api/ ClercqIt.Api/
+COPY Clercq.It.Jobs/ Clercq.It.Jobs/
 
 # Build and publish
 RUN dotnet build ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/build
 RUN dotnet publish ClercqIt.Api/ClercqIt.Api.csproj -c Release -o /app/publish
+# The scheduled jobs (docs/jobs.md) ship in the same folder: Scaleway Serverless Jobs
+# run `dotnet /app/api/Clercq.It.Jobs.dll <job-name>` from this image. They share the
+# API's assemblies, so they add only their own few files.
+RUN dotnet publish Clercq.It.Jobs/Clercq.It.Jobs.csproj -c Release -o /app/publish
 
 # Build stage for Next.js frontend  
 FROM node:24-slim@sha256:55fb5f5a527ea2c5c4a95f963e48ef90aa38c7b346054fdc8ee9957a2b55d205 AS node-base

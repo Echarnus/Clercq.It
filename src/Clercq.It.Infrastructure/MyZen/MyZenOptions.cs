@@ -16,9 +16,6 @@ public sealed class MyZenOptions
     /// <summary>Any long random string; the session cookies are encrypted with a key derived from it.</summary>
     public string SessionKey { get; set; } = string.Empty;
 
-    /// <summary>How often the keep-alive touches a connected session.</summary>
-    public int KeepAliveMinutes { get; set; } = 10;
-
     public bool IsConfigured =>
         !string.IsNullOrWhiteSpace(Email) && !string.IsNullOrWhiteSpace(Password) && !string.IsNullOrWhiteSpace(SessionKey);
 }
