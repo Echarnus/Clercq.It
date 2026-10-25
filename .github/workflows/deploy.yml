@@ -378,6 +378,22 @@ jobs:
         id: smoke
         run: .github/scripts/smoke-test.sh "$SITE_URL" "${{ steps.version.outputs.version }}"
 
+      - name: Update scheduled jobs
+        # The jobs (infra/terraform/jobs.tf, docs/jobs.md) run this same image. They move
+        # only after the smoke test passed, so a rolled-back site does not leave them on a
+        # bad image. A failure here keeps the jobs on their previous image: worth a look,
+        # but no reason to fail a deploy the smoke test already approved.
+        id: jobs
+        continue-on-error: true
+        run: .github/scripts/set-job-image.sh "$IMAGE_REF"
+
+      - name: Report scheduled jobs left on their previous image
+        if: steps.jobs.outcome == 'failure'
+        run: |
+          echo "::warning::The scheduled jobs could not be moved to $IMAGE_REF and keep running their previous image."
+          echo "## ⚠️ Scheduled jobs not updated" >> $GITHUB_STEP_SUMMARY
+          echo "They keep their previous image. See the 'Update scheduled jobs' step, then re-run it or the deploy." >> $GITHUB_STEP_SUMMARY
+
       - name: Roll back to previous image
         if: failure() && steps.smoke.outcome == 'failure' && env.PREVIOUS_IMAGE != ''
         run: |

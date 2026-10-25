@@ -160,7 +160,6 @@ else
     builder.Services.AddInfrastructure(builder.Configuration, useAspirePostgreSQL: false);
 }
 
-builder.Services.AddHostedService<MyZenKeepAliveService>();
 builder.Services.AddContentMcpServer();
 
 var app = builder.Build();
