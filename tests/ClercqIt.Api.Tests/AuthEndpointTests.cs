@@ -84,6 +84,48 @@ public class AuthEndpointTests : IAsyncLifetime
         response.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
+    [Fact(DisplayName = "GET /api/auth/identity-provider without a token returns 401")]
+    public async Task IdentityProvider_Anonymous_ReturnsUnauthorized()
+    {
+        var response = await _client.GetAsync("/api/auth/identity-provider");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+    }
+
+    [Fact(DisplayName = "GET /api/auth/identity-provider without Admin.View returns 403")]
+    public async Task IdentityProvider_WithoutAdminView_ReturnsForbidden()
+    {
+        var client = await _factory.CreateClientForUserAsync("test");
+
+        var response = await client.GetAsync("/api/auth/identity-provider");
+
+        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+    }
+
+    [Fact(DisplayName = "GET /api/auth/identity-provider shows the realm, console links, clients and roles to an admin")]
+    public async Task IdentityProvider_Admin_ReturnsSetup()
+    {
+        var client = await _factory.CreateClientForUserAsync("admin");
+
+        var response = await client.GetAsync("/api/auth/identity-provider");
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var body = await response.Content.ReadAsStringAsync();
+        var setup = await response.Content.ReadFromJsonAsync<IdentityProvider>();
+        setup!.Realm.Should().Be(CustomWebApplicationFactory.Realm);
+        setup.Authority.Should().Be($"{_factory.KeycloakUrl}/realms/{CustomWebApplicationFactory.Realm}");
+        setup.AdminConsoleUrl.Should().Be($"{_factory.KeycloakUrl}/admin/{CustomWebApplicationFactory.Realm}/console/");
+        setup.WebClientId.Should().Be(CustomWebApplicationFactory.WebClientId);
+        setup.McpClientId.Should().Be("clercqit-mcp");
+        setup.Roles.Select(r => r.Name).Should().Contain(["Admin.View", "Blogs.Contributor", "MyZen.Owner"]);
+        body.Should().NotContainAny("secret", "password", "Secret", "Password");
+    }
+
+    private sealed record IdentityProvider(
+        string Realm, string Authority, string AdminConsoleUrl, string WebClientId, string McpClientId, List<Role> Roles);
+
+    private sealed record Role(string Name, string Description);
+
     [Theory(DisplayName = "Social login endpoints do not exist")]
     [InlineData("/api/auth/github")]
     [InlineData("/api/auth/github/callback?code=x&state=y")]
