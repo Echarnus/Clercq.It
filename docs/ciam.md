@@ -23,6 +23,10 @@ On the free plan the deployment name is also the realm name, and Cloud IAM creat
 
 To get the free plan in **Create deployment**, move the user slider to **100**: the support level, instance type and price switch to Freemium, Mutualized and 0 €.
 
+### Find it from the admin
+
+Forgot where Cloud IAM lives? Sign in at `https://www.clercq.it/admin` and open **Administration > Settings** (issue #462). The **Authentication: Cloud IAM** section shows the provider, base URL, realm, issuer, the site and MCP client ids and the realm roles, with links to the Keycloak admin console, Cloud IAM and your Keycloak account page. The API serves these from `GET /api/auth/identity-provider` (`Admin.View` only), built from `Keycloak:BaseUrl`, `Keycloak:Realm`, `Keycloak:ClientId` and `Keycloak:McpClientId` (default `clercqit-mcp`). It never shows a password or client secret.
+
 ## Cloud IAM Setup Guide
 
 ### 1. Create Account and Deploy Keycloak

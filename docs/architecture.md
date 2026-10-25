@@ -430,6 +430,8 @@ Reads are public; writes need a role (policies in `src/ClercqIt.Api/Program.cs`)
 | `/api/certifications`, `/api/certifications/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Certifications.Contributor` |
 | `/api/images` | `POST` (multipart `image`), returns the stored URL | `Blogs.Contributor` |
 | `/api/auth/config` | `GET`, Keycloak issuer and public client id for the admin UI | Public |
+| `/api/auth/session` | `GET`, 204 when the token has an admin role (dashboard gate) | Any admin role |
+| `/api/auth/identity-provider` | `GET`, Cloud IAM URLs, realm, client ids and roles for the admin Settings page; no secrets | `Admin.View` |
 | `/api/features` | `GET`, the feature flags | Public |
 | `/api/stats/pageview` | `POST`, records a page view | Public |
 | `/api/stats` | `GET`, statistics summary | `Admin.View` |

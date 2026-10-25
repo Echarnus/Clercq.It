@@ -32,6 +32,14 @@ public static class AuthEndpoints
         .WithDescription("Returns 204 when the bearer token belongs to a user with an admin role, else 401 or 403")
         .RequireAuthorization(AdminAreaPolicy);
 
+        // The admin Settings page (issue #462): where Cloud IAM lives and how it is set up.
+        // Only URLs, the realm, client ids and role names; never a password or client secret.
+        group.MapGet("/identity-provider", (IdentityProviderSettings settings) => Results.Ok(settings))
+        .WithName("GetIdentityProvider")
+        .WithSummary("Get the identity provider setup for the admin settings")
+        .WithDescription("Returns the Cloud IAM / Keycloak URLs, realm, client ids and roles the site uses. Contains no secrets")
+        .RequireAuthorization("AdminView");
+
         // No registration or social login endpoints: the owner creates admin
         // users in the Cloud IAM console (see docs/ciam.md).
 
