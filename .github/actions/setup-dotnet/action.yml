@@ -1,0 +1,28 @@
+name: Set up .NET
+description: >-
+  Use the runner's preinstalled .NET SDK when it satisfies global.json, and
+  install the SDK from global.json with actions/setup-dotnet only when it does not.
+  This keeps CI working when Microsoft's download feed fails (#467).
+
+runs:
+  using: composite
+  steps:
+    # `dotnet --version` resolves the SDK through global.json and fails when no
+    # installed SDK matches, so it tells whether a download is needed.
+    - name: Check the preinstalled .NET SDK
+      id: preinstalled
+      shell: bash
+      run: |
+        if sdk=$(dotnet --version 2>/dev/null); then
+          echo "Using the preinstalled .NET SDK $sdk (matches global.json)."
+          echo "found=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "No preinstalled .NET SDK matches global.json; installing it."
+          echo "found=false" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Install the .NET SDK from global.json
+      if: steps.preinstalled.outputs.found != 'true'
+      uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+      with:
+        global-json-file: global.json
