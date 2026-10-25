@@ -30,7 +30,7 @@ Labels are defined in `.github/labels.yml` and synced by `.github/workflows/labe
 
 ## Docs rule
 
-Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR.
+Every issue keeps `docs/` up to date. A PR that changes behaviour, configuration, infrastructure, pipelines or this workflow updates the matching page in the same PR. A PR that changes the architecture (a container, an external system, a database login, an API component, the sign-in or MCP flow) also updates the [C4 diagrams](./architecture.md#c4-diagrams).
 
 ### Docs check
 
@@ -59,12 +59,28 @@ New pages are added to the index in [docs/README.md](./README.md).
 
 GitHub enforces the trunk-based model (issue #245). The rules live as code in `.github/rulesets/` and a weekly audit checks they are still in place.
 
+### Live status
+
+Checked on 2026-10-24 with `gh api repos/Echarnus/Clercq.It/rulesets` and `gh api repos/Echarnus/Clercq.It/rules/branches/main` (issue #433):
+
+| Rule | Status |
+| --- | --- |
+| Ruleset `main` | **Active** since 2026-10-22 (id 25640431). Matches `main.json`: all 13 required checks, strict, squash only, no bypass actors. `main` is protected. |
+| Ruleset `prod-tags` | **Not applied.** Anyone with write access, and any workflow with `contents: write`, can create, move or delete `prod-*` and `v*` tags. |
+| Repository settings | Applied: auto-merge on, squash only, head branches deleted after merge. |
+
+To apply `prod-tags`, an admin runs this once from the repository root (agents are not allowed to change repository rules):
+
+```bash
+gh api -X POST repos/Echarnus/Clercq.It/rulesets --input .github/rulesets/prod-tags.json
+```
+
 ### Ruleset `main` (`.github/rulesets/main.json`)
 
 | Rule | Setting |
 | --- | --- |
 | Pull request required | Yes, **0** approvals (no human review; a reviewer agent may be added in #251), stale approvals dismissed, squash merge only |
-| Required status checks | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts`, `Docs updated`, `PR conventions`, `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan`, `Trivy Filesystem Scan` |
+| Required status checks | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Container smoke test`, `Test deploy scripts`, `Docs updated`, `PR conventions`, `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan`, `Trivy Filesystem Scan` |
 | Branch up to date | Required before merging (strict checks) |
 | Linear history | Required |
 | Force push and deletion | Blocked |

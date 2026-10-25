@@ -7,7 +7,7 @@ This guide covers local development setup and workflows for the Clercq.It projec
 ### Required Software
 - **.NET 10 SDK** (LTS) - [Download](https://dotnet.microsoft.com/download/dotnet/10.0)
 - **Node.js 24 LTS** - [Download](https://nodejs.org/). CI (`test.yml`, `security-scan.yml`) and the Docker image (`node:24-slim`) use the same major.
-- **pnpm 10.12.4+** - Install with `npm install -g pnpm`
+- **pnpm** - Run `corepack enable` once (Corepack ships with Node 24). It installs the exact pnpm version in `src/ClercqIt.Web/package.json` (`packageManager`, pinned with its sha512 hash) and checks the hash.
 - **Docker** - [Download](https://www.docker.com/products/docker-desktop)
 - **Git** - [Download](https://git-scm.com/)
 
@@ -33,11 +33,21 @@ Clercq.It/
 │   ├── ClercqIt.Web/            # Next.js frontend
 │   ├── Clercq.It.Domain/        # Domain layer
 │   ├── Clercq.It.Application/   # Application layer
-│   ├── Clercq.It.Infrastructure/ # Infrastructure layer
+│   ├── Clercq.It.Infrastructure/ # Infrastructure layer (EF Core, migrations in EF/Migrations)
+│   ├── Clercq.It.Infrastructure.EF.Migrations/ # Console app that applies migrations (Aspire only)
+│   ├── Clercq.It.ContentImport/ # Imports content/ into the database (deploy pipeline)
 │   ├── Clercq.It.AppHost/       # Aspire orchestration (dev only)
-│   └── Clercq.It.ServiceDefaults/ # Aspire service defaults (dev only)
+│   ├── Clercq.It.ServiceDefaults/ # Health checks and OpenTelemetry (also in production)
+│   ├── Dockerfile, start.sh, nginx.conf # Production image
+│   └── Directory.Packages.props # Central NuGet versions
 ├── tests/                       # Test projects
-│   └── ClercqIt.Api.Tests/      # API unit tests
+│   ├── Clercq.It.Domain.Tests/
+│   ├── Clercq.It.Application.Tests/
+│   ├── Clercq.It.Architecture.Tests/ # Layering rules
+│   ├── Clercq.It.ContentImport.Tests/
+│   └── ClercqIt.Api.Tests/      # API integration tests (Testcontainers)
+├── content/                     # Markdown content imported on deploy
+├── infra/terraform/             # Scaleway infrastructure
 ├── docs/                        # Documentation
 └── .github/                     # GitHub workflows & config
 ```
@@ -79,11 +89,13 @@ dotnet run
 ```
 
 This will automatically:
-- Launch the Aspire Dashboard at `http://localhost:15888`
-- Start PostgreSQL with pgAdmin web interface
-- Launch the API with automatic database connection and migrations
-- Start the Next.js frontend (if configured)
-- Provide comprehensive observability, logging, and monitoring
+- Launch the Aspire Dashboard at `https://localhost:17266` (`http://localhost:15165` with the `http` profile; see `src/Clercq.It.AppHost/Properties/launchSettings.json`)
+- Start PostgreSQL (database `ClercqItDb`, with a data volume) and pgAdmin
+- Start Keycloak on port 8080 with the `clercqit` realm and seed the test users below
+- Run `Clercq.It.Infrastructure.EF.Migrations` once to apply the EF Core migrations; the API waits for it
+- Start the API and the Next.js frontend (`pnpm dev`)
+
+Local object storage (MinIO) is not part of the AppHost; the command to run it is in a comment in `src/Clercq.It.AppHost/Program.cs`.
 
 ### Aspire Dashboard Features
 
@@ -99,8 +111,9 @@ The Aspire Dashboard provides:
 When running with Aspire, the following services are available:
 
 - **PostgreSQL Database**: `postgres` service with pgAdmin
-- **API Service**: `clercqit-api` at `https://localhost:7000`
-- **Next.js Frontend**: `clercqit-web` (if configured)
+- **Keycloak**: `keycloak` at `http://localhost:8080`
+- **API Service**: `clercqit-api` at `http://localhost:5001` (fixed port; 5000 clashes with macOS AirPlay)
+- **Next.js Frontend**: `clercqit-web` at `http://localhost:3000` (fixed, because the Keycloak redirect URIs use it)
 
 ### Keycloak Authentication
 
@@ -217,11 +230,13 @@ cd src/ClercqIt.Api
 dotnet run
 ```
 
-The API will be available at:
-- HTTPS: `https://localhost:7000`
+The API will be available at (`src/ClercqIt.Api/Properties/launchSettings.json`):
 - HTTP: `http://localhost:5000`
-- Swagger UI: `https://localhost:7000/swagger`
-- Scalar UI: `https://localhost:7000/scalar/v1`
+- HTTPS (`https` profile): `https://localhost:7137`
+- OpenAPI document: `http://localhost:5000/openapi/v1.json`
+- Scalar UI: `http://localhost:5000/scalar/v1`
+
+OpenAPI and Scalar are only mapped in the Development environment. There is no Swagger UI. The API does not migrate the database on startup: run `dotnet ef database update` as above, or use Aspire.
 
 ### Frontend Setup (Next.js)
 
@@ -258,16 +273,17 @@ What the owner configures on the cloud environment (Project settings → Cloud e
 
 `global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`setup-dotnet` `10.0.x`) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`). The backend stays on .NET 10 (LTS) and EF Core 10 until a later LTS is worth the move: .NET 11 is a short-term support release and was still a release candidate at the audit of 23 October 2026 (#352). The tests run xunit v2 on `Microsoft.NET.Test.Sdk` 18, `xunit.runner.visualstudio` 4 and `coverlet.collector` 10 (#359; 6.0.4 skipped async method bodies on .NET 10); FluentAssertions stays on 7.x (licence, see [Testing](./testing.md)).
 
-Commands agents run before opening a PR:
+Before opening a PR, agents run the `quality-check` skill (see [Quality gates](#quality-gates)). By hand, the same gates are:
 
 ```bash
-dotnet build src/ClercqIt.Api/ClercqIt.Api.csproj
-dotnet test tests/ClercqIt.Api.Tests
-dotnet test tests/Clercq.It.Application.Tests
-dotnet test tests/Clercq.It.Domain.Tests
-cd src/ClercqIt.Web && pnpm lint && pnpm format:check && pnpm typecheck && pnpm build
-cd infra/terraform && terraform fmt -check
+dotnet format Clercq.It.CI.slnf --verify-no-changes
+dotnet build Clercq.It.CI.slnf -c Release
+dotnet test Clercq.It.CI.slnf -c Release --no-build
+cd src/ClercqIt.Web && pnpm lint && pnpm format:check && pnpm typecheck && pnpm test && pnpm build
+cd infra/terraform && terraform fmt -check && terraform validate
 ```
+
+The API integration tests (`tests/ClercqIt.Api.Tests`) need Docker for Testcontainers. In the cloud container, start it first with `dockerd > /tmp/dockerd.log 2>&1 &`.
 
 ## Configuration
 
@@ -355,6 +371,8 @@ One standard for every editor and for CI, defined in two files at the repo root:
 
 - **`src/Directory.Packages.props`**: central package management (`ManagePackageVersionsCentrally`). Every NuGet version lives here; `PackageReference` items in the csproj files have no `Version`. To add a package, add a `PackageVersion` line here and a version-less `PackageReference` in the project. It sits in `src/` because the Docker build context is `src/` (the Dockerfile copies it before `dotnet restore`); `tests/Directory.Packages.props` imports it. Dependabot updates it.
 
+- **`packages.lock.json`** (one per project, next to the csproj): `RestorePackagesWithLockFile` in `Directory.Build.props` pins every NuGet package, direct and transitive, by version and content hash (#399). CI, the Docker build and the session-start hook restore with `dotnet restore --locked-mode`, which fails when a lock file is missing or out of date. After adding or updating a package in `src/Directory.Packages.props`, run `dotnet restore Clercq.It.CI.slnf --force-evaluate` and commit the changed lock files. Dependabot updates them in its own PRs. The Aspire AppHost has no lock file: it pulls OS-specific packages, so its lock file would differ on every machine.
+
 `Clercq.It.CI.slnf` is the solution without the AppHost. Use it for restore, build, test and format, as CI does.
 
 ```bash
@@ -380,7 +398,7 @@ The Next.js app in `src/ClercqIt.Web` has three gates (issue #240). The `Test Ne
 
 | Command | Tool | Fix with |
 | --- | --- | --- |
-| `pnpm lint` | ESLint 9, `eslint.config.mjs`, zero warnings allowed | `pnpm lint:fix`, then fix the rest by hand |
+| `pnpm lint` | ESLint 10, `eslint.config.mjs`, zero warnings allowed | `pnpm lint:fix`, then fix the rest by hand |
 | `pnpm format:check` | Prettier, `.prettierrc.json` (2 spaces from `.editorconfig`, width 100, Tailwind class order read from `app/globals.css`) | `pnpm format` |
 | `pnpm typecheck` | `tsc --noEmit` | by hand |
 
@@ -398,13 +416,15 @@ With no human review, agents are the only thing between a change and production,
 
 **Rules** (`.claude/rules/*.md`) load into Claude's context. A rule with `paths:` front matter loads only when Claude works on matching files; one without loads always.
 
+Do not name a rule `security.md`: OpenSSF Scorecard reads the first file with that name anywhere in the repo as the security policy, so it would shadow the root `SECURITY.md` (#400).
+
 | Rule | Loads for | Covers |
 | --- | --- | --- |
 | `backend.md` | `src/**/*.cs`, `tests/**/*.cs`, project files | layering, analyzer policy, format/build/test commands |
 | `frontend.md` | `src/ClercqIt.Web/**` | ESLint, Prettier and TypeScript policy |
 | `testing.md` | `src/**`, `tests/**` | test conventions and coverage ratchet |
 | `infra.md` | `infra/**` | `terraform fmt`/`validate`, secrets in Terraform |
-| `security.md` | always | no secrets, SAST, suppressions need a reason |
+| `secure-coding.md` | always | no secrets, SAST, suppressions need a reason |
 | `docs.md` | always | the docs rule and the docs check |
 
 **Skills** (`.claude/skills/<name>/SKILL.md`) are commands Claude runs on request or by itself:
@@ -434,7 +454,7 @@ Four hook scripts keep agents inside these gates while they edit:
 | `.claude/hooks/frontend-stop-check.sh` | `Stop` | Runs Prettier and ESLint on the frontend files changed versus `main`, plus `tsc --noEmit`. Any failure blocks ending the turn, once per stop. |
 | `.claude/hooks/backend-stop-check.sh` | `Stop` | Runs `dotnet format Clercq.It.CI.slnf --verify-no-changes` (whitespace, style and analyzers) on the C# files changed versus `main`, and `terraform fmt -check` on changed Terraform files. Any failure blocks ending the turn, once per stop. |
 
-They are registered in `.claude/settings.json`. Agents cannot edit that file (it counts as self-modification), so the owner adds this once, next to the existing `SessionStart` entry (issue #304):
+They take effect once they are registered in `.claude/settings.json`. As of 24 October 2026 that file only registers the `SessionStart` hook, so the four scripts above do not run yet. Agents cannot edit that file (it counts as self-modification), so the owner adds this once, next to the existing `SessionStart` entry (issue #304):
 
 ```json
 "PostToolUse": [
@@ -482,8 +502,11 @@ docker build -t clercq-it ./src
 # Run container
 docker run -p 80:80 \
   -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=ClercqItDb;Username=clercq_user;Password=clercq_pass;" \
+  -e Keycloak__BaseUrl="http://host.docker.internal:8080" \
   clercq-it
 ```
+
+Without `Keycloak__BaseUrl` the API refuses to start (`Authentication is not configured`), and the container exits because `start.sh` stops when a service dies.
 
 The application will be available at `http://localhost`
 
@@ -494,9 +517,9 @@ The application will be available at `http://localhost`
 #### Port Already in Use
 
 ```bash
-# Find process using port 5000/7000
+# Find process using port 5000 (API) or 3000 (frontend)
 lsof -i :5000
-lsof -i :7000
+lsof -i :3000
 
 # Kill process
 kill -9 <PID>
@@ -529,7 +552,7 @@ dotnet build
 
 #### Aspire Dashboard Not Starting
 
-1. **Port Conflicts**: Aspire Dashboard typically uses port 15888
+1. **Port Conflicts**: the dashboard uses ports 17266 and 15165, Keycloak 8080, the API 5001 and the frontend 3000
 2. **Docker Requirements**: PostgreSQL requires Docker Desktop to be running
 3. **Network Connectivity**: Ensure Docker networks allow inter-container communication
 
@@ -546,7 +569,7 @@ If an AppHost error shows up in CI/CD or Docker builds, check that:
 
 - Check Aspire Dashboard logs for service startup issues
 - Verify PostgreSQL container is running: `docker ps`
-- Test API health endpoint: `https://localhost:7000/health`
+- Test API health endpoint: `http://localhost:5000/health` (`http://localhost:5001/health` under Aspire)
 
 ## IDE Configuration
 
@@ -575,8 +598,8 @@ Once your development environment is set up:
 1. Review the [Architecture Documentation](./architecture.md)
 2. Understand [Versioning and Branching](./versioning.md)
 3. Learn about [CI/CD Pipelines](./devops.md)
-4. Explore the API endpoints at `https://localhost:7000/swagger` or `https://localhost:7000/scalar/v1`
-5. Check the test coverage with `dotnet test --collect:"XPlat Code Coverage"`
+4. Explore the API endpoints at `http://localhost:5000/scalar/v1`
+5. Check the test coverage as described in [Testing](./testing.md)
 6. Start developing new features following Clean Architecture patterns
 
 ## Additional Resources

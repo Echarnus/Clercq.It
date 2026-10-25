@@ -19,6 +19,8 @@ export const handlers = [
       ? HttpResponse.json(certification)
       : new HttpResponse(null, { status: 404 }),
   ),
+  // Page views from the site's tracker are accepted and dropped.
+  http.post(`${API}/api/stats/pageview`, () => new HttpResponse(null, { status: 204 })),
   // Every feature flag is off unless a test turns it on.
   http.get(`${API}/api/features`, () => HttpResponse.json({})),
   http.get(`${API}/api/auth/config`, () =>

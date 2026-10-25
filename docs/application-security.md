@@ -56,7 +56,9 @@ Implements multi-tier rate limiting to prevent DDoS attacks:
 
 #### API Endpoints Rate Limit
 - **30 requests per minute** - Standard API calls
-- Applied to: Images, Projects, Blogs, Certifications endpoints
+- Applied to: Images, Projects, Blogs, Certifications, Auth (`/api/auth/config`), Features (`/api/features`), MyZen, MCP and the statistics summary (`GET /api/stats`). `POST /api/stats/pageview` only has the global limit.
+
+Both limits are partitioned by the connection's remote address. In the container every request reaches the API from nginx or from Next.js on `localhost`, and the API does not read `X-Forwarded-For`, so in production all visitors currently share one bucket (#438).
 
 #### Admin sign-in (authorization code + PKCE)
 - The admin UI signs in with the OAuth 2.1 authorization code flow and PKCE (S256) against Keycloak, using `oidc-client-ts` (`src/ClercqIt.Web/lib/auth.ts`, issue #257). Keycloak's own login page handles passwords, MFA, brute-force protection and required actions.
@@ -281,6 +283,10 @@ These are GitHub settings, not code. The owner turns them on once:
 
 1. **Settings → Code security → Secret Protection**: enable it, and enable **Push protection**.
 2. Apply the rulesets in `.github/rulesets/` as described in [contributing.md](./contributing.md#changing-a-rule). The `main` ruleset requires `Semgrep`, `gitleaks`, `CodeQL gate`, `.NET Security Scan`, `npm Security Audit`, `Trivy Container Scan` and `Trivy Filesystem Scan`.
+
+### Workflow output
+
+This repository is public, so workflow logs and job summaries are public too. Never print a secret or a sensitive Terraform output there. `deploy.yml` masks the sensitive outputs it reads (`::add-mask::`), and the `Terraform Output` step in `infra.yml` writes only the outputs without `sensitive = true` to the summary. Until #435 it wrote all of them with `terraform output -json`, which shows sensitive values in plain text; the exposed verify credentials were rotated (see [Secrets](./secrets.md#rotating-a-terraform-generated-credential)).
 
 ## Security Layers Summary
 

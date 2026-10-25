@@ -16,6 +16,33 @@ output "database_name" {
   value       = scaleway_rdb_database.portfolio_app_db.name
 }
 
+output "database_ca_certificate" {
+  description = "TLS certificate of the database instance (deploy.yml pins it for psql and the content import)"
+  value       = scaleway_rdb_instance.portfolio_db.certificate
+}
+
+output "database_migrator_user" {
+  description = "Migration login (owns the schema; deploy.yml only)"
+  value       = scaleway_rdb_user.portfolio_app_user.name
+}
+
+output "database_migrator_password" {
+  description = "Migration login password (from Secret Manager)"
+  value       = local.secrets["db-app-password"]
+  sensitive   = true
+}
+
+output "database_app_user" {
+  description = "Runtime login (rows only): the container and the content import"
+  value       = scaleway_rdb_user.portfolio_runtime_user.name
+}
+
+output "database_app_password" {
+  description = "Runtime login password (from Secret Manager)"
+  value       = random_password.db_runtime.result
+  sensitive   = true
+}
+
 output "container_url" {
   description = "Container application URL"
   value       = scaleway_container.portfolio_app.domain_name
@@ -122,13 +149,24 @@ output "verify_database_name" {
 }
 
 output "verify_database_user" {
-  description = "Verify database user"
+  description = "Verify migration login (owns the schema)"
   value       = scaleway_rdb_user.verify.name
 }
 
 output "verify_database_password" {
   description = "Verify database password (from Secret Manager)"
   value       = local.verify_secrets["db-password"]
+  sensitive   = true
+}
+
+output "verify_database_app_user" {
+  description = "Verify runtime login (rows only)"
+  value       = scaleway_rdb_user.verify_app.name
+}
+
+output "verify_database_app_password" {
+  description = "Verify runtime login password (from Secret Manager)"
+  value       = local.verify_secrets["app-password"]
   sensitive   = true
 }
 

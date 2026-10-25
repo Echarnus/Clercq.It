@@ -50,13 +50,14 @@ if ! command -v scw >/dev/null 2>&1; then
 fi
 
 # Restore .NET projects (never the local-only Aspire AppHost).
-DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj
+DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore src/ClercqIt.Api/ClercqIt.Api.csproj --locked-mode
 for project in tests/ClercqIt.Api.Tests tests/Clercq.It.Application.Tests tests/Clercq.It.Domain.Tests tests/Clercq.It.ContentImport.Tests; do
-  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$project"
+  DOTNET_CLI_TELEMETRY_OPTOUT=1 dotnet restore "$project" --locked-mode
 done
 
 # Frontend dependencies.
+# Corepack installs the pnpm version (and checks the hash) named in package.json's packageManager.
 if ! command -v pnpm >/dev/null 2>&1; then
-  npm install -g pnpm@10.12.4
+  $SUDO corepack enable
 fi
 (cd src/ClercqIt.Web && pnpm install --frozen-lockfile)

@@ -55,3 +55,13 @@ variable "keycloak_realm" {
   default     = "clercqit"
 }
 
+
+variable "terraform_access_key" {
+  description = "Access key (not the secret) of the API key Terraform runs with. Its owner is allowed in the bucket policies (storage_policies.tf), so Terraform and the deploy pipeline keep access to the buckets."
+  type        = string
+
+  validation {
+    condition     = length(var.terraform_access_key) > 0
+    error_message = "Set TF_VAR_terraform_access_key to the access key Terraform uses (the SCW_ACCESS_KEY value)."
+  }
+}

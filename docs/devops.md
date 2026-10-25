@@ -8,22 +8,60 @@ The CI/CD pipeline is built using **GitHub Actions** and follows **trunk-based d
 
 ## Pipeline Workflows
 
-The project uses six main workflows:
+The repository has 13 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
 
-1. **Test Pipeline** (`test.yml`) - Runs on every push and PR with security checks
-2. **Build Pipeline** (`build.yml`) - Builds and publishes Docker images with vulnerability scanning
-3. **Security Scanning** (`security-scan.yml`) - Comprehensive security analysis
-4. **CodeQL Analysis** (`codeql.yml`) - Advanced semantic code security analysis
-5. **Infrastructure Pipeline** (`infra.yml`) - Manages Terraform infrastructure
-6. **Deploy Pipeline** (`deploy.yml`) - Verifies the image in the verify environment, then deploys the same digest to production
-7. **Docs check** (`docs-check.yml`) - Fails a PR that changes code, infra or workflows without updating `docs/`
-8. **Sync labels** (`labels.yml`) - Applies `.github/labels.yml` to the repository
-9. **SAST** (`sast.yml`) - Semgrep and gitleaks on every PR and on `main`, blocking (see [Application security](./application-security.md#static-analysis-sast))
-10. **OpenSSF Scorecard** (`scorecard.yml`) - Scores repository security practices and publishes the result behind the README badge
+| Workflow | Runs on | What it does | Required checks |
+| --- | --- | --- | --- |
+| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build, Docker build without push, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts` |
+| Docs check (`docs-check.yml`) | PR to `main` (also on label changes) | Fails code changes without a `docs/` change | `Docs updated` |
+| PR conventions (`pr-conventions.yml`) | PR to `main` (also on edit) | Branch name `<type>/<issue>-<slug>` and `Closes #<n>` in the body | `PR conventions` |
+| SAST (`sast.yml`) | PR, push to `main`, by hand | Semgrep (ERROR findings block) and gitleaks | `Semgrep`, `gitleaks` |
+| CodeQL (`codeql.yml`) | PR, push to `main`, Mondays 08:00 UTC, by hand | C# and JS/TS analysis; the gate fails on an open high or critical alert | `CodeQL gate` |
+| Security Scanning (`security-scan.yml`) | PR, push to `main`, daily 02:00 UTC, by hand | Trivy image and filesystem scans, NuGet and npm vulnerability audits | `Trivy Container Scan`, `Trivy Filesystem Scan`, `.NET Security Scan`, `npm Security Audit` |
+| Deploy Infra (`infra.yml`) | PR or push touching `infra/**`; after every `Deploy to Scaleway` run; by hand | `terraform fmt`, `validate` and plan on PRs (plan posted as a comment); apply on `main` | none (only runs on `infra/` PRs) |
+| build (`build.yml`) | Push to `main`, by hand | Runs `test.yml` again, computes the version, builds and pushes the image to Docker Hub with provenance, Trivy scan | — |
+| Deploy to Scaleway (`deploy.yml`) | After a successful `build` on `main`, by hand | Verify stage, promote the same digest to production, smoke test with rollback, `prod-<version>` tag and release | — |
+| OpenSSF Scorecard (`scorecard.yml`) | Push to `main`, Mondays 02:30 UTC, branch protection changes, by hand | Scores the repo and feeds the README badge | — |
+| Repository audit (`repo-audit.yml`) | Mondays 06:00 UTC, by hand | Checks rulesets, repo settings, branches and tags against the rules in [Enforced rules](./contributing.md#enforced-rules) | — |
+| Sync labels (`labels.yml`) | Push to `main` that changes `.github/labels.yml`, by hand | Applies the label list | — |
+| Pipeline Test (`pipeline-test.yml`) | By hand only | Smoke checks of the pipeline pieces | — |
+
+Dependabot also opens weekly update PRs, which go through the same PR checks.
+
+### On a pull request
+
+Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml`, `codeql.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 13 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
+
+### On merge to main
+
+The squash commit on `main` starts this chain, with no manual step:
+
+1. `build.yml`: runs the tests again, builds and pushes `echarnus/clercq-it:<version>` with signed provenance. `sast.yml`, `codeql.yml`, `security-scan.yml` and `scorecard.yml` also run on the push.
+2. `deploy.yml` (after a successful build): **verify** (migrate the verify database, import content, deploy the image to `clercq-it-verify`, smoke test), then **promote** the same image digest to production (migrations, content import, deploy, smoke test, roll back on failure), then **release** (`prod-<version>` tag and GitHub Release). A failed verify or smoke test opens a p1 issue.
+3. `infra.yml` (after every `Deploy to Scaleway` run that succeeded, or a push that touches `infra/`): `terraform apply` in the `production-terraform` concurrency group.
 
 How issues, branches, PRs and reviews fit together is described in [Contributing](./contributing.md). The rules GitHub enforces on `main` and on release tags, and the weekly audit that checks them, are in [Enforced rules](./contributing.md#enforced-rules).
 
 Additionally, **Dependabot** runs automatically to keep dependencies secure and up to date.
+
+### Workflow token permissions
+
+Every workflow sets a read-only `permissions` block at the top (`contents: read`, sometimes `actions: read` or `read-all`). A job that needs to write asks for it in its own `permissions` block, and only for the scopes it uses (#397):
+
+| Workflow | Job | Write scopes |
+| --- | --- | --- |
+| `build.yml` | `build` | `contents` (initial version tag), `id-token` and `attestations` (build provenance) |
+| `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
+| `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
+| `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
+| `deploy.yml` | `deploy` | `issues` (p1 issue on a failed verify or smoke test) |
+| `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
+| `labels.yml` | `sync` | `issues` |
+| `sast.yml` | `semgrep` | `security-events` (SARIF upload) |
+| `repo-audit.yml` | `audit` | `issues` |
+| `scorecard.yml` | `analysis` | `security-events`, `id-token` |
+
+A job that calls a reusable workflow (`build.yml` calling `test.yml`) caps that workflow's permissions, so give the calling job what the called workflow needs. A new workflow follows the same rule; OpenSSF Scorecard's Token-Permissions check scores any top-level write as a failure.
 
 ## Workflow and review pipelines
 
@@ -42,39 +80,64 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 ### Jobs
 
 #### test-dotnet
-- Uses .NET 10
-- Runs xUnit tests with code coverage
-- Uploads coverage to Codecov
-- Tests located in `/tests/` directory
+- Uses .NET 10 and restores `Clercq.It.CI.slnf` in locked mode (`--locked-mode`)
+- Checks formatting (`dotnet format --verify-no-changes`), then builds in Release with warnings as errors
+- Runs the unit tests, then the API integration tests (`tests/ClercqIt.Api.Tests`, PostgreSQL and Keycloak in Testcontainers)
+- Runs the backend coverage gate (`.github/scripts/check_coverage.py` against `tests/coverage-thresholds.json`, see [Testing](./testing.md))
+- Uploads the coverage report as an artifact and to Codecov (Codecov failures do not fail the job)
+- Lists vulnerable NuGet packages for the API (informational; the blocking check is `.NET Security Scan`)
 
 #### test-frontend
 - Uses Node.js 24 (LTS) and pnpm, the same Node major as the Docker image (`node:24-slim`)
-- Runs Jest tests and ESLint
-- Builds Next.js application to verify compilation
+- Runs ESLint (no warnings allowed), the Prettier check and the TypeScript check
+- Builds the Next.js application
+- Runs the Vitest unit tests with the frontend coverage gate (`pnpm test:coverage`)
+- Runs `pnpm audit --audit-level=high`
 
 
 #### docker-build
 - Pull requests only
-- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`. The .NET stage copies `src/nuget.config` and `src/Directory.Packages.props` (central package versions) before `dotnet restore`; the build context is `src/`, so files at the repo root are not in the image.
+- Builds the production image from `src/Dockerfile` for `linux/amd64` without pushing it, so a broken Dockerfile fails the PR instead of the build on `main`. The .NET stage copies `src/nuget.config`, `src/Directory.Packages.props` (central package versions) and each project's `packages.lock.json` before `dotnet restore --locked-mode`, and the Node stage installs pnpm through Corepack from the hash-pinned `packageManager` field; the build context is `src/`, so files at the repo root are not in the image.
+
+#### container-test (`Container smoke test`)
+- Pull requests only, required check (issue #439)
+- Builds the image with `load: true` and runs it the way Scaleway does, so a container that crashes at startup fails the PR. The PR build alone never started the image: the missing libicu in 1.0.247 to 1.0.252 only showed after merge.
+- A `postgres:17-alpine` service container is the throwaway database. The job applies the idempotent migration script with `psql` and runs the content import (`src/Clercq.It.ContentImport`), the same steps as `deploy.yml`.
+- `docker run --network host`: the container reaches Postgres on `localhost:5432` and serves the site on `http://localhost`. `Keycloak__BaseUrl` is a dummy (`https://keycloak.invalid`): the API needs a URL to start and only fetches the Keycloak metadata when someone signs in. Object storage is not configured, so image uploads are not covered.
+- The start step fails as soon as the container stops, and waits up to 120 s for `http://localhost/`. Then `.github/scripts/smoke-test.sh http://localhost 0.0.0-ci` runs the same checks as after a production deploy. On failure the job prints `docker logs` and the API and frontend logs from inside the container.
+- ZAP (#239) and Playwright e2e (#246) are meant to run as steps after the smoke test, against the same running container.
+
+Run the same check locally (needs Docker; from the repo root):
+
+```bash
+docker build -t clercq-it:ci --build-arg VERSION=0.0.0-ci ./src
+docker run -d --name ci-db -p 5432:5432 -e POSTGRES_DB=clercqit_ci -e POSTGRES_USER=clercqit_user -e POSTGRES_PASSWORD=ci-only-password postgres:17-alpine
+# apply the migrations and import content as in the job, then:
+docker run -d --name clercq-it --network host \
+  -e ConnectionStrings__DefaultConnection='Host=localhost;Port=5432;Database=clercqit_ci;Username=clercqit_user;Password=ci-only-password' \
+  -e Keycloak__BaseUrl=https://keycloak.invalid clercq-it:ci
+.github/scripts/smoke-test.sh http://localhost 0.0.0-ci
+```
 
 #### deploy-scripts
 - Pull requests only
 - Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI)
+- Runs `check-pr-conventions.test.sh` and the Python tests in `.github/scripts/tests/` (docs check, repository audit, coverage gate)
 
 ### Example
 
 ```bash
-# Runs automatically on push/PR
-# Or manually trigger with
-gh workflow run test.yml
+# Runs automatically on every PR, and from build.yml on main.
+# It has no workflow_dispatch trigger, so it cannot be started by hand.
 ```
 
 ## Build Pipeline (`build.yml`)
 
 ### Triggers
-- Push to `main` branch only
-- Manual workflow dispatch with optional branch selection
-- Pull requests (test only, no build/push)
+- Push to `main`
+- Manual workflow dispatch. It builds the ref you dispatch from (`gh workflow run build.yml --ref <branch>`); the `branch` input is not used by any step.
+
+PRs do not run `build.yml`; they run `test.yml` directly.
 
 ### Jobs
 
@@ -82,17 +145,23 @@ gh workflow run test.yml
 - Calls the test pipeline to ensure all tests pass
 
 #### build
-- Uses GitVersion for semantic versioning
+- Uses GitVersion and `.github/actions/calculate-version` for the version (see [Versioning](./versioning.md))
+- Generates the idempotent migration script `migration.sql` (`dotnet ef migrations script --idempotent`) and uploads it as an artifact for `deploy.yml`
 - Builds `linux/amd64` only: Scaleway serverless containers run amd64, and an emulated arm64 build added 20+ minutes per merge
 - Publishes to Docker Hub with multiple tags:
   - Semantic version (e.g., `1.0.1`)
   - Short SHA (e.g., `abc1234`)
   - `latest` (for main branch)
-- Generates build attestation for security
+- Generates signed build provenance (`actions/attest-build-provenance`) and pushes it to the registry
+- Scans the pushed image with Trivy (CRITICAL and HIGH, report only; the blocking scan is `Trivy Container Scan` on the PR)
 
 ### Third-party actions
 
-`aquasecurity/trivy-action` is pinned to a commit SHA (v0.36.0). Its old unprefixed tags such as `0.28.0` no longer exist upstream, which is what broke every build on `main` from 10 March 2026. Prefer SHA pins for third-party actions.
+Every action in `.github/workflows/` and `.github/actions/` is pinned to a full commit SHA with the release it stands for as a comment, for example `actions/checkout@<sha> # v7.0.1` (#398). A tag can be moved or deleted upstream; a SHA cannot. `aquasecurity/trivy-action` shows why: its old unprefixed tags such as `0.28.0` vanished upstream, which broke every build on `main` from 10 March 2026.
+
+The `FROM` lines in `src/Dockerfile` are pinned the same way, as `image:tag@sha256:<digest>`.
+
+Dependabot (`.github/dependabot.yml`, `github-actions` and `docker` ecosystems) updates both the SHA or digest and the version comment, so pins do not go stale. When you add an action or image by hand, pin it too. To find the SHA for a release: `git ls-remote --tags https://github.com/<owner>/<repo> <tag>` (use the `^{}` line for annotated tags). To find an image digest: `docker buildx imagetools inspect <image>:<tag>`. OpenSSF Scorecard's Pinned-Dependencies check flags anything left unpinned.
 
 ### Docker Image Tags
 
@@ -206,43 +275,36 @@ gh workflow run codeql.yml
 ## Infrastructure Pipeline (`infra.yml`)
 
 ### Triggers
-- Push to `main` branch with changes to `infra/**` files only
-- Pull requests with changes to `infra/**` files
+- Pull requests that change `infra/**` (plan only)
+- Push to `main` that changes `infra/**`
+- After every completed `Deploy to Scaleway` run (`workflow_run`); the apply job only runs when that deploy succeeded
 - Manual workflow dispatch
 
-**Note**: The pipeline only runs when infrastructure files are modified to prevent conflicts with application deployments. This ensures Terraform doesn't revert container image versions set by the deploy pipeline.
+So Terraform is applied after every successful deploy, not only after infra changes. That is safe for the running image: both containers ignore `registry_image` (`lifecycle.ignore_changes`), so an apply never resets them to `:latest`.
 
 ### Jobs
 
-#### terraform-check
-- Validates Terraform formatting and configuration
-- Runs on all infrastructure changes
-
-#### terraform-plan
-- Creates Terraform execution plan
-- Runs on pull requests
-- Uses `infrastructure-plan` environment
+#### terraform-plan (`Terraform Plan`)
+- Pull requests only
+- Runs `terraform fmt -check` (reported, but `continue-on-error`, so it does not fail the job), `terraform init`, `terraform validate` and `terraform plan`
 - A failing `terraform plan` fails the job (`set -o pipefail`, since the output is piped through `tee`). Before this fix the check stayed green on a broken plan. The plan is still posted as a PR comment when it fails.
+- Not a required check in `.github/rulesets/main.json`
 
-#### terraform-apply
-- Applies Terraform changes to production
-- Runs on main branch push
-- Uses `production` environment with manual approval
-- Requires reviewer approval before execution
+#### terraform-deploy (`Deploy Infrastructure`)
+- Runs on the push, `workflow_run` and dispatch triggers above
+- Uses the `production` GitHub environment and the `production-terraform` concurrency group
+- Runs `terraform apply -auto-approve`, then writes the outputs without `sensitive = true` to the job summary (#435)
 
-#### terraform-destroy
-- Manual workflow to destroy infrastructure
-- Uses `production` environment with manual approval
-- Requires explicit confirmation
+There is no destroy job.
 
 ### Infrastructure Components
 
-- **Serverless Container**: Auto-scales 0-1 vCPU with 512MB memory
-- **Serverless SQL**: PostgreSQL database with minimal resource allocation
-- **Object Storage**: S3-compatible bucket for blog images with public-read ACL
-- **Organization**: ClercqIt with Portfolio namespace
-- **Cockpit Logging**: Scaleway Cockpit for centralized logs and metrics via OpenTelemetry
-- **Cost Optimization**: Infrastructure scales to zero when not in use
+- **Serverless container** `clercq-it-app`: 0 to 1 instances, 500 mVCPU, 512 MB, port 80, in the existing `portfolio` container namespace (read as a data source, not managed by Terraform)
+- **Managed PostgreSQL** `portfolio-db`: Scaleway RDB `DB-DEV-S`, PostgreSQL 16, no HA, backups on, public endpoint; database `clercqit_portfolio`, user `clercqit_user`. It does not scale to zero.
+- **Object Storage**: bucket `clercq-it-blog-images` for blog images, public-read ACL. Bucket policies (`storage_policies.tf`) keep each storage key to its own bucket and the state bucket to Terraform only ([secrets.md](./secrets.md#who-can-reach-which-bucket))
+- **IAM**: an application and objects-only API key the container uses for Object Storage, and a list-only Secret Manager application for the Claude agent (`iam.tf`)
+- **Secrets**: Scaleway Secret Manager (`secrets.tf`, see [Secrets](./secrets.md))
+- **Cockpit**: a token the container uses to send logs and metrics through OpenTelemetry
 
 - **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
 - **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
@@ -310,6 +372,7 @@ gh workflow run infra.yml
 #### release
 - Runs only after an automatic deploy (not for manual deploys)
 - Creates tag `prod-<version>` on the deployed commit and a GitHub Release with generated notes
+- Attaches the image's signed build provenance to the release (`.intoto.jsonl` and `.sigstore.json`; see [Versioning](./versioning.md#production-releases))
 - Uses the `prod-` prefix so GitVersion ignores the tag (see [Versioning](./versioning.md#production-releases))
 
 **Note**: The deployment implements a cache-busting strategy to work around Scaleway's image caching behavior with `min_scale=0` containers. This ensures fresh images are always pulled from the registry by forcing container recreation through a temporary scale-up/scale-down cycle.
@@ -398,7 +461,7 @@ Released versions are listed as GitHub Releases (`prod-<version>` tags).
 Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets.md)). GitHub keeps only what the pipelines need to reach Scaleway and Docker Hub, plus seed values that are read once while the secrets are created.
 
 ### Scaleway (GitHub repository secrets)
-- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for the S3 state backend). Needs IAM manager rights, because Terraform creates IAM applications and policies.
+- `SCALEWAY_ACCESS_KEY`: Scaleway API access key (also used as AWS_ACCESS_KEY_ID for the S3 state backend). Needs IAM manager rights, because Terraform creates IAM applications and policies. `infra.yml` also passes this access key (not the secret key) as `TF_VAR_terraform_access_key`, so the bucket policies allow its owner ([secrets.md](./secrets.md#who-can-reach-which-bucket)).
 - `SCALEWAY_SECRET_KEY`: Scaleway API secret key (also used as AWS_SECRET_ACCESS_KEY)
 - `SCALEWAY_ORGANIZATION_ID`: Scaleway organization ID
 - `SCALEWAY_PROJECT_ID`: Scaleway project ID
@@ -408,7 +471,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 - `DOCKER_PASSWORD`: Docker Hub access token
 
 ### Seeds and transitional secrets (GitHub repository secrets)
-- `DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `DATABASE_PASSWORD` is still read by the migration step in `deploy.yml` until the workflows read from Secret Manager directly.
+- `DATABASE_PASSWORD`, `KEYCLOAK_BASE_URL`: passed as `TF_VAR_*` and used only to seed the matching Secret Manager secret when it is first created. After that Terraform ignores them. `deploy.yml` no longer reads `DATABASE_PASSWORD`: it takes the migration and runtime logins from the Terraform outputs ([secrets.md](./secrets.md#database-logins)).
 - `KEYCLOAK_REALM`: optional, defaults to `clercqit`.
 
 ### Environment Variables
@@ -421,7 +484,7 @@ Application secrets live in **Scaleway Secret Manager** (see [Secrets](./secrets
 
 ### Automatic Deployment (Main Branch)
 
-1. Developer pushes to `main` branch
+1. A PR is squash-merged into `main` (direct pushes are blocked by the `main` ruleset)
 2. Test pipeline runs automatically
 3. If tests pass, build pipeline starts
 4. Docker image is built with semantic version
@@ -535,7 +598,7 @@ The CI/CD pipeline includes comprehensive automated security scanning:
 
 ### Container Security
 - **Non-root execution**: Containers run with non-privileged users
-- **Minimal attack surface**: Alpine-based images with minimal packages
+- **Minimal attack surface**: Debian slim based images (`node:24-slim`, `nginx:1.30-trixie`), pinned by digest
 - **Health checks**: Built-in container health monitoring
 - **Image attestation**: Signed provenance for supply chain security
 
@@ -549,7 +612,8 @@ Comprehensive security scanning workflow:
   - Trivy filesystem scanning
   - .NET security analysis
   - npm security audit
-  - OpenSSF Scorecard
+
+OpenSSF Scorecard runs in its own workflow, `scorecard.yml`.
 
 #### codeql.yml
 Advanced code analysis:
@@ -562,7 +626,7 @@ Automated dependency updates (`.github/dependabot.yml`):
 - **Schedule**: Weekly on Mondays at 8:00 AM UTC
 - **Ecosystems**: NuGet, npm (`src/ClercqIt.Web`), GitHub Actions, Docker, Terraform
 - **Grouping**: all patch and minor updates for an ecosystem arrive as one grouped PR per week (e.g. `nuget-minor-patch`, `web-minor-patch`). Major updates arrive as separate PRs.
-- **Review**: no default assignee or reviewer. The agent reviewer handles dependency PRs like any other PR: a grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
+- **Review**: no default assignee or reviewer, and no reviewer agent yet (#251). A grouped patch/minor PR is merged once CI is green. A major update PR is not merged directly; it is closed with a link to a planned upgrade issue, so the upgrade is done deliberately with code changes, docs and tests.
 - **Labeling**: `dependencies` plus the ecosystem label (`dotnet`, `frontend`, `ci/cd`, `docker`, `infrastructure`)
 - **Stale PRs**: to refresh a Dependabot PR whose base is far behind `main`, comment `@dependabot recreate`. Closing a Dependabot PR makes Dependabot skip that version; it only proposes the dependency again when a newer version is released.
 - **Action majors**: Dependabot proposes GitHub Actions majors as separate PRs too. The audit of 23 October 2026 (#353) moved every workflow to the latest major (`actions/checkout@v7`, `actions/upload-artifact@v7`, `actions/download-artifact@v8`, `actions/setup-dotnet@v6`, `github/codeql-action@v4`, `hashicorp/setup-terraform@v4`, the Docker actions, `codecov/codecov-action@v7`, `actions/github-script@v9`, `actions/attest-build-provenance@v4`, `gittools/actions@v4`, which needs GitVersion 6.2 or newer, so `versionSpec` is `6.8.x`; 6.8 and 6.0 compute the same version for this repo). These run on Node 24. In `actions/github-script` v9 scripts can no longer `require('@actions/github')`; use the injected `github` client.
@@ -624,7 +688,7 @@ trivy image clercq-it:local --severity HIGH,CRITICAL
 
 **Issue**: Tests fail during build
 - **Cause**: Code compilation or test errors
-- **Solution**: Run tests locally first with `dotnet test Clercq.It.CI.slnf` and `pnpm test`
+- **Solution**: Run the `quality-check` skill, or `dotnet test Clercq.It.CI.slnf` and `pnpm test` (in `src/ClercqIt.Web`)
 
 **Issue**: Next.js build fails with "useSearchParams() should be wrapped in a suspense boundary"
 - **Cause**: Next.js 15 requires components using `useSearchParams()` to be wrapped in a Suspense boundary for static page generation
@@ -675,8 +739,8 @@ trivy image clercq-it:local --severity HIGH,CRITICAL
 - **Solution**: Deploy workflow now only triggers after "build" workflow (removed "Deploy Infra" trigger to prevent conflicts)
 
 **Issue**: Container image reverting to `:latest` tag
-- **Cause**: Infrastructure pipeline was running on every push to main, resetting the container image to `:latest` via Terraform, conflicting with the deploy pipeline's version-specific updates
-- **Solution**: Infrastructure pipeline now only runs when files in `infra/**` are modified, preventing it from reverting application deployments
+- **Cause**: A Terraform apply reset the container image to `var.container_image` (`:latest`), overriding the version the deploy pipeline set
+- **Solution**: Both containers ignore `registry_image` (`lifecycle.ignore_changes`), so `deploy.yml` alone owns the running image. `infra.yml` still applies after every deploy.
 
 **Issue**: Deploy fails due to missing Docker image
 - **Cause**: Build pipeline didn't push to Docker Hub
@@ -755,15 +819,11 @@ gh secret list
 
 ## GitHub Environments
 
-### infrastructure-plan Environment
-- Used for Terraform planning in pull requests
-- No protection rules
-- Provides Scaleway credentials for planning
-
 ### production Environment
-- Used for Terraform apply and destroy operations
-- Requires manual approval from designated reviewers
-- Protected with deployment protection rules
+- Used by the `deploy` job in `deploy.yml` and the `terraform-deploy` job in `infra.yml`
+- Its protection rules are set in the GitHub repository settings, not in this repository. Merges to `main` deploy without a human step (see [Contributing](./contributing.md)), so the environment should not require reviewers.
+
+The `Terraform Plan` job on PRs uses no environment; it reads the repository secrets.
 
 ## Resources
 

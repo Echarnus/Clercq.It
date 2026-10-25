@@ -10,7 +10,7 @@ The portfolio feature fetches project data from the backend API and displays it 
 
 All portfolio pages are server-rendered for SEO benefits:
 - **Portfolio List Page** (`/portfolio`): Fetches all projects sorted by date (newest first)
-- **Portfolio Detail Page** (`/portfolio/[id]`): Fetches individual project details
+- **Portfolio Detail Page** (`/portfolio/[slug]`): Fetches individual project details. The URL is `/portfolio/<title-slug>-<short id>`; see [SEO](./seo.md)
 - **Home Page Featured Projects**: Fetches featured projects for the homepage
 
 ### Redux Integration
@@ -30,7 +30,7 @@ lib/api/
 
 app/portfolio/
 ├── page.tsx              # Portfolio list page (SSR)
-├── [id]/
+├── [slug]/
 │   └── page.tsx          # Portfolio detail page (SSR)
 └── lib/
     └── api.ts            # SSR-specific wrappers
@@ -110,13 +110,14 @@ All three layers share the same base API configuration and Project type.
 
 ```typescript
 // Zod schema with runtime validation
-const ProjectSchema = z.object({
-  id: z.string().uuid(),
-  startDate: z.string().datetime(),
-  endDate: z.string().datetime(),
+// src/ClercqIt.Web/lib/api/baseApi.ts
+export const ProjectSchema = z.object({
+  id: z.guid(), // not z.uuid(): .NET Guids are not always RFC 9562 UUIDs
+  startDate: z.iso.datetime(),
+  endDate: z.iso.datetime(),
   shortDescription: z.string(),
   longDescription: z.string(),
-  image: z.string().url(),
+  image: z.string(), // empty when the project has no image
   featured: z.boolean(),
   title: z.string().min(1),
   skills: z.array(z.string()),
@@ -141,10 +142,10 @@ type Project = z.infer<typeof ProjectSchema>;
 
 ![Portfolio List Page](screenshots/portfolio-list.png)
 
-### Portfolio Detail (`/app/portfolio/[id]/page.tsx`)
+### Portfolio Detail (`/app/portfolio/[slug]/page.tsx`)
 
 **Features:**
-- SSR data fetching by ID
+- SSR data fetching by the short id in the URL; old GUID URLs redirect permanently ([SEO](./seo.md))
 - Full project information display
 - Formatted dates
 - Skill badges and dates in a details card next to the body
@@ -187,6 +188,7 @@ All portfolio pages are server-rendered with:
 - Full HTML content for search engine crawlers
 - Dynamic routes for individual project pages
 - Proper metadata and page titles
+- Readable URLs, canonical URLs, Open Graph cards and JSON-LD (see [SEO](./seo.md))
 
 ## Future Enhancements
 
