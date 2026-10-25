@@ -63,6 +63,14 @@ Every workflow sets a read-only `permissions` block at the top (`contents: read`
 
 A job that calls a reusable workflow (`build.yml` calling `test.yml`) caps that workflow's permissions, so give the calling job what the called workflow needs. A new workflow follows the same rule; OpenSSF Scorecard's Token-Permissions check scores any top-level write as a failure.
 
+### .NET SDK in CI
+
+Workflows set up .NET with the local composite action `.github/actions/setup-dotnet` (`uses: ./.github/actions/setup-dotnet`, after `actions/checkout`), never with `actions/setup-dotnet` and a `dotnet-version` directly. `global.json` alone decides the SDK version (#467).
+
+The action runs `dotnet --version` first. That resolves the SDK through `global.json` (`10.0.100`, `rollForward: latestFeature`) and fails when no installed SDK matches. The `ubuntu-latest` runner image already ships several .NET 10 SDKs, so CI normally uses one of those and downloads nothing. Only when none matches does the action run `actions/setup-dotnet` with `global-json-file: global.json`.
+
+Why: on 25 October 2026 `dotnet-version: '10.0.x'` started resolving to SDK 10.0.403, and Microsoft's feed answered every download with HTTP 409, which failed every .NET job. The log line to look for is `Could not find .NET Core SDK with version = ...`. If it comes back after a `global.json` change, pick a version the runner image already has (see the image's readme under "Included Software" in the job log).
+
 ## Workflow and review pipelines
 
 ### Docs check (`docs-check.yml`)
