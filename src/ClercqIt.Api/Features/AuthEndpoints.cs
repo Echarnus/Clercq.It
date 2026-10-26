@@ -22,7 +22,11 @@ public static class AuthEndpoints
         .WithName("GetAuthConfig")
         .WithSummary("Get the OpenID Connect settings for the admin UI")
         .WithDescription("Returns the Keycloak issuer URL and the public client id the admin UI signs in with")
-        .AllowAnonymous();
+        .AllowAnonymous()
+        // Static and cheap. The admin shell reads it on every load, and the shared
+        // localhost bucket (#438) made sign-in fail with 429 (issue #475). Browsers
+        // still pass nginx's /api limit.
+        .DisableRateLimiting();
 
         // The web server asks this before it serves the admin dashboard (src/ClercqIt.Web/proxy.ts),
         // so visitors without an admin role never receive its page or code.
@@ -30,7 +34,10 @@ public static class AuthEndpoints
         .WithName("GetAdminSession")
         .WithSummary("Check an admin session")
         .WithDescription("Returns 204 when the bearer token belongs to a user with an admin role, else 401 or 403")
-        .RequireAuthorization(AdminAreaPolicy);
+        .RequireAuthorization(AdminAreaPolicy)
+        // proxy.ts calls this on every dashboard request and link prefetch, from localhost,
+        // so a rate limit here sent signed-in admins back to the sign-in page (issue #475).
+        .DisableRateLimiting();
 
         // The admin Settings page (issue #462): where Cloud IAM lives and how it is set up.
         // Only URLs, the realm, client ids and role names; never a password or client secret.
