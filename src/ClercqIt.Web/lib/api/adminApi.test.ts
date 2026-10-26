@@ -203,6 +203,12 @@ describe("writes with a token", () => {
     expect(calls[2].form?.has("image")).toBe(false);
     expect(calls[3].form?.get("expiryDate")).toBe("2026-01-01");
 
+    await createCertification(base);
+    await updateCertification(certification.id, { ...base, removeImage: true });
+    expect(calls[4].form?.has("image")).toBe(false);
+    expect(calls[5].form?.get("removeImage")).toBe("true");
+    expect(calls[2].form?.has("removeImage")).toBe(false);
+
     server.use(
       http.delete(`${API}/api/certifications/:id`, () => new HttpResponse(null, { status: 204 })),
     );

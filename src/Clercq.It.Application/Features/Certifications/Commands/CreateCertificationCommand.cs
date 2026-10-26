@@ -11,7 +11,7 @@ public record CreateCertificationCommand(
     string CredentialId,
     string CredentialUrl,
     string Description,
-    Stream ImageStream,
-    string ImageFileName,
-    string ImageContentType
+    Stream? ImageStream,
+    string? ImageFileName,
+    string? ImageContentType
 ) : IRequest<CertificationDto>;

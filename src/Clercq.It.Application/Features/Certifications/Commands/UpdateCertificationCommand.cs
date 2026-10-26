@@ -14,5 +14,6 @@ public record UpdateCertificationCommand(
     string Description,
     Stream? ImageStream,
     string? ImageFileName,
-    string? ImageContentType
+    string? ImageContentType,
+    bool RemoveImage = false
 ) : IRequest<CertificationDto?>;

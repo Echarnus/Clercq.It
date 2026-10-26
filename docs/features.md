@@ -69,7 +69,7 @@ The Project Portfolio feature enables administrators to showcase their work thro
 - Featured flag: Optional, defaults to false
 
 ### Admin image field
-In the admin project dialog, the red X on the current image removes it; saving then stores the project without an image (issue #405). Blog posts and certifications need an image, so their dialogs show **Replace image** instead of an X. The `/placeholder.svg` import default counts as no image.
+In the admin project and certification dialogs, the red X on the current image removes it; saving then stores the item without an image (issues #405 and #479). The API takes `removeImage=true` on `PUT /api/certifications/{id}` for this, and `POST /api/certifications` accepts a certification without an `image` file. Blog posts need an image, so their dialog shows **Replace image** instead of an X. The `/placeholder.svg` import default counts as no image.
 
 ### Storage
 - Project images stored separately in Scaleway Object Storage

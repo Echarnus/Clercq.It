@@ -75,8 +75,8 @@ public class CertificationEndpointTests : IAsyncLifetime
         certification.GetProperty("expiryDate").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
-    [Fact(DisplayName = "POST /api/certifications returns BadRequest without image")]
-    public async Task CreateCertification_NoImage_ReturnsBadRequest()
+    [Fact(DisplayName = "POST /api/certifications returns Created without image")]
+    public async Task CreateCertification_NoImage_ReturnsCreatedWithEmptyImage()
     {
         var client = await CreateAuthenticatedClientAsync();
         using var formContent = new MultipartFormDataContent();
@@ -89,7 +89,40 @@ public class CertificationEndpointTests : IAsyncLifetime
 
         var response = await client.PostAsync("/api/certifications", formContent);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var certification = JsonSerializer.Deserialize<JsonElement>(
+            await response.Content.ReadAsStringAsync(), JsonOptions);
+        certification.GetProperty("image").GetString().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "PUT /api/certifications/{id} with removeImage clears the image")]
+    public async Task UpdateCertification_RemoveImage_ClearsImage()
+    {
+        var client = await CreateAuthenticatedClientAsync();
+        using var createContent = CreateCertificationFormContent(
+            "Remove Image Cert", "Issuer", "2024-01-01", null,
+            "CRED-RM", "https://example.com/rm", "Has an image first");
+        var createResponse = await client.PostAsync("/api/certifications", createContent);
+        createResponse.StatusCode.Should().Be(HttpStatusCode.Created);
+        var createdCert = JsonSerializer.Deserialize<JsonElement>(
+            await createResponse.Content.ReadAsStringAsync(), JsonOptions);
+        var certId = createdCert.GetProperty("id").GetString();
+
+        using var updateContent = new MultipartFormDataContent();
+        updateContent.Add(new StringContent("Remove Image Cert"), "title");
+        updateContent.Add(new StringContent("Issuer"), "issuer");
+        updateContent.Add(new StringContent("2024-01-01"), "issueDate");
+        updateContent.Add(new StringContent("CRED-RM"), "credentialId");
+        updateContent.Add(new StringContent("https://example.com/rm"), "credentialUrl");
+        updateContent.Add(new StringContent("Has an image first"), "description");
+        updateContent.Add(new StringContent("true"), "removeImage");
+
+        var updateResponse = await client.PutAsync($"/api/certifications/{certId}", updateContent);
+
+        updateResponse.StatusCode.Should().Be(HttpStatusCode.OK);
+        var updatedCert = JsonSerializer.Deserialize<JsonElement>(
+            await updateResponse.Content.ReadAsStringAsync(), JsonOptions);
+        updatedCert.GetProperty("image").GetString().Should().BeEmpty();
     }
 
     [Fact(DisplayName = "POST /api/certifications returns Unauthorized without authentication token")]

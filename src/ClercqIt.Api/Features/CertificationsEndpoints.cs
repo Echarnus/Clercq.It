@@ -65,12 +65,8 @@ public static class CertificationsEndpoints
             }
 
             var imageFile = form.Files["image"];
-            if (imageFile == null || imageFile.Length == 0)
-            {
-                return Results.BadRequest(new { error = "Image file is required" });
-            }
-
-            using var imageStream = imageFile.OpenReadStream();
+            var hasImage = imageFile != null && imageFile.Length > 0;
+            await using var imageStream = hasImage ? imageFile!.OpenReadStream() : null;
             var command = new CreateCertificationCommand(
                 title,
                 issuer,
@@ -80,8 +76,8 @@ public static class CertificationsEndpoints
                 credentialUrl,
                 description,
                 imageStream,
-                imageFile.FileName,
-                imageFile.ContentType
+                hasImage ? imageFile!.FileName : null,
+                hasImage ? imageFile!.ContentType : null
             );
 
             var result = await mediator.Send(command);
@@ -90,7 +86,7 @@ public static class CertificationsEndpoints
         .RequireAuthorization("CertificationsContributor")
         .WithName("CreateCertification")
         .WithSummary("Create a new certification")
-        .WithDescription("Creates a new certification with an image. Requires the Certifications.Contributor role.")
+        .WithDescription("Creates a new certification with an optional image. Requires the Certifications.Contributor role.")
         .DisableAntiforgery();
 
         group.MapPut("/{id:guid}", async (Guid id, HttpRequest request, IMediator mediator) =>
@@ -104,6 +100,7 @@ public static class CertificationsEndpoints
             var credentialId = form["credentialId"].ToString();
             var credentialUrl = form["credentialUrl"].ToString();
             var description = form["description"].ToString();
+            _ = bool.TryParse(form["removeImage"].ToString(), out var removeImage);
 
             if (!DateTime.TryParse(issueDateString, out var issueDate))
             {
@@ -147,7 +144,8 @@ public static class CertificationsEndpoints
                 description,
                 imageStream,
                 imageFileName,
-                imageContentType
+                imageContentType,
+                removeImage
             );
 
             var result = await mediator.Send(command);
@@ -162,7 +160,7 @@ public static class CertificationsEndpoints
         .RequireAuthorization("CertificationsContributor")
         .WithName("UpdateCertification")
         .WithSummary("Update a certification")
-        .WithDescription("Updates an existing certification. Image is optional - if not provided, the existing image is retained. Requires the Certifications.Contributor role.")
+        .WithDescription("Updates an existing certification. Image is optional - if not provided, the existing image is retained; send removeImage=true to clear it. Requires the Certifications.Contributor role.")
         .DisableAntiforgery();
 
         group.MapDelete("/{id:guid}", async (Guid id, IMediator mediator) =>

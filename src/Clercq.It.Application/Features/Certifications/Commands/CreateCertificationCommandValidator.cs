@@ -32,19 +32,27 @@ public class CreateCertificationCommandValidator : AbstractValidator<CreateCerti
             .NotEmpty().WithMessage("Description is required")
             .MaximumLength(2000).WithMessage("Description must not exceed 2000 characters");
 
-        RuleFor(x => x.ImageStream)
-            .NotNull().WithMessage("Image is required");
-
+        // The image is optional; when one is sent it needs a valid name and type.
         RuleFor(x => x.ImageFileName)
             .NotEmpty().WithMessage("Image file name is required")
-            .Must(BeAValidImageFileName).WithMessage("Invalid image file extension. Only jpg, jpeg, png, gif, and webp are allowed");
+            .When(x => x.ImageStream != null);
+
+        RuleFor(x => x.ImageFileName)
+            .Must(BeAValidImageFileName)
+            .When(x => !string.IsNullOrEmpty(x.ImageFileName))
+            .WithMessage("Invalid image file extension. Only jpg, jpeg, png, gif, and webp are allowed");
 
         RuleFor(x => x.ImageContentType)
             .NotEmpty().WithMessage("Image content type is required")
-            .Must(BeAValidImageContentType).WithMessage("Invalid image content type. Only image types are allowed");
+            .When(x => x.ImageStream != null);
+
+        RuleFor(x => x.ImageContentType)
+            .Must(BeAValidImageContentType)
+            .When(x => !string.IsNullOrEmpty(x.ImageContentType))
+            .WithMessage("Invalid image content type. Only image types are allowed");
     }
 
-    private bool BeAValidImageFileName(string fileName)
+    private bool BeAValidImageFileName(string? fileName)
     {
         if (string.IsNullOrWhiteSpace(fileName))
             return false;
@@ -53,7 +61,7 @@ public class CreateCertificationCommandValidator : AbstractValidator<CreateCerti
         return validExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase));
     }
 
-    private bool BeAValidImageContentType(string contentType)
+    private bool BeAValidImageContentType(string? contentType)
     {
         if (string.IsNullOrWhiteSpace(contentType))
             return false;

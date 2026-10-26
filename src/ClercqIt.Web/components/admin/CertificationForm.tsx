@@ -31,6 +31,7 @@ const certificationFormSchema = z.object({
     .min(1, "Description is required")
     .max(2000, "Description must not exceed 2,000 characters"),
   image: z.instanceof(File).nullable(),
+  removeImage: z.boolean(),
 });
 
 type CertificationFormValues = z.infer<typeof certificationFormSchema>;
@@ -65,14 +66,11 @@ export function CertificationForm({
       credentialUrl: certification?.credentialUrl || "",
       description: certification?.description || "",
       image: null,
+      removeImage: false,
     },
   });
 
   const handleSubmit = async (values: CertificationFormValues) => {
-    if (!isEditing && !values.image) {
-      form.setError("image", { message: "Image is required for new certifications" });
-      return;
-    }
     await onSubmit(values);
   };
 
@@ -200,10 +198,14 @@ export function CertificationForm({
                 <ImageUpload
                   value={field.value}
                   onChange={field.onChange}
-                  existingImageUrl={certification?.image}
-                  label="Certification Badge/Image"
+                  existingImageUrl={certification?.image || undefined}
+                  onRemoveExisting={() => form.setValue("removeImage", true)}
+                  label="Certification Badge/Image (Optional)"
                 />
               </FormControl>
+              <FormDescription>
+                Optional. Without an image the certification shows no picture on the site.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

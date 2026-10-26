@@ -23,13 +23,17 @@ public class CreateCertificationCommandHandler : IRequestHandler<CreateCertifica
 
     public async Task<CertificationDto> Handle(CreateCertificationCommand request, CancellationToken cancellationToken)
     {
-        // Upload image to object storage
-        var imageUrl = await _objectStorageService.UploadFileAsync(
-            request.ImageFileName,
-            request.ImageStream,
-            request.ImageContentType,
-            isInlineImage: false,
-            cancellationToken);
+        // Upload image to object storage if provided; without one the certification shows no picture
+        var imageUrl = string.Empty;
+        if (request.ImageStream != null && !string.IsNullOrEmpty(request.ImageFileName) && !string.IsNullOrEmpty(request.ImageContentType))
+        {
+            imageUrl = await _objectStorageService.UploadFileAsync(
+                request.ImageFileName,
+                request.ImageStream,
+                request.ImageContentType,
+                isInlineImage: false,
+                cancellationToken);
+        }
 
         // Create certification entity
         var certification = Certification.Create(

@@ -249,7 +249,31 @@ public class CreateCertificationCommandValidatorTests
     }
 
     [Fact]
-    public void Validate_ShouldFail_WhenImageStreamIsNull()
+    public void Validate_ShouldPass_WhenNoImageIsGiven()
+    {
+        // Arrange
+        var command = new CreateCertificationCommand(
+            "Certification Title",
+            "Issuer",
+            DateTime.UtcNow.AddDays(-1),
+            null,
+            "",
+            "",
+            "Description",
+            null,
+            null,
+            null
+        );
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenImageStreamHasNoFileName()
     {
         // Arrange
         var command = new CreateCertificationCommand(
@@ -260,8 +284,8 @@ public class CreateCertificationCommandValidatorTests
             "",
             "",
             "Description",
-            null!,
-            "cert.jpg",
+            new MemoryStream(),
+            null,
             "image/jpeg"
         );
 
@@ -270,7 +294,7 @@ public class CreateCertificationCommandValidatorTests
 
         // Assert
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.PropertyName == "ImageStream");
+        result.Errors.Should().Contain(e => e.PropertyName == "ImageFileName");
     }
 
     [Theory]

@@ -218,6 +218,49 @@ public class UpdateCertificationCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldClearImage_WhenRemoveImageIsSet()
+    {
+        // Arrange
+        var certId = Guid.NewGuid();
+        var existingCert = Aggregates.Certification(
+            id: certId,
+            title: "Azure Expert",
+            issuer: "Microsoft",
+            issueDate: DateTime.UtcNow.AddYears(-1),
+            expiryDate: null,
+            credentialId: "CERT-123",
+            credentialUrl: "https://example.com/cert",
+            description: "Test cert",
+            image: "https://example.com/existing-image.jpg");
+
+        _mockCertificationRepository
+            .Setup(x => x.GetByIdAsync(certId, MoqIt.IsAny<CancellationToken>()))
+            .ReturnsAsync(existingCert);
+
+        var command = new UpdateCertificationCommand(
+            certId,
+            "Azure Expert",
+            "Microsoft",
+            DateTime.UtcNow.AddYears(-1),
+            null,
+            "CERT-123",
+            "https://example.com/cert",
+            "Test cert",
+            null,
+            null,
+            null,
+            RemoveImage: true
+        );
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result!.Image.Should().BeEmpty();
+    }
+
+    [Fact]
     public async Task Handle_ShouldUpdateExpiryDate()
     {
         // Arrange
