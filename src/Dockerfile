@@ -76,7 +76,7 @@ RUN echo "{\"version\":\"${VERSION}\",\"gitSha\":\"${GIT_SHA}\",\"buildDate\":\"
 RUN pnpm run build
 
 # Final runtime stage starting from nginx
-FROM nginx:1.30-trixie@sha256:a7675fcee220f59b4a99f7098c06a0d5d999c2c0ee37c0211efb780536e5cb20 AS final
+FROM nginx:1.31-trixie@sha256:4c41e2d0a3a55b325ed572cd0200bdb72af1433c3daa2bca6ef8eea68ce504a2 AS final
 WORKDIR /app
 
 # Accept version build arguments again for final stage
