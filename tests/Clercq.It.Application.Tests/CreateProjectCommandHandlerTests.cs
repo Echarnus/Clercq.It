@@ -53,7 +53,8 @@ public class CreateProjectCommandHandlerTests
             startDate,
             endDate,
             true,
-            new[] { "C#", "React" }
+            new[] { "C#", "React" },
+            "Certia"
         );
 
         // Act
@@ -62,6 +63,7 @@ public class CreateProjectCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result.Title.Should().Be("Test Project");
+        result.Company.Should().Be("Certia");
         result.ShortDescription.Should().Be("Short description");
         result.LongDescription.Should().Be("# Long Description\n\nThis is markdown content.");
         result.Image.Should().Be(uploadedImageUrl);
@@ -74,6 +76,7 @@ public class CreateProjectCommandHandlerTests
         _mockProjectRepository.Verify(x => x.AddAsync(
             MoqIt.Is<Project>(p =>
                 p.Title == "Test Project" &&
+                p.Company == "Certia" &&
                 p.ShortDescription == "Short description" &&
                 p.LongDescription == "# Long Description\n\nThis is markdown content." &&
                 p.Image == uploadedImageUrl &&

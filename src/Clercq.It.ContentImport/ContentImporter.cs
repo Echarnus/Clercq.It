@@ -33,6 +33,7 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
             var desired = Build(file, () => new Project(
                 StableId.For("project", file.Slug),
                 file.RequiredString("title"),
+                file.OptionalString("company") ?? string.Empty,
                 file.RequiredString("shortDescription"),
                 BodyOr(file, file.RequiredString("shortDescription")),
                 image,
@@ -156,13 +157,13 @@ public sealed class ContentImporter(ApplicationDbContext db, IContentImageStore 
     private static bool Copy(Project from, Project to)
     {
         var changed = false;
-        if (from.Title != to.Title || from.ShortDescription != to.ShortDescription
+        if (from.Title != to.Title || from.Company != to.Company || from.ShortDescription != to.ShortDescription
             || from.LongDescription != to.LongDescription || from.StartDate != to.StartDate
             || from.EndDate != to.EndDate || from.Featured != to.Featured
             || !from.Skills.Values.SequenceEqual(to.Skills.Values))
         {
-            to.Update(from.Title, from.ShortDescription, from.LongDescription, from.StartDate, from.EndDate,
-                from.Featured, from.Skills);
+            to.Update(from.Title, from.Company, from.ShortDescription, from.LongDescription, from.StartDate,
+                from.EndDate, from.Featured, from.Skills);
             changed = true;
         }
         return ChangeImage(from.Image, to.Image, to.ChangeImage) || changed;

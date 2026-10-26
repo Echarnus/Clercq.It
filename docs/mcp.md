@@ -25,6 +25,7 @@ The server is stateless, so it works with the serverless container scaling to ze
 
 - The tools send the same MediatR commands as the admin endpoints, so the same FluentValidation rules apply. A validation failure comes back as a tool error with the messages.
 - `update_*` tools change only the fields you pass. `update_certification` takes `clearExpiryDate: true` to remove an expiry date.
+- Projects have an optional `company` (the employer or client), which the site shows as a subtitle under the title. Keep the title for the project or product itself; `update_project` with `company: ""` clears it.
 - Dates are `yyyy-MM-dd`. Descriptions and blog bodies are Markdown.
 - Images go in as `imageBase64` plus `imageFileName` (jpg, jpeg, png, gif or webp, max 5 MB) and are uploaded to object storage like admin uploads. Certifications and blog posts need an image when created. Projects can have no image: `update_project` with `removeImage: true` clears it, and the site then shows no picture.
 - The MyZen tools use the session connected on the admin tab ([MyZen](./myzen.md)); they cannot connect it. An expired session gives a tool error that says to reconnect. Each call writes one entry, and `search_myzen_projects` gives the `projectId` and `customerId` an entry needs. `update_myzen_time_entry` keeps the entry's customer unless `projectId` changes; then it takes the `customerId` passed with it.

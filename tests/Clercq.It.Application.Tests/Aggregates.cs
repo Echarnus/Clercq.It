@@ -31,8 +31,9 @@ internal static class Aggregates
         DateTime? startDate = null,
         DateTime? endDate = null,
         bool featured = false,
-        Skills? skills = null) =>
-        new(id ?? Guid.NewGuid(), title, shortDescription, longDescription, image, startDate ?? DefaultDate,
+        Skills? skills = null,
+        string company = "") =>
+        new(id ?? Guid.NewGuid(), title, company, shortDescription, longDescription, image, startDate ?? DefaultDate,
             endDate ?? startDate ?? DefaultDate, featured, skills ?? new Skills([]));
 
     public static Certification Certification(

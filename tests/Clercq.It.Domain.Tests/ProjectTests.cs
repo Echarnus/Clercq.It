@@ -8,7 +8,7 @@ public class ProjectTests
     private static readonly DateTime Start = new(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
     private static Project NewProject() =>
-        new(Guid.NewGuid(), "Title", "Short", "Long", "", Start, Start.AddMonths(3), false, new Skills(["C#"]));
+        new(Guid.NewGuid(), "Title", "", "Short", "Long", "", Start, Start.AddMonths(3), false, new Skills(["C#"]));
 
     [Fact]
     public void Constructor_WithValidValues_SetsAllProperties()
@@ -17,12 +17,13 @@ public class ProjectTests
         var id = Guid.NewGuid();
 
         // Act
-        var project = new Project(id, "Title", "Short", "Long", "img", Start, Start.AddMonths(1), true,
+        var project = new Project(id, "Title", "Acme", "Short", "Long", "img", Start, Start.AddMonths(1), true,
             new Skills(["C#", "SQL"]));
 
         // Assert
         project.Id.Should().Be(id);
         project.Title.Should().Be("Title");
+        project.Company.Should().Be("Acme");
         project.ShortDescription.Should().Be("Short");
         project.LongDescription.Should().Be("Long");
         project.Image.Should().Be("img");
@@ -36,7 +37,7 @@ public class ProjectTests
     public void Create_WithValidValues_AssignsNewId()
     {
         // Act
-        var project = Project.Create("Title", "Short", "Long", "", Start, Start, false, new Skills([]));
+        var project = Project.Create("Title", "", "Short", "Long", "", Start, Start, false, new Skills([]));
 
         // Assert
         project.Id.Should().NotBeEmpty();
@@ -49,7 +50,7 @@ public class ProjectTests
     public void Constructor_WithBlankTitle_Throws(string title)
     {
         // Act
-        var act = () => new Project(Guid.NewGuid(), title, "Short", "Long", "", Start, Start, false, new Skills([]));
+        var act = () => new Project(Guid.NewGuid(), title, "", "Short", "Long", "", Start, Start, false, new Skills([]));
 
         // Assert
         act.Should().Throw<ArgumentException>();
@@ -62,7 +63,7 @@ public class ProjectTests
         var project = NewProject();
 
         // Act
-        var act = () => project.Update("New", "Short", "Long", Start, Start.AddDays(-1), false, new Skills([]));
+        var act = () => project.Update("New", "", "Short", "Long", Start, Start.AddDays(-1), false, new Skills([]));
 
         // Assert
         act.Should().Throw<ArgumentException>().WithMessage("*cannot end before it starts*");
@@ -76,10 +77,11 @@ public class ProjectTests
         var project = NewProject();
 
         // Act
-        project.Update("New", "New short", "New long", Start.AddDays(1), Start.AddDays(2), true, new Skills(["Go"]));
+        project.Update("New", "New company", "New short", "New long", Start.AddDays(1), Start.AddDays(2), true, new Skills(["Go"]));
 
         // Assert
         project.Title.Should().Be("New");
+        project.Company.Should().Be("New company");
         project.ShortDescription.Should().Be("New short");
         project.LongDescription.Should().Be("New long");
         project.StartDate.Should().Be(Start.AddDays(1));

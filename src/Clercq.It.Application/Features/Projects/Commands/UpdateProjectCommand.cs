@@ -15,5 +15,6 @@ public record UpdateProjectCommand(
     DateTime EndDate,
     bool Featured,
     string[] Skills,
-    bool RemoveImage = false
+    bool RemoveImage = false,
+    string Company = ""
 ) : IRequest<ProjectDto?>;

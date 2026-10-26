@@ -25,7 +25,7 @@ public sealed class ProjectTools(McpContent content)
     [McpServerTool(Name = "create_project")]
     [Description("Creates a project. Descriptions are Markdown. Without an image the site shows no picture.")]
     public async Task<ProjectDto> CreateAsync(
-        [Description("Title, max 200 characters")] string title,
+        [Description("Title: the product or project itself, max 200 characters")] string title,
         [Description("Summary shown on cards, max 500 characters")] string shortDescription,
         [Description("Full Markdown description")] string longDescription,
         [Description("Start date, yyyy-MM-dd")] DateOnly startDate,
@@ -34,13 +34,14 @@ public sealed class ProjectTools(McpContent content)
         [Description("Show the project on the homepage")] bool featured = false,
         [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string? imageBase64 = null,
         [Description("Image file name with its extension, required with imageBase64")] string? imageFileName = null,
+        [Description("Employer or client, shown as a subtitle, max 200 characters")] string? company = null,
         CancellationToken cancellationToken = default)
     {
         using var image = McpImage.From(imageBase64, imageFileName);
         var result = await content.SendAsync(new CreateProjectCommand(
             title, shortDescription, longDescription,
             image?.Stream, image?.FileName, image?.ContentType,
-            McpContent.Utc(startDate), McpContent.Utc(endDate), featured, skills), cancellationToken);
+            McpContent.Utc(startDate), McpContent.Utc(endDate), featured, skills, company?.Trim() ?? ""), cancellationToken);
         content.Audit("created", "project", result.Id);
         return result;
     }
@@ -59,6 +60,7 @@ public sealed class ProjectTools(McpContent content)
         [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string? imageBase64 = null,
         [Description("Image file name with its extension, required with imageBase64")] string? imageFileName = null,
         [Description("Remove the current image, so the project shows no picture")] bool removeImage = false,
+        [Description("Employer or client, shown as a subtitle; an empty string clears it")] string? company = null,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAsync(id, cancellationToken);
@@ -73,7 +75,8 @@ public sealed class ProjectTools(McpContent content)
             endDate is { } end ? McpContent.Utc(end) : current.EndDate,
             featured ?? current.Featured,
             skills ?? current.Skills,
-            removeImage), cancellationToken)
+            removeImage,
+            company?.Trim() ?? current.Company), cancellationToken)
             ?? throw McpContent.NotFound("project", id);
         content.Audit("updated", "project", id);
         return result;

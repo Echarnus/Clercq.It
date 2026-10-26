@@ -63,7 +63,8 @@ public class UpdateProjectCommandHandlerTests
             startDate,
             endDate,
             true,
-            new[] { "C#", "React" }
+            new[] { "C#", "React" },
+            Company: "Fluvius"
         );
 
         // Act
@@ -72,6 +73,7 @@ public class UpdateProjectCommandHandlerTests
         // Assert
         result.Should().NotBeNull();
         result!.Title.Should().Be("Updated Project");
+        result.Company.Should().Be("Fluvius");
         result.ShortDescription.Should().Be("Updated short desc");
         result.LongDescription.Should().Be("Updated long desc");
         result.StartDate.Should().Be(startDate);
@@ -82,6 +84,7 @@ public class UpdateProjectCommandHandlerTests
         _mockProjectRepository.Verify(x => x.UpdateAsync(
             MoqIt.Is<Project>(p =>
                 p.Title == "Updated Project" &&
+                p.Company == "Fluvius" &&
                 p.ShortDescription == "Updated short desc" &&
                 p.LongDescription == "Updated long desc"),
             MoqIt.IsAny<CancellationToken>()), Times.Once);

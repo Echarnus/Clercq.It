@@ -30,7 +30,8 @@ A file is YAML front matter between `---` lines, then a Markdown body. The file 
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `title` | yes | Max 200 characters |
+| `title` | yes | Max 200 characters. Name the project or product itself |
+| `company` | no | Employer or client, max 200 characters, shown as a subtitle under the title |
 | `shortDescription` | yes | Max 500 characters, shown on cards |
 | `startDate` | yes | `yyyy-MM-dd` |
 | `endDate` | no | `yyyy-MM-dd`, defaults to `startDate` |
@@ -42,6 +43,7 @@ A file is YAML front matter between `---` lines, then a Markdown body. The file 
 ```markdown
 ---
 title: "ClercqIt"
+company: "Clercq.It"
 shortDescription: "My personal website."
 startDate: 2025-06-28
 featured: true

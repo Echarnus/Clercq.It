@@ -371,4 +371,40 @@ public class UpdateProjectCommandValidatorTests
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ImageContentType");
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ALSIC")]
+    public void Validate_ShouldPass_WithEmptyOrShortCompany(string company)
+    {
+        // Arrange
+        var command = new UpdateProjectCommand(
+            Guid.NewGuid(), "Test Project", "Short", "Long", null, null, null,
+            DateTime.UtcNow.AddMonths(-6), DateTime.UtcNow.AddMonths(-3), false, new[] { "C#" },
+            Company: company);
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void Validate_ShouldFail_WhenCompanyExceeds200Characters()
+    {
+        // Arrange
+        var company = new string('a', 201);
+        var command = new UpdateProjectCommand(
+            Guid.NewGuid(), "Test Project", "Short", "Long", null, null, null,
+            DateTime.UtcNow.AddMonths(-6), DateTime.UtcNow.AddMonths(-3), false, new[] { "C#" },
+            Company: company);
+
+        // Act
+        var result = _validator.Validate(command);
+
+        // Assert
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage == "Company must not exceed 200 characters");
+    }
 }

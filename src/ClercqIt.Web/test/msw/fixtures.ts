@@ -7,6 +7,7 @@ export const API = "http://localhost:5001";
 export const project: Project = {
   id: "11111111-1111-4111-8111-111111111111",
   title: "Portfolio site",
+  company: "Clercq.It",
   shortDescription: "This website",
   longDescription: "# Portfolio",
   image: "https://images.example.com/p.png",

@@ -9,5 +9,6 @@ public record ProjectDto(
     string Image,
     bool Featured,
     string Title,
-    string[] Skills
+    string[] Skills,
+    string Company = ""
 );

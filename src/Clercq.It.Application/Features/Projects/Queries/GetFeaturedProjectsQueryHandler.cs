@@ -26,7 +26,8 @@ public class GetFeaturedProjectsQueryHandler : IRequestHandler<GetFeaturedProjec
             p.Image,
             p.Featured,
             p.Title,
-            p.Skills.Values
+            p.Skills.Values,
+            p.Company
         ));
     }
 }

@@ -117,6 +117,7 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         var created = Json(await mcp.CallToolAsync("create_project", new Dictionary<string, object?>
         {
             ["title"] = "Child Benefit modernisation",
+            ["company"] = "Certia",
             ["shortDescription"] = "Migrating a WinForms app to the web.",
             ["longDescription"] = "Angular and **.NET**.",
             ["startDate"] = "2025-05-01",
@@ -128,6 +129,7 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         }));
         var id = created.GetProperty("id").GetGuid();
         created.GetProperty("image").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
+        created.GetProperty("company").GetString().Should().Be("Certia");
 
         var updated = Json(await mcp.CallToolAsync("update_project", new Dictionary<string, object?>
         {
@@ -137,6 +139,14 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         updated.GetProperty("title").GetString().Should().Be("Child Benefit 2.0");
         updated.GetProperty("shortDescription").GetString().Should().Be("Migrating a WinForms app to the web.");
         updated.GetProperty("featured").GetBoolean().Should().BeTrue();
+        updated.GetProperty("company").GetString().Should().Be("Certia", "fields left out keep their value");
+
+        var cleared = Json(await mcp.CallToolAsync("update_project", new Dictionary<string, object?>
+        {
+            ["id"] = id,
+            ["company"] = "",
+        }));
+        cleared.GetProperty("company").GetString().Should().BeEmpty();
 
         // The site reads the same row
         var site = await factory.CreateClient().GetAsync($"/api/projects/{id}");
