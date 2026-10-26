@@ -56,7 +56,8 @@ Implements multi-tier rate limiting to prevent DDoS attacks:
 
 #### API Endpoints Rate Limit
 - **30 requests per minute** - Standard API calls
-- Applied to: Images, Projects, Blogs, Certifications, Auth (`/api/auth/config`), Features (`/api/features`), MyZen, MCP and the statistics summary (`GET /api/stats`). `POST /api/stats/pageview` only has the global limit.
+- Applied to: Images, Projects, Blogs, Certifications, Auth (`/api/auth/identity-provider`), Features (`/api/features`), MyZen, MCP and the statistics summary (`GET /api/stats`). `POST /api/stats/pageview` only has the global limit.
+- Not rate limited by the API: `GET /api/auth/config` and `GET /api/auth/session` (issue #475). The dashboard gate in `src/ClercqIt.Web/proxy.ts` calls `/api/auth/session` on every dashboard request and link prefetch, and the admin shell reads `/api/auth/config` on every load. In the shared bucket below they hit 429, and the admin was sent back to `/admin` with "Sign-in is not available right now". Both are cheap (static settings, a token check), and browser calls still pass nginx's `/api` limit.
 
 Both limits are partitioned by the connection's remote address. In the container every request reaches the API from nginx or from Next.js on `localhost`, and the API does not read `X-Forwarded-For`, so in production all visitors currently share one bucket (#438).
 
