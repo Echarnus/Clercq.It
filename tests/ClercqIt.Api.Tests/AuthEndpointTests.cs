@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace ClercqIt.Api.Tests;
 
@@ -136,5 +139,21 @@ public class AuthEndpointTests : IAsyncLifetime
         var response = await _client.GetAsync(url);
 
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    // The web server checks the admin session on every dashboard request from localhost,
+    // which shares one rate-limit bucket with the whole site (#438). A 429 there sent
+    // signed-in admins back to the sign-in page (issue #475).
+    [Theory(DisplayName = "The admin sign-in endpoints are not rate limited by the API")]
+    [InlineData("/api/auth/session")]
+    [InlineData("/api/auth/config")]
+    public void SignInEndpoints_DisableRateLimiting(string route)
+    {
+        var endpoint = _factory.Services.GetRequiredService<EndpointDataSource>().Endpoints
+            .OfType<RouteEndpoint>()
+            .Single(e => "/" + e.RoutePattern.RawText?.TrimStart('/') == route
+                && e.Metadata.GetMetadata<IHttpMethodMetadata>()?.HttpMethods.Contains("GET") == true);
+
+        endpoint.Metadata.GetMetadata<DisableRateLimitingAttribute>().Should().NotBeNull();
     }
 }
