@@ -3,7 +3,6 @@ using Clercq.It.Application.Common.DTOs;
 using Clercq.It.Application.Features.Certifications.Commands;
 using Clercq.It.Application.Features.Certifications.Queries;
 using Microsoft.AspNetCore.Authorization;
-using ModelContextProtocol;
 using ModelContextProtocol.Server;
 
 namespace Clercq.It.Api.Features.Mcp;
@@ -24,32 +23,31 @@ public sealed class CertificationTools(McpContent content)
             ?? throw McpContent.NotFound("certification", id);
 
     [McpServerTool(Name = "create_certification")]
-    [Description("Creates a certification. An image (for example the badge or issuer logo) is required.")]
+    [Description("Creates a certification. Without an image (for example the badge or issuer logo) the site shows no picture.")]
     public async Task<CertificationDto> CreateAsync(
         [Description("Certification name, max 200 characters")] string title,
         [Description("Issuing organisation, max 200 characters")] string issuer,
         [Description("Issue date, yyyy-MM-dd, not in the future")] DateOnly issueDate,
         [Description("Markdown description, max 2000 characters")] string description,
-        [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string imageBase64,
-        [Description("Image file name with its extension")] string imageFileName,
+        [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string? imageBase64 = null,
+        [Description("Image file name with its extension, required with imageBase64")] string? imageFileName = null,
         [Description("Expiry date, yyyy-MM-dd, after the issue date")] DateOnly? expiryDate = null,
         [Description("Credential id, max 200 characters")] string? credentialId = null,
         [Description("Link to verify the credential, max 500 characters")] string? credentialUrl = null,
         CancellationToken cancellationToken = default)
     {
-        using var image = McpImage.From(imageBase64, imageFileName)
-            ?? throw new McpException("imageBase64 is required for a certification.");
+        using var image = McpImage.From(imageBase64, imageFileName);
         var result = await content.SendAsync(new CreateCertificationCommand(
             title, issuer, McpContent.Utc(issueDate),
             expiryDate is { } expiry ? McpContent.Utc(expiry) : null,
             credentialId ?? string.Empty, credentialUrl ?? string.Empty, description,
-            image.Stream, image.FileName, image.ContentType), cancellationToken);
+            image?.Stream, image?.FileName, image?.ContentType), cancellationToken);
         content.Audit("created", "certification", result.Id);
         return result;
     }
 
     [McpServerTool(Name = "update_certification", Idempotent = true)]
-    [Description("Updates a certification. Only the fields you pass change; an image replaces the current one.")]
+    [Description("Updates a certification. Only the fields you pass change; an image replaces the current one and removeImage clears it.")]
     public async Task<CertificationDto> UpdateAsync(
         Guid id,
         string? title = null,
@@ -62,6 +60,7 @@ public sealed class CertificationTools(McpContent content)
         [Description("Markdown description")] string? description = null,
         [Description("Image bytes as base64 (jpg, png, gif or webp, max 5 MB)")] string? imageBase64 = null,
         [Description("Image file name with its extension, required with imageBase64")] string? imageFileName = null,
+        [Description("Remove the current image, so the certification shows no picture")] bool removeImage = false,
         CancellationToken cancellationToken = default)
     {
         var current = await GetAsync(id, cancellationToken);
@@ -78,7 +77,7 @@ public sealed class CertificationTools(McpContent content)
             credentialId ?? current.CredentialId,
             credentialUrl ?? current.CredentialUrl,
             description ?? current.Description,
-            image?.Stream, image?.FileName, image?.ContentType), cancellationToken)
+            image?.Stream, image?.FileName, image?.ContentType, removeImage), cancellationToken)
             ?? throw McpContent.NotFound("certification", id);
         content.Audit("updated", "certification", id);
         return result;

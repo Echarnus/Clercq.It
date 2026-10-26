@@ -373,7 +373,7 @@ export interface CreateCertificationData {
   credentialId?: string;
   credentialUrl?: string;
   description: string;
-  image: File;
+  image?: File;
 }
 
 export async function createCertification(data: CreateCertificationData): Promise<Certification> {
@@ -391,7 +391,9 @@ export async function createCertification(data: CreateCertificationData): Promis
     formData.append("credentialUrl", data.credentialUrl);
   }
   formData.append("description", data.description);
-  formData.append("image", data.image);
+  if (data.image) {
+    formData.append("image", data.image);
+  }
 
   const response = await authFetch("/api/certifications", {
     method: "POST",
@@ -415,6 +417,7 @@ export interface UpdateCertificationData {
   credentialUrl?: string;
   description: string;
   image?: File;
+  removeImage?: boolean;
 }
 
 export async function updateCertification(
@@ -437,6 +440,8 @@ export async function updateCertification(
   formData.append("description", data.description);
   if (data.image) {
     formData.append("image", data.image);
+  } else if (data.removeImage) {
+    formData.append("removeImage", "true");
   }
 
   const response = await authFetch(`/api/certifications/${id}`, {

@@ -28,7 +28,7 @@ public class UpdateCertificationCommandHandler : IRequestHandler<UpdateCertifica
             return null;
         }
 
-        // Update image if provided
+        // Update image if provided, or remove it when asked
         if (request.ImageStream != null && !string.IsNullOrEmpty(request.ImageFileName) && !string.IsNullOrEmpty(request.ImageContentType))
         {
             var imageUrl = await _objectStorageService.UploadFileAsync(
@@ -38,6 +38,11 @@ public class UpdateCertificationCommandHandler : IRequestHandler<UpdateCertifica
                 isInlineImage: false,
                 cancellationToken);
             certification.ChangeImage(imageUrl);
+        }
+        else if (request.RemoveImage)
+        {
+            // A new image wins over a removal; without either the current image stays.
+            certification.ChangeImage(string.Empty);
         }
 
         // Update other properties

@@ -119,6 +119,7 @@ export function CertificationList() {
     credentialUrl?: string;
     description: string;
     image: File | null;
+    removeImage: boolean;
   }) => {
     setIsSubmitting(true);
     try {
@@ -132,15 +133,13 @@ export function CertificationList() {
           credentialUrl: data.credentialUrl || undefined,
           description: data.description,
           image: data.image || undefined,
+          removeImage: data.removeImage,
         });
         toast({
           title: "Success",
           description: "Certification updated successfully",
         });
       } else {
-        if (!data.image) {
-          throw new Error("Image is required");
-        }
         await createCertification({
           title: data.title,
           issuer: data.issuer,
@@ -149,7 +148,7 @@ export function CertificationList() {
           credentialId: data.credentialId || undefined,
           credentialUrl: data.credentialUrl || undefined,
           description: data.description,
-          image: data.image,
+          image: data.image || undefined,
         });
         toast({
           title: "Success",

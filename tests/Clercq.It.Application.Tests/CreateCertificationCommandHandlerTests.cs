@@ -111,6 +111,36 @@ public class CreateCertificationCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_ShouldStoreEmptyImage_WhenNoImageProvided()
+    {
+        // Arrange
+        var command = new CreateCertificationCommand(
+            "Azure Developer",
+            "Microsoft",
+            DateTime.UtcNow,
+            null,
+            "AZ204-001",
+            "https://microsoft.com/verify/AZ204-001",
+            "Azure development certification",
+            null,
+            null,
+            null
+        );
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Image.Should().BeEmpty();
+        _mockObjectStorageService.Verify(x => x.UploadFileAsync(
+            MoqIt.IsAny<string>(),
+            MoqIt.IsAny<Stream>(),
+            MoqIt.IsAny<string>(),
+            MoqIt.IsAny<bool>(),
+            MoqIt.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task Handle_ShouldAddCertificationToRepository()
     {
         // Arrange

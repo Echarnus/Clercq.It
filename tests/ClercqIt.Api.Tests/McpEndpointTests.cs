@@ -243,9 +243,32 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
             .Should().BeFalse();
         updated.GetProperty("issuer").GetString().Should().Be("Microsoft");
 
+        var cleared = Json(await mcp.CallToolAsync("update_certification", new Dictionary<string, object?>
+        {
+            ["id"] = id,
+            ["removeImage"] = true,
+        }));
+        cleared.GetProperty("image").GetString().Should().BeEmpty();
+
         (await mcp.CallToolAsync("delete_certification", new Dictionary<string, object?> { ["id"] = id }))
             .IsError.Should().NotBe(true);
         Json(await mcp.CallToolAsync("list_certifications")).EnumerateArray().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A certification can be created without an image")]
+    public async Task CreateCertification_NoImage_StoresEmptyImage()
+    {
+        await using var mcp = await ConnectAsync("certs");
+
+        var created = Json(await mcp.CallToolAsync("create_certification", new Dictionary<string, object?>
+        {
+            ["title"] = "Microservices architecture",
+            ["issuer"] = "U2U",
+            ["issueDate"] = "2020-10-01",
+            ["description"] = "Course on microservices.",
+        }));
+
+        created.GetProperty("image").GetString().Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Blog tools create, update and delete a blog post")]
