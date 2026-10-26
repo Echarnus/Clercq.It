@@ -42,6 +42,170 @@ Only the authenticator-app MFA is supported. SMS and e-mail codes are not.
 
 The HTML parsers (`MyZenHtml`) follow MyZen's current markup. When MyZen changes a page, `tests/ClercqIt.Api.Tests/MyZen/MyZenHtmlTests.cs` holds trimmed copies of each page (`MyZenPages.cs`) to update.
 
+## Diagrams
+
+The diagrams are [Mermaid](https://mermaid.js.org/), so GitHub renders them in place. The C4 view follows the [C4 model](https://c4model.com), like the ones in [Architecture](./architecture.md#c4-diagrams). A PR that changes how MyZen works updates them in the same PR.
+
+### Components
+
+Who talks to whom inside the MyZen feature. The website container and the keep-alive job run the same image and share the database.
+
+```mermaid
+C4Component
+  title Components: MyZen feature
+
+  Boundary(callers, "Callers") {
+    Person(owner, "Owner", "Kenneth, role MyZen.Owner")
+    System_Ext(claude, "Claude", "MCP client")
+  }
+
+  Container_Boundary(site, "Website container clercq-it-app") {
+    Component(panel, "MyZen section", "Next.js, MyZenPanel and MyZenEntryForm", "Connect, month list, add, edit, delete")
+    Component(endpoints, "MyZen endpoints", "ClercqIt.Api, policy MyZenOwner", "REST at /api/myzen, 404 while the MyZen flag is off")
+    Component(mcp, "MyZen MCP tools", "ClercqIt.Api, Features/Mcp", "The same operations for Claude")
+    Component(handlers, "Handlers", "Application, MediatR", "Commands and queries behind IMyZenGateway")
+    Component(gateway, "MyZen gateway", "Infrastructure, MyZenGateway", "Login steps, AJAX calls, request token, expiry check")
+    Component(parser, "HTML parsing", "Infrastructure, MyZenHtml", "Turns MyZen's pages into DTOs")
+    Component(store, "Session store", "Infrastructure, EfMyZenSessionStore and MyZenSessionCipher", "AES-GCM encrypted cookies, key from myzen-session-key")
+  }
+
+  Container_Boundary(jobs, "Scheduled job clercq-it-job-myzen-keepalive") {
+    Component(keepalive, "MyZenKeepAliveJob", "Clercq.It.Jobs, every 10 minutes", "Pings MyZen, saves refreshed cookies")
+  }
+
+  ContainerDb(db, "Database", "PostgreSQL", "Table MyZenSessions")
+  System_Ext(myzen, "MyZen", "myzen.trustteam.be")
+  System_Ext(secrets, "Secret Manager", "myzen-login, myzen-session-key")
+
+  Rel(owner, panel, "Uses", "HTTPS")
+  Rel(claude, mcp, "Calls tools", "MCP over HTTPS")
+  Rel(panel, endpoints, "Calls", "HTTPS")
+  Rel(endpoints, handlers, "Sends commands and queries")
+  Rel(mcp, handlers, "Sends commands and queries")
+  Rel(handlers, gateway, "Uses", "IMyZenGateway")
+  Rel(gateway, parser, "Parses pages with")
+  Rel(gateway, store, "Loads and saves the session")
+  Rel(store, db, "Reads and writes", "EF Core")
+  Rel(gateway, myzen, "Login form, MFA, AJAX endpoints", "HTTPS, cookie session")
+  Rel(keepalive, store, "Loads and saves the session")
+  Rel(keepalive, myzen, "GET /TimeRegistration/Index", "HTTPS")
+  Rel(secrets, gateway, "Email, password, session key", "Environment")
+  Rel(secrets, keepalive, "Session key", "Job secret")
+
+  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
+```
+
+### Connecting
+
+MyZen's login has a CAPTCHA (sometimes) and MFA, so the owner connects it by hand once. The API signs in with the stored email and password.
+
+```mermaid
+sequenceDiagram
+  actor Owner
+  participant UI as MyZen section
+  participant API as API and gateway
+  participant DB as MyZenSessions
+  participant MZ as MyZen
+
+  Owner->>UI: Connect MyZen
+  UI->>API: POST /api/myzen/session/start
+  API->>MZ: GET /Account/Logon
+  MZ-->>API: Login page, tokens, CAPTCHA if shown
+  API->>DB: Save cookies and tokens (state Connecting)
+  API-->>UI: CAPTCHA image or none
+  Owner->>UI: Types the CAPTCHA
+  UI->>API: POST /api/myzen/session/login
+  API->>MZ: POST login with email, password, CAPTCHA
+  MZ-->>API: Next step
+  alt MFA asked
+    API-->>UI: Step Mfa
+    Owner->>UI: Code from the authenticator app
+    UI->>API: POST /api/myzen/session/mfa
+    API->>MZ: POST the code, remember the device 30 days
+    MZ-->>API: Signed in
+  end
+  API->>DB: Save the session (state Connected)
+  API-->>UI: Step Connected
+  UI->>API: GET /api/myzen/time-entries
+```
+
+### Changing a time entry
+
+Each change writes one entry. The gateway opens the entry first, so an unknown ID changes nothing, and the section reloads the month afterwards.
+
+```mermaid
+sequenceDiagram
+  actor Owner
+  participant UI as MyZen section
+  participant API as API and gateway
+  participant DB as MyZenSessions
+  participant MZ as MyZen
+
+  Owner->>UI: Saves the entry form
+  UI->>API: POST or PUT /api/myzen/time-entries
+  API->>API: Validates the body (400 if invalid)
+  API->>DB: Load and decrypt the session
+  API->>MZ: GET /TimeRegistration/Index
+  MZ-->>API: Page with rawcsrfToken
+  API->>MZ: POST TimeRegistrationEntryDetails with the token
+  alt MyZen accepts
+    MZ-->>API: 2xx without an error
+    API->>DB: Save refreshed cookies
+    API-->>UI: 204
+    UI->>API: GET /api/myzen/time-entries (reload the month)
+  else MyZen shows its login page
+    MZ-->>API: Redirect to /Account/Logon
+    API->>DB: Mark the session Expired
+    API-->>UI: 409, Reconnect MyZen
+  else MyZen refuses
+    API-->>UI: 422 with MyZen's reason
+  end
+```
+
+### Keep-alive
+
+The job runs on Scaleway on its own schedule, so it keeps running while the website container sleeps. See [Scheduled jobs](./jobs.md).
+
+```mermaid
+sequenceDiagram
+  participant SW as Scaleway cron
+  participant Job as myzen-keepalive
+  participant DB as MyZenSessions
+  participant MZ as MyZen
+
+  SW->>Job: Every 10 minutes, same image as the website
+  Job->>DB: Load the session
+  alt No connected session or flag off
+    Job-->>SW: Exit 0, nothing to do
+  else Connected
+    Job->>MZ: GET /TimeRegistration/Index with the cookies
+    alt Still signed in
+      MZ-->>Job: Page
+      Job->>DB: Save refreshed cookies, last seen alive
+      Job-->>SW: Exit 0
+    else Login page returned
+      MZ-->>Job: Redirect to /Account/Logon
+      Job->>DB: Mark Expired
+      Job-->>SW: Exit 0
+    end
+  end
+```
+
+### Session states
+
+```mermaid
+stateDiagram-v2
+  [*] --> Disconnected
+  Disconnected --> Connecting: start
+  Connecting --> Connecting: login needs MFA, or MyZen refuses and shows a new CAPTCHA
+  Connecting --> Connected: login or MFA succeeds
+  Connected --> Connected: keep-alive or data call succeeds
+  Connected --> Expired: MyZen answers with its login page
+  Expired --> Connecting: Reconnect MyZen
+  Connected --> Disconnected: DELETE /api/myzen/session
+  Expired --> Disconnected: DELETE /api/myzen/session
+```
+
 ## API
 
 All endpoints need the `MyZen.Owner` role (policy `MyZenOwner`) and answer 404 while the `MyZen` feature flag is off.
