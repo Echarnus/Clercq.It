@@ -112,7 +112,6 @@ C4Component
     Component(pipeline, "HTTP pipeline", "ASP.NET Core", "Rate limiter, JWT bearer and MCP auth, role policies, exception handlers")
     Component(endpoints, "Endpoint modules", "Minimal APIs, Features/*Endpoints.cs", "Projects, blogs, certifications, images, auth config, stats, MyZen, feature flags")
     Component(mcp, "Content MCP server", "ModelContextProtocol.AspNetCore, Features/Mcp", "Stateless tools per role")
-    Component(keepalive, "MyZen keep-alive", "Hosted service", "Keeps the MyZen session open")
     Component(mediatr, "MediatR pipeline", "Application", "ValidationBehavior runs the FluentValidation validators")
     Component(handlers, "Handlers", "Application/Features", "Commands and queries, DTOs")
     Component(domain, "Domain model", "Domain", "Project, Blog, Certification aggregates, repository contracts")
@@ -136,7 +135,6 @@ C4Component
   Rel(pipeline, ciam, "JWKS")
   Rel(endpoints, mediatr, "Send")
   Rel(mcp, mediatr, "Send, same commands")
-  Rel(keepalive, gateway, "KeepAliveAsync, IMyZenGateway")
   Rel(mediatr, handlers, "Dispatch")
   Rel(handlers, domain, "Uses")
   Rel(handlers, repos, "Through Domain contracts")
@@ -174,6 +172,9 @@ C4Deployment
         Container(proc, "nginx, Next.js, API", "start.sh supervises all three", "Non-root user clercqit")
       }
     }
+    Deployment_Node(jobs, "Serverless Jobs", "Cron") {
+      Container(jobrun, "clercq-it-job-myzen-keepalive", "Same image, Clercq.It.Jobs.dll", "Runs every 10 minutes, a few seconds each")
+    }
     Deployment_Node(rdb, "Managed Database", "portfolio-db, DB-DEV-S, PostgreSQL 16") {
       ContainerDb(pg, "clercqit_portfolio", "PostgreSQL", "Logins: clercqit_user (migrations), clercqit_app (runtime)")
     }
@@ -198,6 +199,9 @@ C4Deployment
   Rel(actions, pg, "migration.sql as clercqit_user, content import as clercqit_app", "psql, TLS")
   Rel(actions, tfstate, "Terraform state", "S3")
   Rel(registry, proc, "Image pulled by Scaleway")
+  Rel(registry, jobrun, "Image pulled for each run")
+  Rel(actions, jobrun, "Sets the deployed image", "scw CLI")
+  Rel(jobrun, pg, "Session row, runtime login", "TLS")
   Rel(proc, pg, "clercqit_app", "TLS VerifyCA")
   Rel(proc, images, "Uploads", "S3")
   Rel(proc, kc, "JWKS")
@@ -276,11 +280,11 @@ It writes one SVG per diagram next to the output file and fails on a syntax erro
 ## Layer Structure
 
 Dependencies point inwards. Domain knows nothing about the other layers; the
-Api and the two tools are composition roots that wire Infrastructure in.
+Api and the tools (content import, scheduled jobs, migrations) are composition roots that wire Infrastructure in.
 
 ```
             ClercqIt.Api ─────────────┐
-   (also: ContentImport, EF.Migrations)│
+   (also: ContentImport, Jobs, EF.Migrations)│
               │                       │
               ▼                       ▼
         Application ◄──────── Infrastructure
@@ -302,7 +306,7 @@ of the suite in CI, so a violation fails the PR.
 | Application depends only on Domain, MediatR and FluentValidation | `LayeringTests` |
 | Infrastructure does not depend on the Api | `LayeringTests` |
 | Endpoint modules under `Clercq.It.Api.Features` go through MediatR, never the DbContext or repositories | `LayeringTests` |
-| Only `ClercqIt.Api`, `Clercq.It.Infrastructure.EF.Migrations` and `Clercq.It.ContentImport` reference the Infrastructure project | `LayeringTests` |
+| Only `ClercqIt.Api`, `Clercq.It.Infrastructure.EF.Migrations`, `Clercq.It.ContentImport` and `Clercq.It.Jobs` reference the Infrastructure project | `LayeringTests` |
 | Aggregates (`IAggregateRoot`) live in `Clercq.It.Domain.Entities` and have no public setters (init is fine) | `DomainModelTests` |
 | Value objects in `Clercq.It.Domain.ValueObjects` are records or sealed, without public setters | `DomainModelTests` |
 | Repository contracts are interfaces in Domain, implemented in Infrastructure | `DomainModelTests` |
@@ -430,6 +434,8 @@ Reads are public; writes need a role (policies in `src/ClercqIt.Api/Program.cs`)
 | `/api/certifications`, `/api/certifications/{id}` | `POST`, `PUT`, `DELETE` (multipart form, `image` file) | `Certifications.Contributor` |
 | `/api/images` | `POST` (multipart `image`), returns the stored URL | `Blogs.Contributor` |
 | `/api/auth/config` | `GET`, Keycloak issuer and public client id for the admin UI | Public |
+| `/api/auth/session` | `GET`, 204 when the token has an admin role (dashboard gate) | Any admin role |
+| `/api/auth/identity-provider` | `GET`, Cloud IAM URLs, realm, client ids and roles for the admin Settings page; no secrets | `Admin.View` |
 | `/api/features` | `GET`, the feature flags | Public |
 | `/api/stats/pageview` | `POST`, records a page view | Public |
 | `/api/stats` | `GET`, statistics summary | `Admin.View` |

@@ -36,7 +36,7 @@ Only the authenticator-app MFA is supported. SMS and e-mail codes are not.
 | Gateway contract, DTOs, queries and commands | `src/Clercq.It.Application/Features/MyZen/` |
 | MyZen client, HTML parsing, session store | `src/Clercq.It.Infrastructure/MyZen/` |
 | Endpoints | `src/ClercqIt.Api/Features/MyZenEndpoints.cs` |
-| Keep-alive | `src/ClercqIt.Api/MyZenKeepAliveService.cs` |
+| Keep-alive job | `src/Clercq.It.Jobs/Jobs/MyZenKeepAliveJob.cs`, scheduled in `infra/terraform/jobs.tf` ([Scheduled jobs](./jobs.md)) |
 | Error mapping (409, 422, 502) | `src/ClercqIt.Api/MyZenExceptionHandler.cs` |
 | Admin section | `src/ClercqIt.Web/components/admin/MyZenPanel.tsx`, `src/ClercqIt.Web/components/admin/MyZenEntryForm.tsx`, `src/ClercqIt.Web/lib/api/myzenApi.ts` |
 
@@ -69,7 +69,7 @@ The entry body:
 
 `durationMinutes` is 1 to 1440, `customerId` is `null` for a project without a customer, and `description` is at most 1000 characters. Invalid bodies get 400 and are never sent to MyZen.
 
-A data call answers **409** when the session must be reconnected, **422** when MyZen refuses a change (the problem's `detail` is MyZen's reason, when it gives one) and **502** when MyZen cannot be reached, answers with an error status, or is not configured.
+A data call answers **409** when the session must be reconnected, **422** when MyZen refuses a change (the problem's `detail` is MyZen's reason, when it gives one) and **502** when MyZen cannot be reached, answers with an error status, or is not configured. The admin tab shows the problem's `detail` next to its own message (for example "Could not load the time entries. MyZen could not be reached."), and clears it once a month loads.
 
 ### MyZen calls behind the changes
 
@@ -79,7 +79,7 @@ A data call answers **409** when the session must be reconnected, **422** when M
 | Add or edit | `POST /TimeRegistration/TimeRegistrationEntryDetails` with `TimeRegistrationID` (empty for a new entry), `ProjectID`, `CustomerID`, `Date` (dd/MM/yyyy), `Duration` (seconds), `Description`, `Invoiced` |
 | Delete | `POST /TimeRegistration/DeleteTimeRegistration` with `ID` |
 
-Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
+Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. The token is `rawcsrfToken` in the page's `<script id="layoutmainconfig">` JSON: the HTML MyZen serves has no hidden `__RequestVerificationToken` input, MyZen's scripts only add those in the browser (issue #448). A hidden input is still read as a fallback. The time-entry list uses the same token. Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
 
 ## Session storage
 
@@ -87,7 +87,9 @@ The session (MyZen's cookies and the login page's tokens) is stored in the `MyZe
 
 ## Keep-alive
 
-`MyZenKeepAliveService` opens MyZen's time registration page every `MyZen:KeepAliveMinutes` (default 10) while the session is connected and the flag is on. It only runs while the container runs: the site scales to zero, so a quiet night can still end the session. How long MyZen keeps an idle "remember me" session decides whether that matters; check the session's **last seen alive** time in the MyZen section.
+The `myzen-keepalive` [scheduled job](./jobs.md) opens MyZen's time registration page with the stored session every 10 minutes (`scheduled_jobs` in `infra/terraform/jobs.tf`) while the session is connected and the `MyZen` flag is on. It runs as a Scaleway Serverless Job from the website image, so it keeps running while the website container sleeps, and it saves the cookies MyZen refreshes. It reads the session with the database login and `MyZen__SessionKey`; it never gets the MyZen password. When MyZen answers with its login page the job marks the session **Expired**.
+
+A run that cannot reach MyZen fails in the Scaleway console (**Serverless → Jobs → `clercq-it-job-myzen-keepalive` → Runs**) and tries again 10 minutes later. Check the session's **last seen alive** time in the MyZen section. Locally, run `dotnet run --project src/Clercq.It.Jobs -- myzen-keepalive` ([Scheduled jobs](./jobs.md#running-a-job-locally)).
 
 ## Configuration
 
@@ -95,7 +97,6 @@ The session (MyZen's cookies and the login page's tokens) is stored in the `MyZe
 | --- | --- |
 | `MyZen__Email`, `MyZen__Password` | Scaleway secret `myzen-login` (type Username/password), created by the owner; Terraform reads it (`infra/terraform/secrets.tf`) |
 | `MyZen__SessionKey` | Scaleway secret `/clercq-it/myzen-session-key`, generated by Terraform |
-| `MyZen__KeepAliveMinutes` | Not set (default 10) |
 | `MyZen__BaseUrl` | Not set (default `https://myzen.trustteam.be`) |
 | `FeatureFlags__MyZen` | `infra/terraform/feature_flags.tf` |
 

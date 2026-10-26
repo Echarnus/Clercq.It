@@ -217,6 +217,8 @@ export async function fetchProjectById(id: string): Promise<Project | null> {
 
 export interface CreateProjectData {
   title: string;
+  /** The employer or client, shown as a subtitle. Empty for none. */
+  company: string;
   shortDescription: string;
   longDescription: string;
   image?: File;
@@ -229,6 +231,7 @@ export interface CreateProjectData {
 export async function createProject(data: CreateProjectData): Promise<Project> {
   const formData = new FormData();
   formData.append("title", data.title);
+  formData.append("company", data.company);
   formData.append("shortDescription", data.shortDescription);
   formData.append("longDescription", data.longDescription);
   if (data.image) {
@@ -254,6 +257,8 @@ export async function createProject(data: CreateProjectData): Promise<Project> {
 
 export interface UpdateProjectData {
   title: string;
+  /** The employer or client, shown as a subtitle. Empty for none. */
+  company: string;
   shortDescription: string;
   longDescription: string;
   image?: File;
@@ -268,6 +273,7 @@ export interface UpdateProjectData {
 export async function updateProject(id: string, data: UpdateProjectData): Promise<Project> {
   const formData = new FormData();
   formData.append("title", data.title);
+  formData.append("company", data.company);
   formData.append("shortDescription", data.shortDescription);
   formData.append("longDescription", data.longDescription);
   if (data.image) {

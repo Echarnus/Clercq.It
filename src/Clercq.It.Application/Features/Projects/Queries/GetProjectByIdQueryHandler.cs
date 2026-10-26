@@ -31,7 +31,8 @@ public class GetProjectByIdQueryHandler : IRequestHandler<GetProjectByIdQuery, P
             project.Image,
             project.Featured,
             project.Title,
-            project.Skills.Values
+            project.Skills.Values,
+            project.Company
         );
     }
 }

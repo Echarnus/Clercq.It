@@ -10,6 +10,10 @@ public class CreateProjectCommandValidator : AbstractValidator<CreateProjectComm
             .NotEmpty().WithMessage("Title is required")
             .MaximumLength(200).WithMessage("Title must not exceed 200 characters");
 
+        RuleFor(x => x.Company)
+            .NotNull().WithMessage("Company must not be null")
+            .MaximumLength(200).WithMessage("Company must not exceed 200 characters");
+
         RuleFor(x => x.ShortDescription)
             .NotEmpty().WithMessage("Short description is required")
             .MaximumLength(500).WithMessage("Short description must not exceed 500 characters");

@@ -21,9 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.x'
+        uses: ./.github/actions/setup-dotnet
 
       - name: Install GitVersion
         uses: gittools/actions/gitversion/setup@7417b1089e2c7de93510f1901d656ddf60bb024f # v4.7.0
@@ -252,9 +250,7 @@ jobs:
           cache-from: type=gha
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
-        with:
-          dotnet-version: '10.0.x'
+        uses: ./.github/actions/setup-dotnet
 
       # Same steps as deploy.yml: the idempotent migration script through psql,
       # then the content import (content/**/*.md has no images, so no bucket).
@@ -307,6 +303,22 @@ jobs:
           SMOKE_DELAY: 5
         run: .github/scripts/smoke-test.sh http://localhost "$VERSION"
 
+      # The scheduled jobs ship in the same image (docs/jobs.md). Run one the way a Scaleway
+      # job does, against the CI database (the container's own connection string), and check
+      # that a wrong name is refused with exit code 2.
+      - name: Scheduled job runs from the image
+        run: |
+          job() {
+            docker exec -e FeatureFlags__MyZen=true -e MyZen__SessionKey=ci-only-session-key clercq-it \
+              /usr/share/dotnet/dotnet /app/api/Clercq.It.Jobs.dll "$1"
+          }
+          out=$(job myzen-keepalive 2>&1) || { echo "$out"; echo "::error::myzen-keepalive failed"; exit 1; }
+          echo "$out"
+          grep -q "no live MyZen session" <<< "$out" || { echo "::error::myzen-keepalive did not report an empty session table"; exit 1; }
+          code=0
+          job no-such-job > /dev/null 2>&1 || code=$?
+          [ "$code" = 2 ] || { echo "::error::an unknown job exited with $code, expected 2"; exit 1; }
+
       # The real image keeps the admin closed to visitors (issue #454): the dashboard
       # redirects to the sign-in page, and admin-only API answers 401 without a token.
       - name: Admin closed to anonymous visitors
@@ -355,6 +367,9 @@ jobs:
 
       - name: Rollback on failed smoke test
         run: bash .github/scripts/tests/rollback.test.sh
+
+      - name: Scheduled job image update
+        run: bash .github/scripts/tests/set-job-image.test.sh
 
       - name: PR conventions check
         run: bash .github/scripts/tests/check-pr-conventions.test.sh

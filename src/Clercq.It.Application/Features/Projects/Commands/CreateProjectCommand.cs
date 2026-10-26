@@ -13,5 +13,6 @@ public record CreateProjectCommand(
     DateTime StartDate,
     DateTime EndDate,
     bool Featured,
-    string[] Skills
+    string[] Skills,
+    string Company = ""
 ) : IRequest<ProjectDto>;

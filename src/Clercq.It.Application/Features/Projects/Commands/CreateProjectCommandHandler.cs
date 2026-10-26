@@ -39,6 +39,7 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
         // Create project entity
         var project = Project.Create(
             request.Title,
+            request.Company,
             request.ShortDescription,
             request.LongDescription,
             imageUrl,
@@ -63,7 +64,8 @@ public class CreateProjectCommandHandler : IRequestHandler<CreateProjectCommand,
             project.Image,
             project.Featured,
             project.Title,
-            project.Skills.Values
+            project.Skills.Values,
+            project.Company
         );
     }
 }

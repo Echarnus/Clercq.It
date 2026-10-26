@@ -146,8 +146,6 @@ resource "scaleway_container" "portfolio_app" {
     "Keycloak__BaseUrl"           = local.secrets["keycloak-base-url"]
     "Keycloak__Realm"             = var.keycloak_realm
     "Keycloak__ClientId"          = "clercqit-web"
-    # Public origin for the MCP server's OAuth metadata (docs/mcp.md); behind nginx the API only sees http.
-    "Mcp__PublicBaseUrl" = "https://www.clercq.it"
     # The database's TLS certificate: the API pins it (SSL Mode VerifyCA, docs/secrets.md#database-logins).
     "Database__CaCertificate" = scaleway_rdb_instance.portfolio_db.certificate
   }, { for name, enabled in var.feature_flags : "FeatureFlags__${name}" => tostring(enabled) })
@@ -157,7 +155,7 @@ resource "scaleway_container" "portfolio_app" {
   secret_environment_variables = {
     "ObjectStorage__AccessKey"             = scaleway_iam_api_key.app_storage.access_key
     "ObjectStorage__SecretKey"             = scaleway_iam_api_key.app_storage.secret_key
-    "ConnectionStrings__DefaultConnection" = "${local.db_connection_base};Database=${scaleway_rdb_database.portfolio_app_db.name};Username=${scaleway_rdb_user.portfolio_runtime_user.name};Password=${random_password.db_runtime.result}"
+    "ConnectionStrings__DefaultConnection" = local.db_runtime_connection
     "OTEL_EXPORTER_OTLP_HEADERS"           = "authorization=Bearer ${scaleway_cockpit_token.portfolio_logs_token.secret_key}"
     "MyZen__Email"                         = local.myzen_login.username
     "MyZen__Password"                      = local.myzen_login.password

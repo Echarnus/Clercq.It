@@ -22,10 +22,8 @@ public static class McpEndpoints
     public static AuthenticationBuilder AddMcpAuthentication(
         this AuthenticationBuilder auth,
         Action<JwtBearerOptions> configureBearer,
-        string keycloakAuthority,
-        string? publicBaseUrl)
+        string keycloakAuthority)
     {
-        var baseUrl = publicBaseUrl?.TrimEnd('/');
         return auth
             .AddJwtBearer(BearerScheme, options =>
             {
@@ -34,11 +32,15 @@ public static class McpEndpoints
             })
             .AddMcp(options =>
             {
-                // Behind nginx the request scheme is http, so production sets the public URL.
-                options.ResourceMetadataUri = new Uri(baseUrl is null ? MetadataPath : baseUrl + MetadataPath, UriKind.RelativeOrAbsolute);
+                // Relative on purpose: the handler serves the metadata only when the request URL
+                // matches, and an absolute URI never matched behind nginx (http inside, https outside).
+                // The 401 header and the resource use the request's origin, which is https once
+                // UseForwardedHeaders has applied nginx's X-Forwarded-Proto (Program.cs).
+                options.ResourceMetadataUri = new Uri(MetadataPath, UriKind.Relative);
                 options.Events.OnResourceMetadataRequest = context =>
                 {
-                    var origin = baseUrl ?? $"{context.HttpContext.Request.Scheme}://{context.HttpContext.Request.Host}";
+                    var request = context.HttpContext.Request;
+                    var origin = $"{request.Scheme}://{request.Host}";
                     context.ResourceMetadata = new()
                     {
                         Resource = origin + Path,

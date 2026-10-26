@@ -56,13 +56,14 @@ Implements multi-tier rate limiting to prevent DDoS attacks:
 
 #### API Endpoints Rate Limit
 - **30 requests per minute** - Standard API calls
-- Applied to: Images, Projects, Blogs, Certifications, Auth (`/api/auth/config`), Features (`/api/features`), MyZen, MCP and the statistics summary (`GET /api/stats`). `POST /api/stats/pageview` only has the global limit.
+- Applied to: Images, Projects, Blogs, Certifications, Auth (`/api/auth/identity-provider`), Features (`/api/features`), MyZen, MCP and the statistics summary (`GET /api/stats`). `POST /api/stats/pageview` only has the global limit.
+- Not rate limited by the API: `GET /api/auth/config` and `GET /api/auth/session` (issue #475). The dashboard gate in `src/ClercqIt.Web/proxy.ts` calls `/api/auth/session` on every dashboard request and link prefetch, and the admin shell reads `/api/auth/config` on every load. In the shared bucket below they hit 429, and the admin was sent back to `/admin` with "Sign-in is not available right now". Both are cheap (static settings, a token check), and browser calls still pass nginx's `/api` limit.
 
 Both limits are partitioned by the connection's remote address. In the container every request reaches the API from nginx or from Next.js on `localhost`, and the API does not read `X-Forwarded-For`, so in production all visitors currently share one bucket (#438).
 
 #### Admin sign-in (authorization code + PKCE)
 - The admin UI signs in with the OAuth 2.1 authorization code flow and PKCE (S256) against Keycloak, using `oidc-client-ts` (`src/ClercqIt.Web/lib/auth.ts`, issue #257). Keycloak's own login page handles passwords, MFA, brute-force protection and required actions.
-- No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id.
+- No API endpoint accepts a password: `POST /api/auth/login` and the password grant are gone, and `clercqit-web` has **Direct access grants** off. `GET /api/auth/config` only returns the issuer URL and the public client id. `GET /api/auth/identity-provider` (`Admin.View` only) adds the Keycloak base URL, console links, the MCP client id and role names for the admin Settings page; it never returns a password or client secret (`src/ClercqIt.Api/Features/Auth/IdentityProviderSettings.cs`).
 - Tokens stay in memory (never `localStorage`); only the PKCE verifier and state sit in `sessionStorage` during the redirect. The return address after sign-in must be an `/admin` path. A copy of the access token sits in an httpOnly cookie for `/admin/dashboard` only, so the server can refuse the dashboard to visitors ([Admin pages](#admin-pages)).
 - The CSP `connect-src` allows `https://*.cloud-iam.com`, so the browser can call Keycloak's token endpoint.
 

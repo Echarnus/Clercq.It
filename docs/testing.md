@@ -23,6 +23,7 @@ One test project per production project:
 | `Clercq.It.Application` | `tests/Clercq.It.Application.Tests`: every command/query handler and validator, with repositories and storage mocked |
 | `ClercqIt.Api` (and Infrastructure) | `tests/ClercqIt.Api.Tests`: every endpoint against real PostgreSQL and Keycloak containers ([below](#api-integration-tests)) |
 | `Clercq.It.ContentImport` | `tests/Clercq.It.ContentImport.Tests` |
+| `Clercq.It.Jobs` | `tests/Clercq.It.Jobs.Tests`: the job runner (exit codes, feature flag, failures) and each job with its gateway mocked |
 | All layers | `tests/Clercq.It.Architecture.Tests` |
 
 A test class is named after the class it tests plus `Tests`, and its namespace mirrors that class's namespace: `CreateBlogCommandHandler` in `Clercq.It.Application.Features.Blogs.Commands` is tested by `CreateBlogCommandHandlerTests` in `Clercq.It.Application.Tests.Features.Blogs.Commands`. The files currently sit flat in each test project.
@@ -102,6 +103,7 @@ Thresholds (21 October 2026, the measured coverage rounded down; raised when the
 | `Clercq.It.Application` | 98% |
 | `ClercqIt.Api` | 98% |
 | `Clercq.It.ContentImport` | 96% |
+| `Clercq.It.Jobs` | 95% |
 | `Clercq.It.ServiceDefaults` | 97% |
 | `Clercq.It.Infrastructure` | 96% |
 

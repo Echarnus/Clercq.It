@@ -36,6 +36,7 @@ Clercq.It/
 │   ├── Clercq.It.Infrastructure/ # Infrastructure layer (EF Core, migrations in EF/Migrations)
 │   ├── Clercq.It.Infrastructure.EF.Migrations/ # Console app that applies migrations (Aspire only)
 │   ├── Clercq.It.ContentImport/ # Imports content/ into the database (deploy pipeline)
+│   ├── Clercq.It.Jobs/          # Scheduled jobs run by Scaleway Serverless Jobs (docs/jobs.md)
 │   ├── Clercq.It.AppHost/       # Aspire orchestration (dev only)
 │   ├── Clercq.It.ServiceDefaults/ # Health checks and OpenTelemetry (also in production)
 │   ├── Dockerfile, start.sh, nginx.conf # Production image
@@ -45,6 +46,7 @@ Clercq.It/
 │   ├── Clercq.It.Application.Tests/
 │   ├── Clercq.It.Architecture.Tests/ # Layering rules
 │   ├── Clercq.It.ContentImport.Tests/
+│   ├── Clercq.It.Jobs.Tests/
 │   └── ClercqIt.Api.Tests/      # API integration tests (Testcontainers)
 ├── content/                     # Markdown content imported on deploy
 ├── infra/terraform/             # Scaleway infrastructure
@@ -272,7 +274,7 @@ What the owner configures on the cloud environment (Project settings → Cloud e
 - Network secrets `SCW_ACCESS_KEY`, `SCW_SECRET_KEY`, `SCW_DEFAULT_PROJECT_ID` for a read-only Secret Manager key (see issue #226).
 - Network access to `clercq.it` and the Scaleway APIs, for smoke tests and secret reads.
 
-`global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`setup-dotnet` `10.0.x`) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`). The backend stays on .NET 10 (LTS) and EF Core 10 until a later LTS is worth the move: .NET 11 is a short-term support release and was still a release candidate at the audit of 23 October 2026 (#352). The tests run xunit v2 on `Microsoft.NET.Test.Sdk` 18, `xunit.runner.visualstudio` 4 and `coverlet.collector` 10 (#359; 6.0.4 skipped async method bodies on .NET 10); FluentAssertions stays on 7.x (licence, see [Testing](./testing.md)).
+`global.json` pins the .NET 10 SDK (`rollForward: latestFeature`), the same major in the cloud environment, CI (`.github/actions/setup-dotnet` reads `global.json` and uses the runner's preinstalled SDK when it matches; see [.NET SDK in CI](./devops.md#net-sdk-in-ci)) and Docker (`mcr.microsoft.com/dotnet/sdk:10.0`). The backend stays on .NET 10 (LTS) and EF Core 10 until a later LTS is worth the move: .NET 11 is a short-term support release and was still a release candidate at the audit of 23 October 2026 (#352). The tests run xunit v2 on `Microsoft.NET.Test.Sdk` 18, `xunit.runner.visualstudio` 4 and `coverlet.collector` 10 (#359; 6.0.4 skipped async method bodies on .NET 10); FluentAssertions stays on 7.x (licence, see [Testing](./testing.md)).
 
 Before opening a PR, agents run the `quality-check` skill (see [Quality gates](#quality-gates)). By hand, the same gates are:
 

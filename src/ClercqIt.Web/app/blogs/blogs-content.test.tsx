@@ -42,4 +42,19 @@ describe("BlogsContent", () => {
     expect(screen.getByText("Post 1")).toBeInTheDocument();
     expect(screen.queryByText("Post 11")).not.toBeInTheDocument();
   });
+
+  it("shows an image only for posts that have one", () => {
+    const withImage = { ...blogs[0], id: "with-image", title: "Has image", image: "/a.png" };
+    const placeholder = {
+      ...blogs[1],
+      id: "placeholder",
+      title: "Placeholder",
+      image: "/placeholder.svg",
+    };
+    render(<BlogsContent blogs={[withImage, placeholder, blogs[2]]} />);
+
+    expect(screen.getAllByRole("img", { name: "Has image" }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("img", { name: "Placeholder" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("img", { name: blogs[2].title })).not.toBeInTheDocument();
+  });
 });

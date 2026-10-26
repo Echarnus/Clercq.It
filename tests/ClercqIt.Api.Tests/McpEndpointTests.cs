@@ -36,6 +36,23 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
             .Should().Contain("resource_metadata=").And.Contain("/.well-known/oauth-protected-resource/api/mcp");
     }
 
+    [Fact(DisplayName = "The metadata link in the 401 resolves to the metadata for the same origin")]
+    public async Task Mcp_Unauthorized_MetadataLinkResolves()
+    {
+        // Regression: an absolute metadata URI with another scheme or host made the link a 404 (#386)
+        var client = factory.CreateClient();
+        var challenge = await client.PostAsync(McpPath, InitializeBody());
+        var link = System.Text.RegularExpressions.Regex.Match(
+            challenge.Headers.WwwAuthenticate.ToString(), "resource_metadata=\"([^\"]+)\"").Groups[1].Value;
+
+        var response = await client.GetAsync(new Uri(link).PathAndQuery);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var metadata = JsonSerializer.Deserialize<JsonElement>(await response.Content.ReadAsStringAsync());
+        metadata.GetProperty("resource").GetString()
+            .Should().Be(new Uri(new Uri(link), McpPath).ToString());
+    }
+
     [Fact(DisplayName = "OAuth protected resource metadata names Keycloak as the authorization server")]
     public async Task ResourceMetadata_ReturnsKeycloakRealm()
     {
@@ -100,6 +117,7 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         var created = Json(await mcp.CallToolAsync("create_project", new Dictionary<string, object?>
         {
             ["title"] = "Child Benefit modernisation",
+            ["company"] = "Certia",
             ["shortDescription"] = "Migrating a WinForms app to the web.",
             ["longDescription"] = "Angular and **.NET**.",
             ["startDate"] = "2025-05-01",
@@ -111,6 +129,7 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         }));
         var id = created.GetProperty("id").GetGuid();
         created.GetProperty("image").GetString().Should().Be(CustomWebApplicationFactory.FakeImageUrl);
+        created.GetProperty("company").GetString().Should().Be("Certia");
 
         var updated = Json(await mcp.CallToolAsync("update_project", new Dictionary<string, object?>
         {
@@ -120,6 +139,14 @@ public class McpEndpointTests(CustomWebApplicationFactory factory) : IAsyncLifet
         updated.GetProperty("title").GetString().Should().Be("Child Benefit 2.0");
         updated.GetProperty("shortDescription").GetString().Should().Be("Migrating a WinForms app to the web.");
         updated.GetProperty("featured").GetBoolean().Should().BeTrue();
+        updated.GetProperty("company").GetString().Should().Be("Certia", "fields left out keep their value");
+
+        var cleared = Json(await mcp.CallToolAsync("update_project", new Dictionary<string, object?>
+        {
+            ["id"] = id,
+            ["company"] = "",
+        }));
+        cleared.GetProperty("company").GetString().Should().BeEmpty();
 
         // The site reads the same row
         var site = await factory.CreateClient().GetAsync($"/api/projects/{id}");

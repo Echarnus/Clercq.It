@@ -63,6 +63,14 @@ Every workflow sets a read-only `permissions` block at the top (`contents: read`
 
 A job that calls a reusable workflow (`build.yml` calling `test.yml`) caps that workflow's permissions, so give the calling job what the called workflow needs. A new workflow follows the same rule; OpenSSF Scorecard's Token-Permissions check scores any top-level write as a failure.
 
+### .NET SDK in CI
+
+Workflows set up .NET with the local composite action `.github/actions/setup-dotnet` (`uses: ./.github/actions/setup-dotnet`, after `actions/checkout`), never with `actions/setup-dotnet` and a `dotnet-version` directly. `global.json` alone decides the SDK version (#467).
+
+The action runs `dotnet --version` first. That resolves the SDK through `global.json` (`10.0.100`, `rollForward: latestFeature`) and fails when no installed SDK matches. The `ubuntu-latest` runner image already ships several .NET 10 SDKs, so CI normally uses one of those and downloads nothing. Only when none matches does the action run `actions/setup-dotnet` with `global-json-file: global.json`.
+
+Why: on 25 October 2026 `dotnet-version: '10.0.x'` started resolving to SDK 10.0.403, and Microsoft's feed answered every download with HTTP 409, which failed every .NET job. The log line to look for is `Could not find .NET Core SDK with version = ...`. If it comes back after a `global.json` change, pick a version the runner image already has (see the image's readme under "Included Software" in the job log).
+
 ## Workflow and review pipelines
 
 ### Docs check (`docs-check.yml`)
@@ -105,6 +113,7 @@ Runs on pushes to `main` that change `.github/labels.yml`, or by hand. Creates o
 - A `postgres:17-alpine` service container is the throwaway database. The job applies the idempotent migration script with `psql` and runs the content import (`src/Clercq.It.ContentImport`), the same steps as `deploy.yml`.
 - `docker run --network host`: the container reaches Postgres on `localhost:5432` and serves the site on `http://localhost`. `Keycloak__BaseUrl` is a dummy (`https://keycloak.invalid`): the API needs a URL to start and only fetches the Keycloak metadata when someone signs in. Object storage is not configured, so image uploads are not covered.
 - The start step fails as soon as the container stops, and waits up to 120 s for `http://localhost/`. Then `.github/scripts/smoke-test.sh http://localhost 0.0.0-ci` runs the same checks as after a production deploy. On failure the job prints `docker logs` and the API and frontend logs from inside the container.
+- `Scheduled job runs from the image` runs `dotnet /app/api/Clercq.It.Jobs.dll myzen-keepalive` inside the container against the CI database, as a Scaleway job does ([Scheduled jobs](./jobs.md)): it must succeed and report an empty session table, and an unknown job name must exit with 2.
 - `Admin closed to anonymous visitors` then checks the real image: `/admin/dashboard` answers `307` to `/admin`, and `/api/features`, `/api/auth/session`, `/api/stats` and `/api/myzen/session` answer `401` without a token (issue #454, [application-security.md](./application-security.md#admin-pages)).
 - ZAP (#239) and Playwright e2e (#246) are meant to run as steps after the smoke test, against the same running container.
 
@@ -122,7 +131,7 @@ docker run -d --name clercq-it --network host \
 
 #### deploy-scripts
 - Pull requests only
-- Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI)
+- Runs `.github/scripts/tests/smoke-test.test.sh` (the smoke test against a fake healthy and broken site) and `rollback.test.sh` (a broken image is rolled back to the previous one, with a fake `scw` CLI), `set-job-image.test.sh` (only the `clercq-it-job-*` definitions move to the new image)
 - Runs `check-pr-conventions.test.sh` and the Python tests in `.github/scripts/tests/` (docs check, repository audit, coverage gate)
 
 ### Example
@@ -307,8 +316,9 @@ There is no destroy job.
 - **Secrets**: Scaleway Secret Manager (`secrets.tf`, see [Secrets](./secrets.md))
 - **Cockpit**: a token the container uses to send logs and metrics through OpenTelemetry
 
+- **Scheduled jobs**: one Serverless Job definition per entry of `scheduled_jobs` in `jobs.tf`, running the website image on a cron schedule, reading the database login and their own secrets through Secret Manager references ([Scheduled jobs](./jobs.md))
 - **Feature flags**: `infra/terraform/feature_flags.tf` holds the production flags; each becomes a `FeatureFlags__<Name>` env var on the website and verify containers ([versioning.md](./versioning.md#feature-flags))
-- **MCP public URL**: the website container sets `Mcp__PublicBaseUrl=https://www.clercq.it`, used in the content MCP server's OAuth metadata ([mcp.md](./mcp.md)). The verify container leaves it unset.
+- **HTTPS behind nginx**: Scaleway's edge terminates TLS. nginx passes the edge's `X-Forwarded-Proto` on to the API (`src/nginx.conf`), which the content MCP server's OAuth metadata depends on ([mcp.md](./mcp.md)).
 - **Verify environment**: `clercq-it-verify` container, `clercqit_verify` database, `clercq-it-verify-images` bucket (`verify.tf`, see [Verify stage](#verify-stage))
 
 **Note**: Custom domains are managed manually in the Scaleway console and not via Terraform to avoid conflicts.
@@ -365,6 +375,7 @@ gh workflow run infra.yml
 - Records the image the container runs now (`PREVIOUS_IMAGE`)
 - Sets the new image and forces container recreation to bypass the image cache (scales min_scale: 0→1→0), with `.github/scripts/set-container-image.sh`
 - Runs the smoke test (see [Smoke test and rollback](#smoke-test-and-rollback))
+- After a passing smoke test, points the scheduled job definitions (`clercq-it-job-*`, [Scheduled jobs](./jobs.md)) at the deployed image with `.github/scripts/set-job-image.sh`. This step only warns when it fails; the jobs then keep their previous image
 - On a failed smoke test: rolls back to `PREVIOUS_IMAGE`, opens a p1 bug issue and fails the run, so no release is tagged
 - Reports deployment status
 

@@ -8,11 +8,11 @@ public class Project : IAggregateRoot
     // For EF Core, which sets the private setters when it loads a row.
     private Project() { }
 
-    public Project(Guid id, string title, string shortDescription, string longDescription, string image,
-        DateTime startDate, DateTime endDate, bool featured, Skills skills)
+    public Project(Guid id, string title, string company, string shortDescription, string longDescription,
+        string image, DateTime startDate, DateTime endDate, bool featured, Skills skills)
     {
         Id = id;
-        Update(title, shortDescription, longDescription, startDate, endDate, featured, skills);
+        Update(title, company, shortDescription, longDescription, startDate, endDate, featured, skills);
         ChangeImage(image);
     }
 
@@ -24,18 +24,22 @@ public class Project : IAggregateRoot
     public string Image { get; private set; } = string.Empty;
     public bool Featured { get; private set; }
     public string Title { get; private set; } = string.Empty;
+    /// <summary>The employer or client the project was done for, shown as a subtitle; empty when there is none.</summary>
+    public string Company { get; private set; } = string.Empty;
     public Skills Skills { get; private set; } = new(Array.Empty<string>());
 
-    public static Project Create(string title, string shortDescription, string longDescription, string image,
-        DateTime startDate, DateTime endDate, bool featured, Skills skills) =>
-        new(Guid.NewGuid(), title, shortDescription, longDescription, image, startDate, endDate, featured, skills);
+    public static Project Create(string title, string company, string shortDescription, string longDescription,
+        string image, DateTime startDate, DateTime endDate, bool featured, Skills skills) =>
+        new(Guid.NewGuid(), title, company, shortDescription, longDescription, image, startDate, endDate, featured,
+            skills);
 
     /// <summary>Replaces the project's details.</summary>
     /// <exception cref="ArgumentException">The title is blank or the project ends before it starts.</exception>
-    public void Update(string title, string shortDescription, string longDescription, DateTime startDate,
-        DateTime endDate, bool featured, Skills skills)
+    public void Update(string title, string company, string shortDescription, string longDescription,
+        DateTime startDate, DateTime endDate, bool featured, Skills skills)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(title);
+        ArgumentNullException.ThrowIfNull(company);
         ArgumentNullException.ThrowIfNull(shortDescription);
         ArgumentNullException.ThrowIfNull(longDescription);
         ArgumentNullException.ThrowIfNull(skills);
@@ -45,6 +49,7 @@ public class Project : IAggregateRoot
         }
 
         Title = title;
+        Company = company;
         ShortDescription = shortDescription;
         LongDescription = longDescription;
         StartDate = startDate;

@@ -135,4 +135,11 @@ describe("schemas", () => {
     expect(ProjectSchema.safeParse({ ...project, id: seededId }).success).toBe(true);
     expect(BlogSchema.safeParse({ ...blog, id: seededId }).success).toBe(true);
   });
+
+  it("default a project's missing company to empty", () => {
+    const withoutCompany: Partial<typeof project> = { ...project };
+    delete withoutCompany.company;
+
+    expect(ProjectSchema.parse(withoutCompany).company).toBe("");
+  });
 });

@@ -49,6 +49,7 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
         // Update other properties
         project.Update(
             request.Title,
+            request.Company,
             request.ShortDescription,
             request.LongDescription,
             request.StartDate,
@@ -68,7 +69,8 @@ public class UpdateProjectCommandHandler : IRequestHandler<UpdateProjectCommand,
             project.Image,
             project.Featured,
             project.Title,
-            project.Skills.Values
+            project.Skills.Values,
+            project.Company
         );
     }
 }

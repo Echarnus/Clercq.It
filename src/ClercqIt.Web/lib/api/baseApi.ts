@@ -33,6 +33,8 @@ export const ProjectSchema = z.object({
   featured: z.boolean(),
   title: z.string().min(1),
   skills: z.array(z.string()),
+  // The employer or client, shown as a subtitle; empty when there is none.
+  company: z.string().default(""),
 });
 
 // Infer TypeScript type from Zod schema
