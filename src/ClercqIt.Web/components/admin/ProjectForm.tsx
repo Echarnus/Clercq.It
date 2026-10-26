@@ -23,6 +23,7 @@ import type { Project } from "@/lib/api/baseApi";
 
 const projectFormSchema = z.object({
   title: z.string().min(1, "Title is required").max(200, "Title must not exceed 200 characters"),
+  company: z.string().trim().max(200, "Company must not exceed 200 characters"),
   shortDescription: z
     .string()
     .min(1, "Short description is required")
@@ -63,6 +64,7 @@ export function ProjectForm({
     resolver: zodResolver(projectFormSchema),
     defaultValues: {
       title: project?.title || "",
+      company: project?.company || "",
       shortDescription: project?.shortDescription || "",
       longDescription: project?.longDescription || "",
       image: null,
@@ -88,6 +90,21 @@ export function ProjectForm({
               </FormControl>
               <FormMessage />
               <p className="text-xs text-muted-foreground">{field.value.length}/200 characters</p>
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="company"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Company (Optional)</FormLabel>
+              <FormControl>
+                <Input placeholder="Employer or client..." {...field} />
+              </FormControl>
+              <FormDescription>Shown as a subtitle under the title.</FormDescription>
+              <FormMessage />
             </FormItem>
           )}
         />

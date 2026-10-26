@@ -167,6 +167,11 @@ export default async function HomePage() {
                       <CardTitle className="mb-2 text-slate-900 dark:text-white">
                         {project.title}
                       </CardTitle>
+                      {project.company && (
+                        <p className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                          {project.company}
+                        </p>
+                      )}
                       <CardDescription className="mb-4 text-slate-600 dark:text-slate-400">
                         {project.shortDescription}
                       </CardDescription>

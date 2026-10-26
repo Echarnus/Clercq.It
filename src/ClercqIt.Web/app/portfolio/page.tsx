@@ -60,6 +60,11 @@ export default async function PortfolioPage() {
                         <CardTitle className="mb-2 text-xl text-slate-900 dark:text-white">
                           {project.title}
                         </CardTitle>
+                        {project.company && (
+                          <p className="mb-2 text-sm font-medium text-slate-500 dark:text-slate-400">
+                            {project.company}
+                          </p>
+                        )}
 
                         <CardDescription className="mb-4 leading-relaxed text-slate-600 dark:text-slate-400">
                           {project.shortDescription}

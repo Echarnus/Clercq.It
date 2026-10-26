@@ -53,6 +53,7 @@ public static class ProjectsEndpoints
             var form = await request.ReadFormAsync();
 
             var title = form["title"].ToString();
+            var company = form["company"].ToString().Trim();
             var shortDescription = form["shortDescription"].ToString();
             var longDescription = form["longDescription"].ToString();
             var startDateString = form["startDate"].ToString();
@@ -105,7 +106,8 @@ public static class ProjectsEndpoints
                 startDate,
                 endDate,
                 featured,
-                skills
+                skills,
+                company
             );
 
             var result = await mediator.Send(command);
@@ -128,6 +130,7 @@ public static class ProjectsEndpoints
             var form = await request.ReadFormAsync();
 
             var title = form["title"].ToString();
+            var company = form["company"].ToString().Trim();
             var shortDescription = form["shortDescription"].ToString();
             var longDescription = form["longDescription"].ToString();
             var startDateString = form["startDate"].ToString();
@@ -183,7 +186,8 @@ public static class ProjectsEndpoints
                 endDate,
                 featured,
                 skills,
-                removeImage
+                removeImage,
+                company
             );
 
             var result = await mediator.Send(command);

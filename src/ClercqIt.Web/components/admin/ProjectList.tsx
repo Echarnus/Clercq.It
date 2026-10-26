@@ -107,6 +107,7 @@ export function ProjectList() {
 
   const handleFormSubmit = async (data: {
     title: string;
+    company: string;
     shortDescription: string;
     longDescription: string;
     image: File | null;
@@ -121,6 +122,7 @@ export function ProjectList() {
       if (selectedProject) {
         await updateProject(selectedProject.id, {
           title: data.title,
+          company: data.company,
           shortDescription: data.shortDescription,
           longDescription: data.longDescription,
           image: data.image || undefined,
@@ -137,6 +139,7 @@ export function ProjectList() {
       } else {
         await createProject({
           title: data.title,
+          company: data.company,
           shortDescription: data.shortDescription,
           longDescription: data.longDescription,
           image: data.image || undefined,
@@ -236,6 +239,9 @@ export function ProjectList() {
                   <TableCell>
                     <div>
                       <p className="font-medium">{project.title}</p>
+                      {project.company && (
+                        <p className="text-sm text-muted-foreground">{project.company}</p>
+                      )}
                       <p className="line-clamp-1 text-sm text-muted-foreground">
                         {project.shortDescription}
                       </p>

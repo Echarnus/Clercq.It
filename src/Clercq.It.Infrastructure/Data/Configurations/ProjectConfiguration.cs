@@ -17,6 +17,11 @@ public class ProjectConfiguration : IEntityTypeConfiguration<Project>
             .HasMaxLength(200)
             .IsRequired();
 
+        builder.Property(p => p.Company)
+            .HasMaxLength(200)
+            .HasDefaultValue(string.Empty)
+            .IsRequired();
+
         builder.Property(p => p.ShortDescription)
             .HasMaxLength(500)
             .IsRequired();

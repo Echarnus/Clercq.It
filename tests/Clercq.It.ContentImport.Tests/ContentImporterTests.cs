@@ -34,6 +34,7 @@ public sealed class ContentImporterTests : IDisposable
     private const string Project = """
         ---
         title: "Clercq.It"
+        company: "Clercq.IT BV"
         shortDescription: "My personal website"
         startDate: 2025-01-01
         endDate: 2025-06-30
@@ -59,6 +60,7 @@ public sealed class ContentImporterTests : IDisposable
         var project = await db.Projects.SingleAsync();
         project.Id.Should().Be(StableId.For("project", "clercqit"));
         project.Title.Should().Be("Clercq.It");
+        project.Company.Should().Be("Clercq.IT BV");
         project.Featured.Should().BeTrue();
         project.LongDescription.Should().Be("Long **Markdown** description.");
         project.StartDate.Should().Be(new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc));
@@ -145,7 +147,7 @@ public sealed class ContentImporterTests : IDisposable
         var adminId = Guid.NewGuid();
         await using (var db = NewDb())
         {
-            db.Projects.Add(new Project(adminId, "From admin", "x", "x", "x", DateTime.UtcNow, DateTime.UtcNow, false, new Skills([])));
+            db.Projects.Add(new Project(adminId, "From admin", "", "x", "x", "x", DateTime.UtcNow, DateTime.UtcNow, false, new Skills([])));
             await db.SaveChangesAsync();
         }
         Write("projects/clercqit.md", Project);

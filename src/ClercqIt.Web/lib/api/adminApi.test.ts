@@ -143,6 +143,7 @@ describe("writes with a token", () => {
     const calls = captureWrites("/api/projects", project);
     const data = {
       title: "t",
+      company: "c",
       shortDescription: "s",
       longDescription: "l",
       startDate: "2024-01-01",
@@ -160,6 +161,8 @@ describe("writes with a token", () => {
     expect(calls.map((c) => c.method)).toEqual(["POST", "POST", "PUT", "PUT", "PUT", "PUT"]);
     expect(calls[0].form?.get("featured")).toBe("true");
     expect(calls[0].form?.get("skills")).toBe("x,y");
+    expect(calls[0].form?.get("company")).toBe("c");
+    expect(calls[2].form?.get("company")).toBe("c");
     expect(calls[0].form?.has("image")).toBe(false);
     expect(calls[1].form?.has("image")).toBe(true);
     expect(calls[3].form?.get("featured")).toBe("false");
@@ -208,6 +211,7 @@ describe("writes with a token", () => {
 
   const emptyProject = {
     title: "",
+    company: "",
     shortDescription: "",
     longDescription: "",
     startDate: "",

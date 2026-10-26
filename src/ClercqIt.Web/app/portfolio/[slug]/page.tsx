@@ -98,9 +98,12 @@ export default async function PortfolioDetailPage({ params }: PortfolioDetailPag
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
         {/* Project Header */}
-        <h1 className="text-4xl font-bold text-slate-900 lg:col-span-3 dark:text-white">
-          {project.title}
-        </h1>
+        <header className="lg:col-span-3">
+          <h1 className="text-4xl font-bold text-slate-900 dark:text-white">{project.title}</h1>
+          {project.company && (
+            <p className="mt-2 text-xl text-slate-600 dark:text-slate-400">{project.company}</p>
+          )}
+        </header>
 
         {/* Project details */}
         <aside className="lg:col-start-4 lg:row-start-2">
