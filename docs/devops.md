@@ -8,11 +8,11 @@ The CI/CD pipeline is built using **GitHub Actions** and follows **trunk-based d
 
 ## Pipeline Workflows
 
-The repository has 13 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
+The repository has 12 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
 
 | Workflow | Runs on | What it does | Required checks |
 | --- | --- | --- | --- |
-| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build and the public bundle check, Docker build without push, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Test deploy scripts` |
+| Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build and the public bundle check, Docker build without push, container smoke test, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Container smoke test`, `Test deploy scripts` |
 | Docs check (`docs-check.yml`) | PR to `main` (also on label changes) | Fails code changes without a `docs/` change | `Docs updated` |
 | PR conventions (`pr-conventions.yml`) | PR to `main` (also on edit) | Branch name `<type>/<issue>-<slug>` and `Closes #<n>` in the body | `PR conventions` |
 | SAST (`sast.yml`) | PR, push to `main`, by hand | Semgrep (ERROR findings block) and gitleaks | `Semgrep`, `gitleaks` |
@@ -24,13 +24,29 @@ The repository has 13 workflows in `.github/workflows/`. "Required" means the jo
 | OpenSSF Scorecard (`scorecard.yml`) | Push to `main`, Mondays 02:30 UTC, branch protection changes, by hand | Scores the repo and feeds the README badge | — |
 | Repository audit (`repo-audit.yml`) | Mondays 06:00 UTC, by hand | Checks rulesets, repo settings, branches and tags against the rules in [Enforced rules](./contributing.md#enforced-rules) | — |
 | Sync labels (`labels.yml`) | Push to `main` that changes `.github/labels.yml`, by hand | Applies the label list | — |
-| Pipeline Test (`pipeline-test.yml`) | By hand only | Smoke checks of the pipeline pieces | — |
 
 Dependabot also opens weekly update PRs, which go through the same PR checks.
 
+The Actions tab also lists workflows that have no file in `.github/workflows/`:
+
+- **Dependabot Updates** and **Copilot coding agent** are managed by GitHub (Dependabot from `.github/dependabot.yml`, Copilot from the repository's Copilot settings).
+- **Agent review** (`review.yml`) is an orphan: the file was deleted, but GitHub keeps showing it while old runs exist. It cannot run. The owner can hide it with **Actions → Agent review → ⋯ → Disable workflow**.
+
+The manual `Pipeline Test` workflow was removed in #483: it only checked that `dotnet` and `node` exist and that four workflow files parse, which every PR run already proves.
+
+### SAST and CodeQL
+
+`sast.yml` and `codeql.yml` both do static analysis, but they are different tools and catch different things, so both stay:
+
+- **Semgrep** (`sast.yml`) matches rule patterns: the OWASP and framework packs, Dockerfile, Terraform and workflow shell injection, plus the repo's own rules in `.semgrep/`. It is fast and covers files CodeQL does not read.
+- **gitleaks** (`sast.yml`) looks for committed secrets in the git history.
+- **CodeQL** (`codeql.yml`) builds a data-flow model of the C# and TypeScript code and finds taint bugs (user input reaching SQL, HTML, file paths) across functions.
+
+All three are required checks. Details are in [Application security](./application-security.md#static-analysis-sast).
+
 ### On a pull request
 
-Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml`, `codeql.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 13 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
+Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml`, `codeql.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 14 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
 
 ### On merge to main
 
