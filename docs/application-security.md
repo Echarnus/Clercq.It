@@ -230,7 +230,7 @@ With no human review, these checks are what stops insecure code reaching `main` 
 |-------|----------|-----------|-------|
 | **Semgrep** | `sast.yml` | Any `ERROR` finding | Registry packs `p/csharp`, `p/typescript`, `p/react`, `p/nextjs`, `p/owasp-top-ten`, `p/secrets`, `p/dockerfile`, `p/terraform`, plus the repo rules in `.semgrep/` |
 | **gitleaks** | `sast.yml` | Any secret | PR: the PR's commits. `main`: full history |
-| **CodeQL gate** | `codeql.yml` | An open `high` or `critical` CodeQL alert on the PR's merge ref | C# and JS/TS, `security-extended` + `security-and-quality` |
+| **CodeQL gate** | `sast.yml` | An open `high` or `critical` CodeQL alert on the PR's merge ref | C# and JS/TS, `security-extended` + `security-and-quality` |
 | **Vulnerable NuGet packages** | `security-scan.yml` | High or Critical advisory | All projects in `Clercq.It.CI.slnf`, transitive included |
 | **pnpm audit** | `security-scan.yml`, `test.yml` | High or Critical advisory | `src/ClercqIt.Web`, transitive included |
 | **Trivy image** | `security-scan.yml` | Fixable High or Critical finding | The production Docker image (OS packages, Node, npm and .NET dependencies) |

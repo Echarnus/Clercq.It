@@ -5,7 +5,7 @@
 [![Deploy](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/deploy.yml)
 [![Infra](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/infra.yml)
 [![Security Scanning](https://github.com/Echarnus/Clercq.It/actions/workflows/security-scan.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/security-scan.yml)
-[![CodeQL](https://github.com/Echarnus/Clercq.It/actions/workflows/codeql.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/codeql.yml)
+[![SAST](https://github.com/Echarnus/Clercq.It/actions/workflows/sast.yml/badge.svg)](https://github.com/Echarnus/Clercq.It/actions/workflows/sast.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/Echarnus/Clercq.It/badge)](https://securityscorecards.dev/viewer/?uri=github.com/Echarnus/Clercq.It)
 [![Docker Hub](https://img.shields.io/docker/pulls/echarnus/clercq-it)](https://hub.docker.com/r/echarnus/clercq-it)
 

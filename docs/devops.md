@@ -8,15 +8,14 @@ The CI/CD pipeline is built using **GitHub Actions** and follows **trunk-based d
 
 ## Pipeline Workflows
 
-The repository has 12 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
+The repository has 11 workflows in `.github/workflows/`. "Required" means the job name is a required status check in `.github/rulesets/main.json`, so a PR cannot merge until it passes.
 
 | Workflow | Runs on | What it does | Required checks |
 | --- | --- | --- | --- |
 | Test (`test.yml`) | PR to `main`; called by `build.yml` on push to `main` | .NET build and tests with coverage, frontend lint/typecheck/tests/build and the public bundle check, Docker build without push, container smoke test, deploy script tests | `Test .NET API`, `Test Next.js Frontend`, `Build Docker image (no push)`, `Container smoke test`, `Test deploy scripts` |
 | Docs check (`docs-check.yml`) | PR to `main` (also on label changes) | Fails code changes without a `docs/` change | `Docs updated` |
 | PR conventions (`pr-conventions.yml`) | PR to `main` (also on edit) | Branch name `<type>/<issue>-<slug>` and `Closes #<n>` in the body | `PR conventions` |
-| SAST (`sast.yml`) | PR, push to `main`, by hand | Semgrep (ERROR findings block) and gitleaks | `Semgrep`, `gitleaks` |
-| CodeQL (`codeql.yml`) | PR, push to `main`, Mondays 08:00 UTC, by hand | C# and JS/TS analysis; the gate fails on an open high or critical alert | `CodeQL gate` |
+| SAST (`sast.yml`) | PR, push to `main`, Mondays 08:00 UTC, by hand | Semgrep (ERROR findings block), gitleaks, and CodeQL C# and JS/TS analysis; the CodeQL gate fails on an open high or critical alert | `Semgrep`, `gitleaks`, `CodeQL gate` |
 | Security Scanning (`security-scan.yml`) | PR, push to `main`, daily 02:00 UTC, by hand | Trivy image and filesystem scans, NuGet and npm vulnerability audits | `Trivy Container Scan`, `Trivy Filesystem Scan`, `.NET Security Scan`, `npm Security Audit` |
 | Deploy Infra (`infra.yml`) | PR or push touching `infra/**`; after every `Deploy to Scaleway` run; by hand | `terraform fmt`, `validate` and plan on PRs (plan posted as a comment); apply on `main` | none (only runs on `infra/` PRs) |
 | build (`build.yml`) | Push to `main`, by hand | Runs `test.yml` again, computes the version, builds and pushes the image to Docker Hub with provenance, Trivy scan | — |
@@ -36,23 +35,23 @@ The manual `Pipeline Test` workflow was removed in #483: it only checked that `d
 
 ### SAST and CodeQL
 
-`sast.yml` and `codeql.yml` both do static analysis, but they are different tools and catch different things, so both stay:
+All static analysis runs in one workflow, `sast.yml` (CodeQL had its own workflow until #485). It runs three tools that catch different things:
 
-- **Semgrep** (`sast.yml`) matches rule patterns: the OWASP and framework packs, Dockerfile, Terraform and workflow shell injection, plus the repo's own rules in `.semgrep/`. It is fast and covers files CodeQL does not read.
-- **gitleaks** (`sast.yml`) looks for committed secrets in the git history.
-- **CodeQL** (`codeql.yml`) builds a data-flow model of the C# and TypeScript code and finds taint bugs (user input reaching SQL, HTML, file paths) across functions.
+- **Semgrep** matches rule patterns: the OWASP and framework packs, Dockerfile, Terraform and workflow shell injection, plus the repo's own rules in `.semgrep/`. It is fast and covers files CodeQL does not read.
+- **gitleaks** looks for committed secrets in the git history.
+- **CodeQL** builds a data-flow model of the C# and TypeScript code and finds taint bugs (user input reaching SQL, HTML, file paths) across functions.
 
 All three are required checks. Details are in [Application security](./application-security.md#static-analysis-sast).
 
 ### On a pull request
 
-Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml`, `codeql.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 14 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
+Every PR to `main` runs `test.yml`, `docs-check.yml`, `pr-conventions.yml`, `sast.yml` and `security-scan.yml`, plus `infra.yml` (plan only) when it touches `infra/`. The agent enables auto-merge (squash) right after opening the PR. The `main` ruleset holds the merge until all 14 required checks pass on a branch that is up to date with `main`. There are no review approvals (0 required).
 
 ### On merge to main
 
 The squash commit on `main` starts this chain, with no manual step:
 
-1. `build.yml`: runs the tests again, builds and pushes `echarnus/clercq-it:<version>` with signed provenance. `sast.yml`, `codeql.yml`, `security-scan.yml` and `scorecard.yml` also run on the push.
+1. `build.yml`: runs the tests again, builds and pushes `echarnus/clercq-it:<version>` with signed provenance. `sast.yml`, `security-scan.yml` and `scorecard.yml` also run on the push.
 2. `deploy.yml` (after a successful build): **verify** (migrate the verify database, import content, deploy the image to `clercq-it-verify`, smoke test), then **promote** the same image digest to production (migrations, content import, deploy, smoke test, roll back on failure), then **release** (`prod-<version>` tag and GitHub Release). A failed verify or smoke test opens a p1 issue.
 3. `infra.yml` (after every `Deploy to Scaleway` run that succeeded, or a push that touches `infra/`): `terraform apply` in the `production-terraform` concurrency group.
 
@@ -67,13 +66,13 @@ Every workflow sets a read-only `permissions` block at the top (`contents: read`
 | Workflow | Job | Write scopes |
 | --- | --- | --- |
 | `build.yml` | `build` | `contents` (initial version tag), `id-token` and `attestations` (build provenance) |
-| `codeql.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
 | `security-scan.yml` | `trivy-container-scan`, `trivy-filesystem-scan` | `security-events` (SARIF upload) |
 | `infra.yml` | `terraform-plan` | `pull-requests`, `issues` (plan comment) |
 | `deploy.yml` | `deploy` | `issues` (p1 issue on a failed verify or smoke test) |
 | `deploy.yml` | `release` | `contents` (tag and GitHub Release) |
 | `labels.yml` | `sync` | `issues` |
 | `sast.yml` | `semgrep` | `security-events` (SARIF upload) |
+| `sast.yml` | `analyze-csharp`, `analyze-javascript` | `security-events` |
 | `repo-audit.yml` | `audit` | `issues` |
 | `scorecard.yml` | `analysis` | `security-events`, `id-token` |
 
@@ -266,7 +265,7 @@ scorecard.dev verifies the workflow before it accepts results. The top-level per
 
 Until #350 the job lived in `security-scan.yml`, whose top-level permissions include `security-events: write`. Every upload was rejected with `workflow verification failed: global perm is set to write`, only as a warning, so the job stayed green while the badge showed **invalid repo path**. If the badge breaks again, look for that warning in the "Run OpenSSF Scorecard" step log.
 
-## CodeQL Analysis Pipeline (`codeql.yml`)
+## CodeQL analysis (in `sast.yml`)
 
 ### Triggers
 - Push to `main`
@@ -295,7 +294,7 @@ Until #350 the job lived in `security-scan.yml`, whose top-level permissions inc
 ```bash
 # Runs automatically on schedule and push/PR
 # Or manually trigger with
-gh workflow run codeql.yml
+gh workflow run sast.yml
 ```
 
 ## Infrastructure Pipeline (`infra.yml`)
@@ -643,11 +642,11 @@ Comprehensive security scanning workflow:
 
 OpenSSF Scorecard runs in its own workflow, `scorecard.yml`.
 
-#### codeql.yml
-Advanced code analysis:
+#### sast.yml
+Static analysis (Semgrep, gitleaks and CodeQL):
 - **Triggers**: Push, PR, weekly schedule, manual
-- **Languages**: C#, JavaScript/TypeScript
-- **Analysis**: Security-extended queries
+- **CodeQL languages**: C#, JavaScript/TypeScript
+- **CodeQL analysis**: Security-extended queries
 
 #### Dependabot
 Automated dependency updates (`.github/dependabot.yml`):
