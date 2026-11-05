@@ -89,6 +89,72 @@ internal static class MyZenPages
         """;
 
     public const string ProjectSuggestions = """
-        [{"value":"20788","label":"Acme Website[~][~]777[~]Acme NV"},{"value":23200,"label":"Vakantie[~][~][~]"}]
+        [{"value":"20788","label":"Acme Website[~][~]777[~]Acme NV"},{"value":23200,"label":"Vakantie[~][~][~]"},
+         {"value":"23201","label":"Ziekte[~][~][extradata-CustomerID][~][extradata-CustomerName]"}]
+        """;
+
+    /// <summary>The customer list (<c>/Company/Customer</c>): the ID is in the row's navigateurl.</summary>
+    public static string CustomerList(params int[] pages) => $"""
+        <table><thead><tr><th></th><th>Creatie op</th><th>Nr</th><th>Naam</th><th>Bedrijf</th><th>Contact</th><th>Gemeente</th><th>E-mail</th><th>Telefoon</th></tr></thead><tbody>
+          <tr class="alt click" navigateurl="/Company/Customer/777/CompanyEdit?ReturnTo=%2FCompany%2FCustomer">
+            <td></td><td>2025-06-16T13:39:41</td><td>2</td><td>Acme NV</td><td>BE0123456749</td><td></td><td>9000 Gent</td><td>billing@acme.example</td><td></td><td></td><td></td><td>Peppol</td><td></td>
+          </tr>
+          <tr class="alt click" navigateurl="/Company/Customer/778/CompanyEdit"><td></td><td></td><td>3</td><td>Beta BV</td></tr>
+          <tr class="alt click" navigateurl="/Home/Somewhere"><td>Broken</td></tr>
+        </tbody></table>
+        <ul class="pagination">{string.Concat(pages.Select(p => $"<li><a data-page=\"{p}\">{p + 1}</a></li>"))}</ul>
+        """;
+
+    /// <summary>A customer's edit page (<c>/Company/Customer/{id}/CompanyEdit</c>), trimmed to the fields read.</summary>
+    public static string CustomerDetails(long id) => $"""
+        <form id="pageform" method="post">
+          <input name="ButtonActionType" type="hidden" value="None" />
+          <input name="Company.CompanyID" type="hidden" value="{id}" />
+          <input name="IsCustomer" type="hidden" value="True" />
+          <input name="CustomerTypeTC" type="radio" value="Company" checked="checked" /><input name="CustomerTypeTC" type="radio" value="Private" />
+          <input name="Company.VAT" type="hidden" value="BE0123456749" />
+          <input name="Company.VATLiable" type="checkbox" value="true" checked="checked" /><input name="Company.VATLiable" type="hidden" value="false" />
+          <input name="Company.CompanyName" type="text" value="Acme NV" />
+          <input name="Company.CommercialName" type="text" value="" />
+          <input name="Company.Nr" type="text" value="2" />
+          <input name="Company.Reference" type="text" value="" />
+          <input name="Company.ContactFirstName" type="text" value="Ada" />
+          <input name="Company.ContactLastName" type="text" value="" />
+          <textarea name="Company.Email">billing@acme.example</textarea>
+          <input name="Company.Website" type="text" value="" />
+          <input name="Company.Phone" type="tel" value="+32 9 123 45 67" />
+          <input name="Company.Mobile" type="tel" value="" />
+          <select name="Company.LanguageTC"><option value="FR">Frans</option><option selected="selected" value="NL">Nederlands</option></select>
+          <select name="InvoiceAddress.Country"><option value="NL">Nederland</option><option selected="selected" value="BE">België</option></select>
+          <input name="InvoiceAddress.Street" type="hidden" value="Voorbeeldstraat" />
+          <input name="InvoiceAddress.StreetNumber" type="text" value="12" />
+          <input name="InvoiceAddress.Box" type="text" value="3" />
+          <input name="InvoiceAddress.Zipcode" type="hidden" value="9000" />
+          <input name="InvoiceAddress.City" type="hidden" value="Gent" />
+        </form>
+        """;
+
+    /// <summary>A project's edit page (<c>/Project/{id}/EditProject</c>), trimmed to the fields read.</summary>
+    public static string ProjectDetails(long id, string status = "InProgress", string customerId = "777", string customer = "Acme NV") => $"""
+        <form id="pageform" method="post">
+          <input name="ProjectID" type="hidden" value="{id}" />
+          <input name="ButtonActionType" type="hidden" value="None" />
+          <input name="ProjectStatus" type="radio" value="Prospect" {(status == "Prospect" ? "checked=\"checked\"" : "")} />
+          <input name="ProjectStatus" type="radio" value="InProgress" {(status == "InProgress" ? "checked=\"checked\"" : "")} />
+          <input name="ProjectStatus" type="radio" value="Finished" />
+          <input name="ProjectStatus" type="radio" value="Canceled" />
+          <input name="ProjectName" type="text" value="Acme Website" />
+          <input type="text" value="{customer}" />
+          <input name="CustomerName" type="hidden" value="{customer}" />
+          <input name="CustomerID" type="hidden" value="{customerId}" />
+          <input name="Reference" type="text" value="PO-1" />
+          <input name="StartDate" type="text" value="1/12/2026 0:00:00" />
+          <input name="EndDate" type="text" value="" />
+          <textarea name="Notes">Phase 1</textarea>
+          <input name="Budget" type="text" value="1.000,50" />
+          <input name="TimeBudgetInput" type="text" value="10:30" />
+          <input name="TimeBudget" type="hidden" value="37800" />
+          <input name="Rate" type="text" value="95,0000" />
+        </form>
         """;
 }

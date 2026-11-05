@@ -206,7 +206,8 @@ public static class MyZenHtml
             string Cell(int i) => i < cells.Count ? cells[i] : string.Empty;
             string? Optional(int i) => Cell(i) is { Length: > 0 } text ? text : null;
 
-            projects.Add(new MyZenProjectDto(id, Cell(0), Cell(1), Optional(2), Optional(3), Cell(5)));
+            // The list has no customer IDs; the gateway adds them from the customer list.
+            projects.Add(new MyZenProjectDto(id, Cell(0), CustomerId: null, Cell(1), Optional(2), Optional(3), Cell(5)));
         }
 
         return (projects, HasPage(document, page + 1));
@@ -214,7 +215,9 @@ public static class MyZenHtml
 
     /// <summary>
     /// Reads MyZen's project lookup: <c>[{ value: id, label }]</c>, where the label is
-    /// <c>Name[~]...[~]CustomerID[~]CustomerName</c>.
+    /// <c>Name[~]...[~]CustomerID[~]CustomerName</c>. Projects without a customer (Feestdag,
+    /// Vakantie, Ziekte) carry MyZen's unfilled placeholders <c>[extradata-CustomerID]</c> and
+    /// <c>[extradata-CustomerName]</c>; those become null.
     /// </summary>
     public static IReadOnlyList<MyZenProjectOptionDto> ParseProjectSuggestions(string json)
     {
@@ -237,10 +240,10 @@ public static class MyZenHtml
                 }
 
                 var label = item.TryGetProperty("label", out var l) && l.ValueKind == JsonValueKind.String ? l.GetString()! : string.Empty;
-                var parts = label.Split("[~]");
+                var parts = label.Split("[~]").Select(p => IsPlaceholder(p) ? string.Empty : p).ToArray();
                 var customerId = parts.Skip(1).Select(ParseId).FirstOrDefault(p => p is not null);
                 var customer = parts.Length > 2 && ParseId(parts[^1]) is null ? Clean(parts[^1]) : string.Empty;
-                options.Add(new MyZenProjectOptionDto(id, Clean(parts[0]), customerId, customer));
+                options.Add(new MyZenProjectOptionDto(id, Clean(parts[0]), customerId, customer.Length > 0 ? customer : null));
             }
             return options;
         }
@@ -249,6 +252,139 @@ public static class MyZenHtml
             return [];
         }
     }
+
+    /// <summary>
+    /// Reads one page of MyZen's customer list (<c>/Company/Customer</c>). Columns: select, created,
+    /// number, name, VAT, contact, city, e-mail, phone, mobile, group, Peppol, actions. The ID is in
+    /// the row's <c>navigateurl</c> (<c>/Company/Customer/{id}/CompanyEdit</c>).
+    /// </summary>
+    public static (IReadOnlyList<MyZenCustomerSummaryDto> Customers, bool HasNextPage) ParseCustomerList(string html, int page)
+    {
+        var document = Parser.ParseDocument(html);
+        var customers = new List<MyZenCustomerSummaryDto>();
+
+        foreach (var row in document.QuerySelectorAll("tbody tr[navigateurl]"))
+        {
+            if (CustomerIdFromUrl(row.GetAttribute("navigateurl")) is not { } id)
+            {
+                continue;
+            }
+
+            var cells = row.QuerySelectorAll("td").Select(td => Clean(td.TextContent)).ToList();
+            string? Cell(int i) => i < cells.Count && cells[i].Length > 0 ? cells[i] : null;
+
+            customers.Add(new MyZenCustomerSummaryDto(id, Cell(2), Cell(3) ?? string.Empty, Cell(4), Cell(5), Cell(6), Cell(7), Cell(8)));
+        }
+
+        return (customers, HasPage(document, page + 1));
+    }
+
+    /// <summary>Reads one customer from its edit page (<c>/Company/Customer/{id}/CompanyEdit</c>).</summary>
+    /// <returns>The customer, or null when the page has no customer form.</returns>
+    public static MyZenCustomerDto? ParseCustomerDetails(string html)
+    {
+        var form = Parser.ParseDocument(html).QuerySelector("form#pageform");
+        if (form is null || ParseId(FieldValue(form, "Company.CompanyID")) is not { } id)
+        {
+            return null;
+        }
+
+        string? Field(string name) => FieldValue(form, name) is { Length: > 0 } value ? value.Trim() : null;
+
+        return new MyZenCustomerDto(
+            id,
+            Field("Company.Nr"),
+            Field("Company.CompanyName") ?? string.Empty,
+            Field("Company.CommercialName"),
+            form.QuerySelector("input[type=radio][name=CustomerTypeTC][checked]")?.GetAttribute("value"),
+            Field("Company.VAT"),
+            form.QuerySelector("input[type=checkbox][name='Company.VATLiable']")?.HasAttribute("checked") == true,
+            Field("Company.Email"),
+            Field("Company.Phone"),
+            Field("Company.Mobile"),
+            Field("Company.Website"),
+            Field("Company.LanguageTC"),
+            Field("Company.Reference"),
+            Field("Company.ContactFirstName"),
+            Field("Company.ContactLastName"),
+            new MyZenAddressDto(
+                Field("InvoiceAddress.Street"),
+                Field("InvoiceAddress.StreetNumber"),
+                Field("InvoiceAddress.Box"),
+                Field("InvoiceAddress.Zipcode"),
+                Field("InvoiceAddress.City"),
+                Field("InvoiceAddress.Country")));
+    }
+
+    /// <summary>MyZen's project statuses (the <c>ProjectStatus</c> radio values) and the labels its pages show.</summary>
+    public static readonly IReadOnlyDictionary<string, string> ProjectStatusLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Prospect"] = "Prospect",
+        ["InProgress"] = "Bezig",
+        ["Finished"] = "Klaar",
+        ["Canceled"] = "Geannuleerd",
+    };
+
+    /// <summary>Reads one project from its edit page (<c>/Project/{id}/EditProject</c>).</summary>
+    /// <returns>The project, or null when the page has no project form.</returns>
+    public static MyZenProjectDetailsDto? ParseProjectDetails(string html)
+    {
+        var form = Parser.ParseDocument(html).QuerySelector("form#pageform");
+        if (form is null || ParseId(FieldValue(form, "ProjectID")) is not { } id)
+        {
+            return null;
+        }
+
+        string? Field(string name) => FieldValue(form, name) is { Length: > 0 } value ? value.Trim() : null;
+        DateOnly? Date(string name) =>
+            TryParseDate(Field(name)?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault(), out var date) ? date : null;
+
+        var status = form.QuerySelector("input[type=radio][name=ProjectStatus][checked]")?.GetAttribute("value") ?? string.Empty;
+        var timeBudgetSeconds = ParseDecimal(Field("TimeBudget"));
+
+        return new MyZenProjectDetailsDto(
+            id,
+            Field("ProjectName") ?? string.Empty,
+            ParseId(Field("CustomerID")),
+            Field("CustomerName"),
+            ProjectStatusLabels.TryGetValue(status, out var label) ? label : status,
+            Date("StartDate"),
+            Date("EndDate"),
+            Field("Reference"),
+            Field("Notes"),
+            ParseDecimal(Field("Budget")),
+            timeBudgetSeconds is > 0 ? Math.Round(timeBudgetSeconds.Value / 3600m, 2) : null,
+            ParseDecimal(Field("Rate")));
+    }
+
+    private static long? CustomerIdFromUrl(string? url)
+    {
+        var parts = (url ?? string.Empty).Split('?')[0].Split('/', StringSplitOptions.RemoveEmptyEntries);
+        var index = Array.FindIndex(parts, p => p.Equals("Customer", StringComparison.OrdinalIgnoreCase));
+        return index >= 0 && index + 1 < parts.Length ? ParseId(parts[index + 1]) : null;
+    }
+
+    /// <summary>The first non-checkbox field with this name in the form.</summary>
+    private static string? FieldValue(IElement form, string name) =>
+        form.QuerySelector($"[name='{name}']:not([type=checkbox]):not([type=radio])") is { } e ? ValueOf(e) : null;
+
+    /// <summary>MyZen writes amounts the Belgian way (<c>1.000,50</c>); plain <c>1000.50</c> is read too.</summary>
+    private static decimal? ParseDecimal(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var normalised = text.Contains(',', StringComparison.Ordinal)
+            ? text.Replace(".", string.Empty, StringComparison.Ordinal).Replace(',', '.')
+            : text;
+        return decimal.TryParse(normalised, NumberStyles.Number, CultureInfo.InvariantCulture, out var value) ? value : null;
+    }
+
+    /// <summary>MyZen's unfilled template fields, such as <c>[extradata-CustomerName]</c>.</summary>
+    private static bool IsPlaceholder(string text) =>
+        text.Trim() is { Length: > 0 } t && t.StartsWith("[extradata-", StringComparison.OrdinalIgnoreCase) && t.EndsWith(']');
 
     /// <summary>Reads MyZen's answer to a save or delete.</summary>
     /// <returns>MyZen's reason when it refused the change, or null when it accepted it.</returns>

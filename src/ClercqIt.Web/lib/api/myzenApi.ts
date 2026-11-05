@@ -35,11 +35,12 @@ export const MyZenTimeEntrySchema = z.object({
 
 export type MyZenTimeEntry = z.infer<typeof MyZenTimeEntrySchema>;
 
+/** A project from MyZen's lookup; `customerId` and `customer` are null for absence projects (Feestdag, Vakantie, Ziekte). */
 export const MyZenProjectOptionSchema = z.object({
   id: z.number(),
   name: z.string(),
   customerId: z.number().nullable(),
-  customer: z.string(),
+  customer: z.string().nullable(),
 });
 
 export type MyZenProjectOption = z.infer<typeof MyZenProjectOptionSchema>;

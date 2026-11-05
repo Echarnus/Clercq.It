@@ -149,13 +149,17 @@ describe("MyZen API client", () => {
     server.use(
       http.get(`${API}/api/myzen/projects/search`, ({ request }) => {
         query = new URL(request.url).search;
-        return HttpResponse.json([{ id: 5, name: "Website", customerId: 7, customer: "Acme" }]);
+        return HttpResponse.json([
+          { id: 5, name: "Website", customerId: 7, customer: "Acme" },
+          { id: 23200, name: "Vakantie", customerId: null, customer: null },
+        ]);
       }),
       http.get(`${API}/api/myzen/time-entries/7`, () => HttpResponse.json(entry)),
     );
 
     expect(await searchMyZenProjects("web site")).toEqual([
       { id: 5, name: "Website", customerId: 7, customer: "Acme" },
+      { id: 23200, name: "Vakantie", customerId: null, customer: null },
     ]);
     expect(query).toBe("?q=web+site");
     expect(await fetchMyZenTimeEntry(7)).toEqual(entry);

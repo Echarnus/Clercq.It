@@ -313,13 +313,124 @@ public class MyZenGatewayTests
         await ConnectAsync();
         _myZen.Respond(HttpMethod.Get, "/Project/Index", MyZenPages.ProjectList(0, 1));
         _myZen.Respond(HttpMethod.Get, "/Project/Index", MyZenPages.ProjectList(0, 1));
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer", MyZenPages.CustomerList());
 
         // Act
         var projects = await Gateway().GetProjectsAsync(CancellationToken.None);
 
         // Assert
         projects.Should().HaveCount(2);
-        _myZen.Requests.Select(r => r.Query).Should().Equal("?F.CurrentPage=0", "?F.CurrentPage=1");
+        _myZen.Requests.Select(r => r.Query).Should().Equal("?F.CurrentPage=0", "?F.CurrentPage=1", "?CurrentPage=0");
+    }
+
+    [Fact(DisplayName = "Projects get their customer ID from the customer list, matched on the name")]
+    public async Task GetProjects_AddsCustomerIds()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Project/Index", MyZenPages.ProjectList());
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer", MyZenPages.CustomerList());
+
+        // Act
+        var projects = await Gateway().GetProjectsAsync(CancellationToken.None);
+
+        // Assert
+        projects.Should().ContainSingle().Which.CustomerId.Should().Be(777);
+        _myZen.Requests[1].Query.Should().Be("?CurrentPage=0");
+    }
+
+    [Fact(DisplayName = "Projects without customers do not read the customer list")]
+    public async Task GetProjects_NoCustomers_SkipsCustomerList()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Project/Index",
+            """<table><tbody><tr id="ProjectID-23200"><td>Vakantie</td><td></td></tr></tbody></table>""");
+
+        // Act
+        var projects = await Gateway().GetProjectsAsync(CancellationToken.None);
+
+        // Assert
+        projects.Should().ContainSingle().Which.CustomerId.Should().BeNull();
+        _myZen.Requests.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "One project is read from its edit page")]
+    public async Task GetProject_ReadsEditPage()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Project/555/EditProject", MyZenPages.ProjectDetails(555));
+
+        // Act
+        var project = await Gateway().GetProjectAsync(555, CancellationToken.None);
+
+        // Assert
+        project!.CustomerId.Should().Be(777);
+        _myZen.Requests.Should().ContainSingle(r => r.Method == "GET");
+    }
+
+    [Fact(DisplayName = "An unknown project ID gives null")]
+    public async Task GetProject_Unknown_Null()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Project/1/EditProject", "<html><title>Sorry</title></html>", HttpStatusCode.InternalServerError);
+
+        // Act
+        var project = await Gateway().GetProjectAsync(1, CancellationToken.None);
+
+        // Assert
+        project.Should().BeNull();
+        _store.Record!.State.Should().Be(MyZenSessionState.Connected);
+    }
+
+    [Fact(DisplayName = "The customer search passes the keyword and reads every page")]
+    public async Task GetCustomers_Keyword_AllPages()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer", MyZenPages.CustomerList(0, 1));
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer", MyZenPages.CustomerList(0, 1));
+
+        // Act
+        var customers = await Gateway().GetCustomersAsync("Acme NV", CancellationToken.None);
+
+        // Assert
+        customers.Should().HaveCount(4);
+        _myZen.Requests.Select(r => r.Query).Should().Equal("?CurrentPage=0&Keyword=Acme%20NV", "?CurrentPage=1&Keyword=Acme%20NV");
+    }
+
+    [Fact(DisplayName = "One customer is read from its edit page; MyZen's no-access page means unknown")]
+    public async Task GetCustomer_ReadsEditPage()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer/777/CompanyEdit", MyZenPages.CustomerDetails(777));
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer/1/CompanyEdit", "<html><title>Error</title></html>", finalPath: "/Home/NoAccess");
+
+        // Act
+        var customer = await Gateway().GetCustomerAsync(777, CancellationToken.None);
+        var unknown = await Gateway().GetCustomerAsync(1, CancellationToken.None);
+
+        // Assert
+        customer!.Vat.Should().Be("BE0123456749");
+        unknown.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "An expired session while reading customers throws NotConnected")]
+    public async Task GetCustomers_Expired_Throws()
+    {
+        // Arrange
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/Company/Customer", MyZenPages.Login(), finalPath: "/Account/Logon");
+
+        // Act
+        var act = () => Gateway().GetCustomersAsync(null, CancellationToken.None);
+
+        // Assert
+        await act.Should().ThrowAsync<MyZenNotConnectedException>();
+        _store.Record!.State.Should().Be(MyZenSessionState.Expired);
     }
 
     [Fact(DisplayName = "An expired session during a data call is marked expired and throws NotConnected")]
@@ -478,7 +589,7 @@ public class MyZenGatewayTests
         var options = await Gateway().SearchProjectsAsync("acme", CancellationToken.None);
 
         // Assert
-        options.Should().HaveCount(2);
+        options.Should().HaveCount(3);
         var lookup = _myZen.Requests[1];
         lookup.Headers["RequestVerificationToken"].Should().Be("page-token");
         lookup.Form.Should().Contain("q=acme").And.Contain("autoSuggestType=Projects");

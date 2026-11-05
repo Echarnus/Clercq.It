@@ -80,3 +80,63 @@ public class SearchMyZenProjectsQueryHandler(IMyZenGateway gateway)
     public Task<IReadOnlyList<MyZenProjectOptionDto>> Handle(SearchMyZenProjectsQuery request, CancellationToken cancellationToken) =>
         gateway.SearchProjectsAsync(request.Query.Trim(), cancellationToken);
 }
+
+public record GetMyZenProjectQuery(long Id) : IRequest<MyZenProjectDetailsDto?>;
+
+public record GetMyZenCustomersQuery : IRequest<IReadOnlyList<MyZenCustomerSummaryDto>>;
+
+/// <summary>Customers whose name, VAT number or company number matches <c>Query</c>.</summary>
+public record SearchMyZenCustomersQuery(string Query) : IRequest<IReadOnlyList<MyZenCustomerSummaryDto>>;
+
+public record GetMyZenCustomerQuery(long Id) : IRequest<MyZenCustomerDto?>;
+
+public class GetMyZenProjectQueryValidator : AbstractValidator<GetMyZenProjectQuery>
+{
+    public GetMyZenProjectQueryValidator()
+    {
+        RuleFor(x => x.Id).GreaterThan(0).WithMessage("Id must be positive");
+    }
+}
+
+public class GetMyZenCustomerQueryValidator : AbstractValidator<GetMyZenCustomerQuery>
+{
+    public GetMyZenCustomerQueryValidator()
+    {
+        RuleFor(x => x.Id).GreaterThan(0).WithMessage("Id must be positive");
+    }
+}
+
+public class SearchMyZenCustomersQueryValidator : AbstractValidator<SearchMyZenCustomersQuery>
+{
+    public SearchMyZenCustomersQueryValidator()
+    {
+        RuleFor(x => x.Query)
+            .Must(q => q?.Trim().Length is >= 2 and <= 50).WithMessage("Search must be 2 to 50 characters");
+    }
+}
+
+public class GetMyZenProjectQueryHandler(IMyZenGateway gateway) : IRequestHandler<GetMyZenProjectQuery, MyZenProjectDetailsDto?>
+{
+    public Task<MyZenProjectDetailsDto?> Handle(GetMyZenProjectQuery request, CancellationToken cancellationToken) =>
+        gateway.GetProjectAsync(request.Id, cancellationToken);
+}
+
+public class GetMyZenCustomersQueryHandler(IMyZenGateway gateway)
+    : IRequestHandler<GetMyZenCustomersQuery, IReadOnlyList<MyZenCustomerSummaryDto>>
+{
+    public Task<IReadOnlyList<MyZenCustomerSummaryDto>> Handle(GetMyZenCustomersQuery request, CancellationToken cancellationToken) =>
+        gateway.GetCustomersAsync(keyword: null, cancellationToken);
+}
+
+public class SearchMyZenCustomersQueryHandler(IMyZenGateway gateway)
+    : IRequestHandler<SearchMyZenCustomersQuery, IReadOnlyList<MyZenCustomerSummaryDto>>
+{
+    public Task<IReadOnlyList<MyZenCustomerSummaryDto>> Handle(SearchMyZenCustomersQuery request, CancellationToken cancellationToken) =>
+        gateway.GetCustomersAsync(MyZenVat.SearchKeyword(request.Query), cancellationToken);
+}
+
+public class GetMyZenCustomerQueryHandler(IMyZenGateway gateway) : IRequestHandler<GetMyZenCustomerQuery, MyZenCustomerDto?>
+{
+    public Task<MyZenCustomerDto?> Handle(GetMyZenCustomerQuery request, CancellationToken cancellationToken) =>
+        gateway.GetCustomerAsync(request.Id, cancellationToken);
+}

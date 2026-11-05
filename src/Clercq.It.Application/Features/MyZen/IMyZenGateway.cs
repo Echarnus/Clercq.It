@@ -25,9 +25,24 @@ public interface IMyZenGateway
     /// <summary>Touches the session so MyZen keeps it; false when it has expired.</summary>
     Task<bool> KeepAliveAsync(CancellationToken cancellationToken);
 
-    /// <summary>Every project in MyZen.</summary>
+    /// <summary>Every project in MyZen, with its customer's ID when MyZen's customer list has that customer once.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<IReadOnlyList<MyZenProjectDto>> GetProjectsAsync(CancellationToken cancellationToken);
+
+    /// <summary>One project from its edit page, or null when MyZen has none with this ID.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    Task<MyZenProjectDetailsDto?> GetProjectAsync(long id, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// MyZen's customers; with a <paramref name="keyword"/>, only those MyZen's own list search
+    /// matches on it (name, VAT or company number).
+    /// </summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    Task<IReadOnlyList<MyZenCustomerSummaryDto>> GetCustomersAsync(string? keyword, CancellationToken cancellationToken);
+
+    /// <summary>One customer from its edit page, or null when MyZen has none with this ID.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    Task<MyZenCustomerDto?> GetCustomerAsync(long id, CancellationToken cancellationToken);
 
     /// <summary>The time entries from <paramref name="firstDay"/> to <paramref name="lastDay"/>.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>

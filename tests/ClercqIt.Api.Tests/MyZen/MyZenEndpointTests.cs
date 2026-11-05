@@ -115,7 +115,7 @@ public class MyZenEndpointTests(CustomWebApplicationFactory factory) : IAsyncLif
     {
         // Arrange
         _gateway.Setup(g => g.GetProjectsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new MyZenProjectDto(5, "Website", "Acme", null, null, "Bezig")]);
+            .ReturnsAsync([new MyZenProjectDto(5, "Website", 7, "Acme", null, null, "Bezig")]);
 
         // Act
         var projects = await _client.GetFromJsonAsync<List<MyZenProjectDto>>("/api/myzen/projects");

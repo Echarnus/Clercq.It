@@ -37,7 +37,7 @@ describe("MyZenEntryForm", () => {
   it("needs a project and a valid duration before it can be added", async () => {
     const user = userEvent.setup();
     vi.mocked(api.searchMyZenProjects).mockResolvedValue([
-      { id: 23200, name: "Vakantie", customerId: null, customer: "" },
+      { id: 23200, name: "Vakantie", customerId: null, customer: null },
     ]);
     const onSave = vi.fn(() => Promise.resolve());
     render(<MyZenEntryForm defaultDate="2026-10-01" onSave={onSave} onCancel={vi.fn()} />);

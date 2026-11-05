@@ -25,6 +25,26 @@ Each change writes one entry. Nothing writes entries in bulk.
 
 Claude can do the same through the site's MCP server: the MyZen tools are listed in [MCP](./mcp.md#tools) and need `MyZen.Owner`. Connecting MyZen stays in this section.
 
+## Customers and projects
+
+The MCP server also reads MyZen's customers and projects (issue #493). There is no admin UI or REST endpoint for them.
+
+| Tool | MyZen page it reads |
+| --- | --- |
+| `list_myzen_projects` | `GET /Project/Index?F.CurrentPage=n`, then the customer list to add each project's `customerId` |
+| `get_myzen_project` | `GET /Project/{id}/EditProject` |
+| `list_myzen_customers` | `GET /Company/Customer?CurrentPage=n` |
+| `search_myzen_customers` | `GET /Company/Customer?CurrentPage=n&Keyword=...` |
+| `get_myzen_customer` | `GET /Company/Customer/{id}/CompanyEdit` |
+
+- MyZen's project list shows the customer's name, not its ID. The gateway reads the customer list and matches on the name; a name that appears twice gives `customerId: null`. Projects without a customer (Feestdag, Vakantie, Ziekte) skip that second read.
+- `search_myzen_projects` returns `customerId` and `customer` as null for absence projects. MyZen's lookup sends the unfilled placeholders `[extradata-CustomerID]` and `[extradata-CustomerName]` for them.
+- `search_myzen_customers` uses MyZen's own list search, which matches the name, the VAT number and the company number. A query that looks like a VAT or company number (`BE 0825.170.684`) is sent without spaces, dots and dashes (`BE0825170684`), the way MyZen stores it.
+- Project status comes back as the label MyZen shows: `Prospect`, `Bezig`, `Klaar` or `Geannuleerd` (form values `Prospect`, `InProgress`, `Finished`, `Canceled`). Dates are `yyyy-MM-dd`; amounts read MyZen's `1.000,50` format; the time budget is in hours.
+- An unknown project ID gives MyZen's error page (500) and an unknown customer ID its `/Home/NoAccess` page. Neither has the edit form, so the tool says there is no such project or customer.
+
+Creating and updating customers and projects is not built yet. MyZen's save requests for them still have to be captured from the owner's browser (see issue #493); the tools will not guess them. There are no delete tools for customers or projects.
+
 When MyZen drops the session, the next keep-alive or data call notices (MyZen answers with its login page), marks it **Expired**, and the section offers **Reconnect MyZen**.
 
 Only the authenticator-app MFA is supported. SMS and e-mail codes are not.

@@ -23,6 +23,7 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
     [
         "myzen_status", "list_myzen_projects", "search_myzen_projects", "list_myzen_time_entries",
         "get_myzen_time_entry", "create_myzen_time_entry", "update_myzen_time_entry", "delete_myzen_time_entry",
+        "get_myzen_project", "list_myzen_customers", "search_myzen_customers", "get_myzen_customer",
     ];
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -96,7 +97,7 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
         _gateway.Setup(g => g.SearchProjectsAsync("acme", It.IsAny<CancellationToken>()))
             .ReturnsAsync([new MyZenProjectOptionDto(5, "Acme Website", 7, "Acme")]);
         _gateway.Setup(g => g.GetProjectsAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync([new MyZenProjectDto(5, "Acme Website", "Acme", null, null, "Bezig")]);
+            .ReturnsAsync([new MyZenProjectDto(5, "Acme Website", 7, "Acme", null, null, "Bezig")]);
         _gateway.Setup(g => g.GetTimeEntriesAsync(from, to, It.IsAny<CancellationToken>()))
             .ReturnsAsync([Entry]);
         await using var mcp = await ConnectAsync(_app!, "admin");
@@ -112,6 +113,55 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
         options[0].GetProperty("customerId").GetInt64().Should().Be(7);
         projects.GetArrayLength().Should().Be(1);
         entries[0].GetProperty("id").GetInt64().Should().Be(101);
+    }
+
+    [Fact(DisplayName = "The customer and project tools return the gateway's data, with null for absence customers")]
+    public async Task CustomerAndProjectTools_ReturnData()
+    {
+        // Arrange
+        _gateway.Setup(g => g.GetCustomersAsync(null, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MyZenCustomerSummaryDto(7, "2", "Acme NV", "BE0825170684", null, "9000 Gent", null, null)]);
+        _gateway.Setup(g => g.GetCustomersAsync("BE0825170684", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MyZenCustomerSummaryDto(7, "2", "Acme NV", "BE0825170684", null, "9000 Gent", null, null)]);
+        _gateway.Setup(g => g.GetCustomerAsync(7, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MyZenCustomerDto(7, "2", "Acme NV", null, "Company", "BE0825170684", true, null, null, null, null, "NL", null,
+                null, null, new MyZenAddressDto("Voorbeeldstraat", "12", null, "9000", "Gent", "BE")));
+        _gateway.Setup(g => g.GetProjectAsync(5, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new MyZenProjectDetailsDto(5, "Acme Website", 7, "Acme NV", "Bezig", new DateOnly(2026, 12, 1), null,
+                null, null, null, null, null));
+        _gateway.Setup(g => g.SearchProjectsAsync("vak", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([new MyZenProjectOptionDto(23200, "Vakantie", null, null)]);
+        await using var mcp = await ConnectAsync(_app!, "admin");
+
+        // Act
+        var all = Json(await mcp.CallToolAsync("list_myzen_customers"));
+        var found = Json(await mcp.CallToolAsync("search_myzen_customers", Args(("query", "BE 0825.170.684"))));
+        var customer = Json(await mcp.CallToolAsync("get_myzen_customer", Args(("id", 7))));
+        var project = Json(await mcp.CallToolAsync("get_myzen_project", Args(("id", 5))));
+        var absence = Json(await mcp.CallToolAsync("search_myzen_projects", Args(("query", "vak"))));
+
+        // Assert
+        all[0].GetProperty("id").GetInt64().Should().Be(7);
+        found[0].GetProperty("vat").GetString().Should().Be("BE0825170684");
+        customer.GetProperty("address").GetProperty("city").GetString().Should().Be("Gent");
+        project.GetProperty("customerId").GetInt64().Should().Be(7);
+        project.GetProperty("startDate").GetString().Should().Be("2026-12-01");
+        (absence[0].TryGetProperty("customer", out var name) ? name.ValueKind : JsonValueKind.Undefined)
+            .Should().BeOneOf(JsonValueKind.Null, JsonValueKind.Undefined);
+    }
+
+    [Fact(DisplayName = "An unknown project or customer ID is a tool error")]
+    public async Task GetProjectAndCustomer_Unknown_ToolError()
+    {
+        await using var mcp = await ConnectAsync(_app!, "admin");
+
+        var project = await mcp.CallToolAsync("get_myzen_project", Args(("id", 9)));
+        var customer = await mcp.CallToolAsync("get_myzen_customer", Args(("id", 9)));
+
+        project.IsError.Should().BeTrue();
+        Text(project).Should().Contain("No MyZen project with id 9");
+        customer.IsError.Should().BeTrue();
+        Text(customer).Should().Contain("No MyZen customer with id 9");
     }
 
     [Fact(DisplayName = "Creating an entry sends it once and returns a confirmation")]
