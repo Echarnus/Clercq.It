@@ -11,7 +11,7 @@ MyZen's login has a CAPTCHA (sometimes) and MFA, so it cannot sign in unattended
 1. **Admin → MyZen → Connect MyZen.** The API opens MyZen's login page and shows its CAPTCHA, if MyZen shows one.
 2. **Sign in to MyZen.** The API signs in with the stored email and password and the CAPTCHA the owner typed. "Remember me" is always ticked.
 3. **Verify.** When MyZen asks, the owner types the code from his authenticator app. "Remember this device for 30 days" is always ticked.
-4. The session is **Connected**. The section shows this month's time entries; the arrows move to another month.
+4. The session is **Connected**. The section shows this month's time entries, oldest first; the arrows move to another month.
 
 ## Managing entries
 
@@ -243,7 +243,7 @@ A data call answers **409** when the session must be reconnected, **422** when M
 | Add or edit | `POST /TimeRegistration/TimeRegistrationEntryDetails` with `TimeRegistrationID` (empty for a new entry), `ProjectID`, `CustomerID`, `Date` (dd/MM/yyyy), `Duration` (seconds), `Description`, `Invoiced` |
 | Delete | `POST /TimeRegistration/DeleteTimeRegistration` with `ID` |
 
-Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. The token is `rawcsrfToken` in the page's `<script id="layoutmainconfig">` JSON: the HTML MyZen serves has no hidden `__RequestVerificationToken` input, MyZen's scripts only add those in the browser (issue #448). A hidden input is still read as a fallback. The time-entry list uses the same token. Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
+Each call carries the request token from `/TimeRegistration/Index` and the `X-Requested-With` and `newui` headers MyZen's pages send. The token is `rawcsrfToken` in the page's `<script id="layoutmainconfig">` JSON: the HTML MyZen serves has no hidden `__RequestVerificationToken` input, MyZen's scripts only add those in the browser (issue #448). A hidden input is still read as a fallback. The time-entry list uses the same token. It reads every page of the list (20 rows each) and returns the entries sorted by date, oldest first (MyZen itself lists newest first). MyZen renders dates without leading zeros (`9/10/2026`, `5/10/2026 0:00:00`), so the parsers read `d/M/yyyy`; the gateway still writes `dd/MM/yyyy`, which MyZen accepts (issue #489). Before an edit or delete the gateway opens the entry, so an unknown ID changes nothing. MyZen's answer to a save is not documented: a JSON `Success: false` or a validation message in the returned HTML counts as refused, anything else with a 2xx status as saved. The first real save shows whether that holds; check the entry in MyZen after it.
 
 ## Session storage
 

@@ -361,6 +361,28 @@ public class MyZenGatewayTests
         _myZen.Requests[2].Form.Should().Contain("F.CurrentPage=1");
     }
 
+    [Fact(DisplayName = "Time entries come back oldest first, across pages")]
+    public async Task GetTimeEntries_SortsAscending()
+    {
+        // Arrange: MyZen lists newest first (issue #489)
+        await ConnectAsync();
+        _myZen.Respond(HttpMethod.Get, "/TimeRegistration/Index", MyZenPages.TimeRegistrationIndex);
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntriesList", MyZenPages.EntryList(
+            [
+                MyZenPages.EntryRow(30, "12/10/2026", "a", "c", "p", 3600, false),
+                MyZenPages.EntryRow(21, "9/10/2026", "b", "c", "p", 3600, false),
+                MyZenPages.EntryRow(20, "9/10/2026", "c", "c", "p", 3600, false),
+            ], 0, 1));
+        _myZen.Respond(HttpMethod.Post, "/TimeRegistration/TimeRegistrationEntriesList", MyZenPages.EntryList(
+            [MyZenPages.EntryRow(10, "1/10/2026", "d", "c", "p", 3600, false)], 0, 1));
+
+        // Act
+        var entries = await Gateway().GetTimeEntriesAsync(new DateOnly(2026, 10, 1), new DateOnly(2026, 10, 31), CancellationToken.None);
+
+        // Assert
+        entries.Select(e => e.Id).Should().Equal(10, 20, 21, 30);
+    }
+
     [Fact(DisplayName = "Time entries throw NotConnected when the index or list shows the login page")]
     public async Task GetTimeEntries_Expired_Throws()
     {
