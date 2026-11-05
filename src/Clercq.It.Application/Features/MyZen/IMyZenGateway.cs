@@ -44,6 +44,29 @@ public interface IMyZenGateway
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<MyZenCustomerDto?> GetCustomerAsync(long id, CancellationToken cancellationToken);
 
+    /// <summary>Creates a customer from MyZen's new-customer form; the new ID when MyZen's answer shows it.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the customer.</exception>
+    Task<long?> CreateCustomerAsync(MyZenCustomerInput customer, CancellationToken cancellationToken);
+
+    /// <summary>Changes the given fields of a customer, keeping the rest of its form; false when MyZen has none with this ID.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the change.</exception>
+    Task<bool> UpdateCustomerAsync(long id, MyZenCustomerInput customer, CancellationToken cancellationToken);
+
+    /// <summary>Creates a project for the customer named <paramref name="customerName"/>; the new ID when MyZen's answer shows it.</summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the project.</exception>
+    Task<long?> CreateProjectAsync(MyZenProjectInput project, string customerName, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Changes the given fields of a project, keeping the rest of its form; false when MyZen has none
+    /// with this ID. <paramref name="customerName"/> is set when <c>CustomerId</c> changes.
+    /// </summary>
+    /// <exception cref="MyZenNotConnectedException">No live session.</exception>
+    /// <exception cref="MyZenRejectedException">MyZen refused the change.</exception>
+    Task<bool> UpdateProjectAsync(long id, MyZenProjectInput project, string? customerName, CancellationToken cancellationToken);
+
     /// <summary>The time entries from <paramref name="firstDay"/> to <paramref name="lastDay"/>.</summary>
     /// <exception cref="MyZenNotConnectedException">No live session.</exception>
     Task<IReadOnlyList<MyZenTimeEntryDto>> GetTimeEntriesAsync(DateOnly firstDay, DateOnly lastDay, CancellationToken cancellationToken);

@@ -63,6 +63,114 @@ public sealed class MyZenTools(McpContent content)
         await content.SendAsync(new GetMyZenCustomerQuery(id), cancellationToken)
             ?? throw McpContent.NotFound("MyZen customer", id);
 
+    [McpServerTool(Name = "create_myzen_customer")]
+    [Description("Creates one MyZen customer and returns it. Refused, with the existing customer's id, when a customer with the same VAT number exists (or, for a private customer without VAT, the same name). Only create customers the user asked for.")]
+    public async Task<MyZenCustomerDto> CreateCustomerAsync(
+        [Description("Company name, e.g. In The Pocket NV")] string name,
+        [Description("VAT number, e.g. BE 0825.170.684; spaces and dots are fine. Required unless type is Private")] string? vat = null,
+        [Description("Street name, without the number")] string? street = null,
+        [Description("House number")] string? streetNumber = null,
+        [Description("Box or bus number")] string? box = null,
+        [Description("Postal code, four digits in Belgium")] string? zipcode = null,
+        string? city = null,
+        [Description("Two-letter ISO country code; MyZen's default is BE")] string? country = null,
+        [Description("Invoice e-mail address; separate several with ;")] string? email = null,
+        [Description("Company (default) or Private")] string? type = null,
+        [Description("Whether the customer is VAT liable; MyZen's default is yes")] bool? vatLiable = null,
+        string? commercialName = null,
+        string? phone = null,
+        string? mobile = null,
+        string? website = null,
+        [Description("Invoice language: NL, FR, EN or DE")] string? language = null,
+        string? reference = null,
+        string? contactFirstName = null,
+        string? contactLastName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var customer = await content.SendAsync(new CreateMyZenCustomerCommand(new MyZenCustomerInput(
+            name, type, vat, vatLiable, commercialName, email, phone, mobile, website, language, reference,
+            contactFirstName, contactLastName, street, streetNumber, box, zipcode, city, country)), cancellationToken);
+        content.Audit("created", "MyZen customer", customer.Id.ToString(CultureInfo.InvariantCulture));
+        return customer;
+    }
+
+    [McpServerTool(Name = "update_myzen_customer", Idempotent = true)]
+    [Description("Changes one MyZen customer and returns it. Only the fields you pass change; everything else on MyZen's form keeps its value. Refused when another customer has the VAT number you pass.")]
+    public async Task<MyZenCustomerDto> UpdateCustomerAsync(
+        [Description("MyZen customer id")] long id,
+        string? name = null,
+        [Description("VAT number, e.g. BE 0825.170.684")] string? vat = null,
+        [Description("Street name, without the number")] string? street = null,
+        string? streetNumber = null,
+        string? box = null,
+        string? zipcode = null,
+        string? city = null,
+        [Description("Two-letter ISO country code")] string? country = null,
+        [Description("Invoice e-mail address; separate several with ;")] string? email = null,
+        [Description("Company or Private")] string? type = null,
+        bool? vatLiable = null,
+        string? commercialName = null,
+        string? phone = null,
+        string? mobile = null,
+        string? website = null,
+        [Description("NL, FR, EN or DE")] string? language = null,
+        string? reference = null,
+        string? contactFirstName = null,
+        string? contactLastName = null,
+        CancellationToken cancellationToken = default)
+    {
+        var customer = await content.SendAsync(new UpdateMyZenCustomerCommand(id, new MyZenCustomerInput(
+            name, type, vat, vatLiable, commercialName, email, phone, mobile, website, language, reference,
+            contactFirstName, contactLastName, street, streetNumber, box, zipcode, city, country)), cancellationToken)
+            ?? throw McpContent.NotFound("MyZen customer", id);
+        content.Audit("updated", "MyZen customer", id.ToString(CultureInfo.InvariantCulture));
+        return customer;
+    }
+
+    [McpServerTool(Name = "create_myzen_project")]
+    [Description("Creates one MyZen project for a customer and returns it. Refused, with the existing project's id, when that customer already has a project with the same name. Get customerId from search_myzen_customers.")]
+    public async Task<MyZenProjectDetailsDto> CreateProjectAsync(
+        [Description("Project name")] string name,
+        [Description("MyZen customer id")] long customerId,
+        [Description("Start date, yyyy-MM-dd")] DateOnly startDate,
+        [Description("Prospect (default), Bezig, Klaar or Geannuleerd")] string? status = null,
+        [Description("End date, yyyy-MM-dd")] DateOnly? endDate = null,
+        string? reference = null,
+        string? notes = null,
+        [Description("Budget in euro")] decimal? budget = null,
+        [Description("Time budget in hours")] decimal? timeBudgetHours = null,
+        [Description("Hourly rate in euro")] decimal? rate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var project = await content.SendAsync(new CreateMyZenProjectCommand(new MyZenProjectInput(
+            name, customerId, status, startDate, endDate, reference, notes, budget, timeBudgetHours, rate)), cancellationToken);
+        content.Audit("created", "MyZen project", project.Id.ToString(CultureInfo.InvariantCulture));
+        return project;
+    }
+
+    [McpServerTool(Name = "update_myzen_project", Idempotent = true)]
+    [Description("Changes one MyZen project and returns it, for example its status (Prospect, Bezig, Klaar, Geannuleerd). Only the fields you pass change; everything else on MyZen's form keeps its value.")]
+    public async Task<MyZenProjectDetailsDto> UpdateProjectAsync(
+        [Description("MyZen project id")] long id,
+        string? name = null,
+        [Description("MyZen customer id, to move the project to another customer")] long? customerId = null,
+        [Description("Prospect, Bezig, Klaar or Geannuleerd")] string? status = null,
+        [Description("Start date, yyyy-MM-dd")] DateOnly? startDate = null,
+        [Description("End date, yyyy-MM-dd")] DateOnly? endDate = null,
+        string? reference = null,
+        string? notes = null,
+        [Description("Budget in euro")] decimal? budget = null,
+        [Description("Time budget in hours")] decimal? timeBudgetHours = null,
+        [Description("Hourly rate in euro")] decimal? rate = null,
+        CancellationToken cancellationToken = default)
+    {
+        var project = await content.SendAsync(new UpdateMyZenProjectCommand(id, new MyZenProjectInput(
+            name, customerId, status, startDate, endDate, reference, notes, budget, timeBudgetHours, rate)), cancellationToken)
+            ?? throw McpContent.NotFound("MyZen project", id);
+        content.Audit("updated", "MyZen project", id.ToString(CultureInfo.InvariantCulture));
+        return project;
+    }
+
     [McpServerTool(Name = "list_myzen_time_entries", ReadOnly = true)]
     [Description("Lists the time entries from one day to another, at most 93 days. Durations are hh:mm:ss.")]
     public async Task<IReadOnlyList<MyZenTimeEntryDto>> ListTimeEntriesAsync(
