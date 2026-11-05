@@ -246,7 +246,9 @@ public sealed class MyZenGateway(
                     break;
                 }
             }
-            return entries;
+
+            // MyZen lists newest first; the owner reads a month from its first day (issue #489).
+            return entries.OrderBy(e => e.Date).ThenBy(e => e.Id).ToList();
         }, cancellationToken);
 
     public async Task<MyZenTimeEntryDto?> GetTimeEntryAsync(long id, CancellationToken cancellationToken)

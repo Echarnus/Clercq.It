@@ -22,7 +22,14 @@ public sealed record MyZenTimeEntryListPage(IReadOnlyList<MyZenTimeEntryDto> Ent
 /// </summary>
 public static class MyZenHtml
 {
+    /// <summary>The format the gateway writes dates in; MyZen accepts it in filters and forms.</summary>
     public const string DateFormat = "dd/MM/yyyy";
+
+    /// <summary>
+    /// MyZen renders dates without leading zeros (<c>9/10/2026</c>, issue #489);
+    /// <c>d</c> and <c>M</c> also read padded values.
+    /// </summary>
+    private const string ReadDateFormat = "d/M/yyyy";
 
     private static readonly HtmlParser Parser = new();
     private static readonly string[] ErrorProperties = ["Message", "Error", "ErrorMessage"];
@@ -128,7 +135,7 @@ public static class MyZenHtml
 
             var summary = row.QuerySelector("td.d-md-table-cell[class*=maxw]");
             var dateText = Clean(summary?.QuerySelector(".font-weight-bold")?.TextContent);
-            if (!DateOnly.TryParseExact(dateText, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+            if (!TryParseDate(dateText, out var date))
             {
                 continue;
             }
@@ -166,7 +173,7 @@ public static class MyZenHtml
         }
 
         var dateText = Field("Date")?.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault();
-        if (!DateOnly.TryParseExact(dateText, DateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var date))
+        if (!TryParseDate(dateText, out var date))
         {
             return null;
         }
@@ -280,6 +287,9 @@ public static class MyZenHtml
     private static bool HasPage(IDocument document, int page) =>
         document.QuerySelectorAll(".pagination [data-page]")
             .Any(a => a.GetAttribute("data-page") == page.ToString(CultureInfo.InvariantCulture));
+
+    private static bool TryParseDate(string? text, out DateOnly date) =>
+        DateOnly.TryParseExact(text, ReadDateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out date);
 
     private static long? ParseId(string? text) =>
         long.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var id) && id > 0 ? id : null;
