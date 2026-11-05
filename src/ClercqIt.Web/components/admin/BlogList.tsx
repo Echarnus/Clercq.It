@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Plus, FileText, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isAbortError, useLatestRequest } from "@/hooks/use-latest-request";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { BlogForm } from "./BlogForm";
 import { fetchAllBlogs, createBlog, updateBlog, deleteBlog } from "@/lib/api/adminApi";
 import type { Blog } from "@/lib/api/baseApi";
@@ -47,20 +49,26 @@ export function BlogList() {
 
   // isLoading starts true; a reload after a change keeps the list on screen.
   // State is only set in promise callbacks, never synchronously in the effect.
-  const loadBlogs = useCallback(
-    () =>
-      fetchAllBlogs()
-        .then(setBlogs)
-        .catch(() =>
-          toast({
-            title: "Error",
-            description: "Failed to load blogs",
-            variant: "destructive",
-          }),
-        )
-        .finally(() => setIsLoading(false)),
-    [toast],
-  );
+  // A newer load, or leaving the section, aborts the older request (issue #490).
+  const nextSignal = useLatestRequest();
+  const loadBlogs = useCallback(() => {
+    const signal = nextSignal();
+    return fetchAllBlogs({ signal })
+      .then((loaded) => {
+        if (!signal.aborted) setBlogs(loaded);
+      })
+      .catch((error: unknown) => {
+        if (signal.aborted || isAbortError(error)) return;
+        toast({
+          title: "Error",
+          description: "Failed to load blogs",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        if (!signal.aborted) setIsLoading(false);
+      });
+  }, [toast, nextSignal]);
 
   useEffect(() => {
     void loadBlogs();
@@ -165,11 +173,7 @@ export function BlogList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingSpinner label="Loading blogs" showLabel className="justify-center py-12" />;
   }
 
   return (

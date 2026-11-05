@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { isAbortError } from "@/hooks/use-latest-request";
 import { fetchIdentityProvider, type IdentityProvider } from "@/lib/api/identityProviderApi";
 import type { AdminSectionContext } from "@/lib/adminNav";
 
@@ -35,22 +37,22 @@ function IdentityProviderDetails() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    fetchIdentityProvider()
+    // Leaving the page aborts the request (issue #490).
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetchIdentityProvider({ signal })
       .then((result) => {
-        if (!cancelled) setIdp(result);
+        if (!signal.aborted) setIdp(result);
       })
       .catch((err: unknown) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Could not load the identity provider");
+        if (signal.aborted || isAbortError(err)) return;
+        setError(err instanceof Error ? err.message : "Could not load the identity provider");
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, []);
 
   if (error) return <p className="text-sm text-destructive">{error}</p>;
-  if (!idp) return <p className="text-sm text-muted-foreground">Loading…</p>;
+  if (!idp) return <LoadingSpinner label="Loading the identity provider" showLabel />;
 
   return (
     <div className="space-y-4">

@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Plus, FolderKanban, Loader2, Star } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isAbortError, useLatestRequest } from "@/hooks/use-latest-request";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { ProjectForm } from "./ProjectForm";
 import { fetchAllProjects, createProject, updateProject, deleteProject } from "@/lib/api/adminApi";
 import type { Project } from "@/lib/api/baseApi";
@@ -47,20 +49,26 @@ export function ProjectList() {
 
   // isLoading starts true; a reload after a change keeps the list on screen.
   // State is only set in promise callbacks, never synchronously in the effect.
-  const loadProjects = useCallback(
-    () =>
-      fetchAllProjects()
-        .then(setProjects)
-        .catch(() =>
-          toast({
-            title: "Error",
-            description: "Failed to load projects",
-            variant: "destructive",
-          }),
-        )
-        .finally(() => setIsLoading(false)),
-    [toast],
-  );
+  // A newer load, or leaving the section, aborts the older request (issue #490).
+  const nextSignal = useLatestRequest();
+  const loadProjects = useCallback(() => {
+    const signal = nextSignal();
+    return fetchAllProjects({ signal })
+      .then((loaded) => {
+        if (!signal.aborted) setProjects(loaded);
+      })
+      .catch((error: unknown) => {
+        if (signal.aborted || isAbortError(error)) return;
+        toast({
+          title: "Error",
+          description: "Failed to load projects",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        if (!signal.aborted) setIsLoading(false);
+      });
+  }, [toast, nextSignal]);
 
   useEffect(() => {
     void loadProjects();
@@ -175,11 +183,7 @@ export function ProjectList() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
+    return <LoadingSpinner label="Loading projects" showLabel className="justify-center py-12" />;
   }
 
   return (

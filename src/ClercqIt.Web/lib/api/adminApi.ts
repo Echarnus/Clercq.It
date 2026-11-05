@@ -17,6 +17,11 @@ export const CertificationSchema = z.object({
 
 export type Certification = z.infer<typeof CertificationSchema>;
 
+/** Options for a read: `signal` cancels it when the caller no longer needs it (issue #490). */
+export interface RequestOptions {
+  signal?: AbortSignal;
+}
+
 // Authenticated fetch wrapper: the access token comes from the in-memory
 // sign-in session (lib/auth.ts), never from localStorage.
 export async function authFetch(endpoint: string, options: RequestInit = {}): Promise<Response> {
@@ -38,10 +43,12 @@ export async function authFetch(endpoint: string, options: RequestInit = {}): Pr
 // BLOGS CRUD
 // ============================================
 
-export async function fetchAllBlogs(): Promise<Blog[]> {
+/** Every item; a cancelled request rejects with the abort error, other failures give []. */
+export async function fetchAllBlogs({ signal }: RequestOptions = {}): Promise<Blog[]> {
   try {
     const response = await fetch(`${getApiUrl()}/api/blogs`, {
       cache: "no-store",
+      signal,
     });
 
     if (!response.ok) {
@@ -59,6 +66,7 @@ export async function fetchAllBlogs(): Promise<Blog[]> {
 
     return validationResult.data;
   } catch (error) {
+    if (signal?.aborted) throw error;
     console.error("Error fetching blogs:", error);
     return [];
   }
@@ -164,10 +172,12 @@ export async function deleteBlog(id: string): Promise<void> {
 // PROJECTS CRUD
 // ============================================
 
-export async function fetchAllProjects(): Promise<Project[]> {
+/** Every item; a cancelled request rejects with the abort error, other failures give []. */
+export async function fetchAllProjects({ signal }: RequestOptions = {}): Promise<Project[]> {
   try {
     const response = await fetch(`${getApiUrl()}/api/projects`, {
       cache: "no-store",
+      signal,
     });
 
     if (!response.ok) {
@@ -185,6 +195,7 @@ export async function fetchAllProjects(): Promise<Project[]> {
 
     return validationResult.data;
   } catch (error) {
+    if (signal?.aborted) throw error;
     console.error("Error fetching projects:", error);
     return [];
   }
@@ -314,10 +325,14 @@ export async function deleteProject(id: string): Promise<void> {
 // CERTIFICATIONS CRUD
 // ============================================
 
-export async function fetchAllCertifications(): Promise<Certification[]> {
+/** Every item; a cancelled request rejects with the abort error, other failures give []. */
+export async function fetchAllCertifications({ signal }: RequestOptions = {}): Promise<
+  Certification[]
+> {
   try {
     const response = await fetch(`${getApiUrl()}/api/certifications`, {
       cache: "no-store",
+      signal,
     });
 
     if (!response.ok) {
@@ -335,6 +350,7 @@ export async function fetchAllCertifications(): Promise<Certification[]> {
 
     return validationResult.data;
   } catch (error) {
+    if (signal?.aborted) throw error;
     console.error("Error fetching certifications:", error);
     return [];
   }

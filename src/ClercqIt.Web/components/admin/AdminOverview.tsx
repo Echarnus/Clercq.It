@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Award, FileText, FolderKanban, Settings } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { isAbortError } from "@/hooks/use-latest-request";
 import { fetchAllBlogs, fetchAllCertifications, fetchAllProjects } from "@/lib/api/adminApi";
 import { flattenNav, hrefOf, type AdminSectionContext } from "@/lib/adminNav";
 
@@ -15,7 +17,8 @@ function StatCard({
   valueClassName,
 }: {
   title: string;
-  value: string | number;
+  /** Null while loading: the card shows a placeholder. */
+  value: string | number | null;
   hint: string;
   icon: typeof FileText;
   valueClassName?: string;
@@ -27,7 +30,11 @@ function StatCard({
         <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
       </CardHeader>
       <CardContent>
-        <div className={valueClassName ?? "text-2xl font-bold"}>{value}</div>
+        {value === null ? (
+          <Skeleton className="h-8 w-12" aria-label={`Loading ${title}`} role="status" />
+        ) : (
+          <div className={valueClassName ?? "text-2xl font-bold"}>{value}</div>
+        )}
         <p className="text-xs text-muted-foreground">{hint}</p>
       </CardContent>
     </Card>
@@ -36,26 +43,35 @@ function StatCard({
 
 /** The admin landing page: content counts and the sections this user can open. */
 export function AdminOverview({ nav }: AdminSectionContext) {
-  const [stats, setStats] = useState({ blogs: 0, projects: 0, certifications: 0 });
+  // Null until the counts load; the cards show a placeholder meanwhile.
+  const [stats, setStats] = useState<{
+    blogs: number;
+    projects: number;
+    certifications: number;
+  } | null>(null);
 
   useEffect(() => {
-    const loadStats = async () => {
-      try {
-        const [blogs, projects, certifications] = await Promise.all([
-          fetchAllBlogs(),
-          fetchAllProjects(),
-          fetchAllCertifications(),
-        ]);
+    // Leaving the overview aborts the three requests (issue #490).
+    const controller = new AbortController();
+    const { signal } = controller;
+    Promise.all([
+      fetchAllBlogs({ signal }),
+      fetchAllProjects({ signal }),
+      fetchAllCertifications({ signal }),
+    ])
+      .then(([blogs, projects, certifications]) => {
+        if (signal.aborted) return;
         setStats({
           blogs: blogs.length,
           projects: projects.length,
           certifications: certifications.length,
         });
-      } catch (error) {
+      })
+      .catch((error: unknown) => {
+        if (signal.aborted || isAbortError(error)) return;
         console.error("Failed to load stats:", error);
-      }
-    };
-    void loadStats();
+      });
+    return () => controller.abort();
   }, []);
 
   const sections = flattenNav(nav).filter((item) => !item.isIndex);
@@ -65,19 +81,19 @@ export function AdminOverview({ nav }: AdminSectionContext) {
       <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           title="Total Blogs"
-          value={stats.blogs}
+          value={stats?.blogs ?? null}
           hint="Published blog posts"
           icon={FileText}
         />
         <StatCard
           title="Total Projects"
-          value={stats.projects}
+          value={stats?.projects ?? null}
           hint="Portfolio projects"
           icon={FolderKanban}
         />
         <StatCard
           title="Certifications"
-          value={stats.certifications}
+          value={stats?.certifications ?? null}
           hint="Professional certifications"
           icon={Award}
         />

@@ -43,6 +43,8 @@ const entry: api.MyZenTimeEntry = {
   duration: "07:30:00",
   invoiced: true,
 };
+// Every load passes an AbortSignal so a newer one can cancel it (issue #490).
+const withSignal = { signal: expect.any(AbortSignal) as AbortSignal };
 const today = new Date(2026, 9, 23);
 
 describe("monthOf", () => {
@@ -103,7 +105,7 @@ describe("MyZenPanel", () => {
     expect(screen.getByText("7:30")).toBeInTheDocument();
     expect(api.submitMyZenLogin).toHaveBeenCalledWith("ab12");
     expect(api.submitMyZenMfaCode).toHaveBeenCalledWith("123456");
-    expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith("2026-10-01", "2026-10-31");
+    expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith("2026-10-01", "2026-10-31", withSignal);
   });
 
   it("offers a reconnect when expired and shows MyZen's message without a CAPTCHA", async () => {
@@ -208,13 +210,51 @@ describe("MyZenPanel", () => {
       await screen.findByText("Sprint review");
       await user.click(screen.getByRole("button", { name: "Next month" }));
       await waitFor(() =>
-        expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith("2026-11-01", "2026-11-30"),
+        expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith(
+          "2026-11-01",
+          "2026-11-30",
+          withSignal,
+        ),
       );
       await user.click(screen.getByRole("button", { name: "Previous month" }));
       await user.click(screen.getByRole("button", { name: "Previous month" }));
       await waitFor(() =>
-        expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith("2026-09-01", "2026-09-30"),
+        expect(api.fetchMyZenTimeEntries).toHaveBeenCalledWith(
+          "2026-09-01",
+          "2026-09-30",
+          withSignal,
+        ),
       );
+    });
+
+    it("aborts the previous month's request so a late answer cannot replace the new month", async () => {
+      const user = userEvent.setup();
+      let answerOctober: (entries: api.MyZenTimeEntry[]) => void = () => {};
+      vi.mocked(api.fetchMyZenTimeEntries)
+        .mockReturnValueOnce(new Promise((resolve) => (answerOctober = resolve)))
+        .mockResolvedValueOnce([{ ...entry, id: 8, date: "2026-11-02", description: "November" }]);
+      render(<MyZenPanel today={today} />);
+
+      expect(await screen.findByText("Loading time entries")).toBeInTheDocument();
+      await user.click(screen.getByRole("button", { name: "Next month" }));
+      expect(await screen.findByText("November")).toBeInTheDocument();
+
+      const october = vi.mocked(api.fetchMyZenTimeEntries).mock.calls[0][2]?.signal;
+      expect(october?.aborted).toBe(true);
+      answerOctober([entry]);
+      await waitFor(() => expect(screen.queryByText("Sprint review")).not.toBeInTheDocument());
+      expect(screen.getByText("November")).toBeInTheDocument();
+      expect(screen.queryByText("Loading time entries")).not.toBeInTheDocument();
+    });
+
+    it("aborts the month's request when the section closes", async () => {
+      vi.mocked(api.fetchMyZenTimeEntries).mockReturnValueOnce(new Promise(() => {}));
+      const { unmount } = render(<MyZenPanel today={today} />);
+      await waitFor(() => expect(api.fetchMyZenTimeEntries).toHaveBeenCalled());
+
+      unmount();
+
+      expect(vi.mocked(api.fetchMyZenTimeEntries).mock.calls[0][2]?.signal?.aborted).toBe(true);
     });
 
     it("adds an entry and reloads the month", async () => {

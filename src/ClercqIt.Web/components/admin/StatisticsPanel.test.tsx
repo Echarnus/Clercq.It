@@ -22,6 +22,9 @@ const stats: api.SiteStatistics = {
   ],
 };
 
+// Every load passes an AbortSignal so a newer one can cancel it (issue #490).
+const withSignal = { signal: expect.any(AbortSignal) as AbortSignal };
+
 describe("shortDate", () => {
   it("formats an ISO date as day and month", () => {
     expect(shortDate("2026-10-04")).toBe("4 Oct");
@@ -39,7 +42,7 @@ describe("StatisticsPanel", () => {
     expect(screen.getByText("78")).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "/blogs" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "30 days" })).toHaveAttribute("aria-pressed", "true");
-    expect(api.fetchSiteStatistics).toHaveBeenCalledWith(30);
+    expect(api.fetchSiteStatistics).toHaveBeenCalledWith(30, withSignal);
   });
 
   it("reloads for another period", async () => {
@@ -50,8 +53,27 @@ describe("StatisticsPanel", () => {
 
     await user.click(screen.getByRole("button", { name: "7 days" }));
 
-    await waitFor(() => expect(api.fetchSiteStatistics).toHaveBeenLastCalledWith(7));
+    await waitFor(() => expect(api.fetchSiteStatistics).toHaveBeenLastCalledWith(7, withSignal));
     expect(screen.getByRole("button", { name: "7 days" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("aborts the previous period's request and shows that it is loading", async () => {
+    const user = userEvent.setup();
+    vi.mocked(api.fetchSiteStatistics)
+      .mockReturnValue(new Promise(() => {}))
+      .mockResolvedValueOnce(stats);
+    render(<StatisticsPanel />);
+    await screen.findByText("1,234");
+    expect(screen.queryByText("Loading statistics")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "7 days" }));
+    await user.click(screen.getByRole("button", { name: "90 days" }));
+
+    const signals = vi.mocked(api.fetchSiteStatistics).mock.calls.map((call) => call[1]?.signal);
+    expect(signals[1]?.aborted).toBe(true);
+    expect(signals[2]?.aborted).toBe(false);
+    expect(screen.getByRole("status")).toHaveTextContent("Loading statistics");
+    expect(screen.getByText("1,234").closest("[aria-busy]")).toHaveAttribute("aria-busy", "true");
   });
 
   it("says so when there are no page views yet", async () => {

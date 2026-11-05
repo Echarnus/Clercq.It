@@ -1,5 +1,6 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type React from "react";
 import { usePathname, useRouter } from "next/navigation";
@@ -138,7 +139,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   };
 
   if (!value) {
-    return null;
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <LoadingSpinner label="Checking your sign-in" showLabel />
+      </div>
+    );
   }
 
   if (nav.length === 0) {

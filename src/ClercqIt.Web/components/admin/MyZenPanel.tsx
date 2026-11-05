@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
   TableBody,
@@ -52,6 +53,9 @@ import {
   type MyZenTimeEntryInput,
   updateMyZenTimeEntry,
 } from "@/lib/api/myzenApi";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { isAbortError, useLatestRequest } from "@/hooks/use-latest-request";
+import { cn } from "@/lib/utils";
 import { formatDuration, MyZenEntryForm } from "./MyZenEntryForm";
 
 /** The first and last day of the month that contains `day`, as yyyy-MM-dd. */
@@ -85,19 +89,34 @@ export function MyZenPanel({ today }: { today?: Date }) {
   const [captcha, setCaptcha] = useState("");
   const [code, setCode] = useState("");
   const [entries, setEntries] = useState<MyZenTimeEntry[] | null>(null);
+  // The month whose load last finished (loaded or failed); while it differs from
+  // `month`, or a reload after a change runs, the table shows that it is loading.
+  const [settled, setSettled] = useState<string | null>(null);
+  const [reloading, setReloading] = useState(false);
+  // The entry the edit form is being opened for, so its button shows progress.
+  const [opening, setOpening] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // The form: a new entry, an entry being edited, or closed.
   const [editing, setEditing] = useState<MyZenTimeEntry | "new" | null>(null);
   const [deleting, setDeleting] = useState<MyZenTimeEntry | null>(null);
+  const [removing, setRemoving] = useState(false);
+  // One signal per kind of request: a newer one aborts the older, and leaving
+  // the section aborts them all (issue #490).
+  const nextStatusSignal = useLatestRequest();
+  const nextEntriesSignal = useLatestRequest();
+  const nextEntrySignal = useLatestRequest();
 
-  const loadStatus = useCallback(
-    () =>
-      fetchMyZenStatus()
-        .then(setStatus)
-        .catch(() => setError("MyZen is not available right now.")),
-    [],
-  );
+  const loadStatus = useCallback(() => {
+    const signal = nextStatusSignal();
+    return fetchMyZenStatus({ signal })
+      .then((loaded) => {
+        if (!signal.aborted) setStatus(loaded);
+      })
+      .catch((e: unknown) => {
+        if (!signal.aborted && !isAbortError(e)) setError("MyZen is not available right now.");
+      });
+  }, [nextStatusSignal]);
 
   useEffect(() => {
     void loadStatus();
@@ -123,19 +142,36 @@ export function MyZenPanel({ today }: { today?: Date }) {
     [loadStatus],
   );
 
-  const loadEntries = useCallback(
-    () =>
-      fetchMyZenTimeEntries(month.from, month.to)
-        .then((loaded) => {
-          setEntries(loaded);
-          setError(null);
-        })
-        .catch((e: unknown) => {
-          setEntries(null);
-          fail(e, "Could not load the time entries.");
-        }),
-    [month, fail],
-  );
+  // Switching months aborts the previous month's request, so a slow answer
+  // never replaces the month on screen.
+  const loadEntries = useCallback(() => {
+    const signal = nextEntriesSignal();
+    return fetchMyZenTimeEntries(month.from, month.to, { signal })
+      .then((loaded) => {
+        if (signal.aborted) return;
+        setEntries(loaded);
+        setError(null);
+      })
+      .catch((e: unknown) => {
+        if (signal.aborted || isAbortError(e)) return;
+        setEntries(null);
+        fail(e, "Could not load the time entries.");
+      })
+      .finally(() => {
+        if (!signal.aborted) setSettled(month.from);
+      });
+  }, [month, fail, nextEntriesSignal]);
+
+  const reloadEntries = async () => {
+    setReloading(true);
+    try {
+      await loadEntries();
+    } finally {
+      setReloading(false);
+    }
+  };
+
+  const loadingEntries = status?.state === "Connected" && (settled !== month.from || reloading);
 
   useEffect(() => {
     if (status?.state !== "Connected") return;
@@ -154,29 +190,36 @@ export function MyZenPanel({ today }: { today?: Date }) {
       throw e;
     }
     setEditing(null);
-    await loadEntries();
+    await reloadEntries();
   };
 
   const edit = async (entry: MyZenTimeEntry) => {
     setError(null);
+    setOpening(entry.id);
+    const signal = nextEntrySignal();
     try {
-      setEditing(await fetchMyZenTimeEntry(entry.id));
+      const loaded = await fetchMyZenTimeEntry(entry.id, { signal });
+      if (!signal.aborted) setEditing(loaded);
     } catch (e: unknown) {
-      fail(e, "Could not open the time entry.");
+      if (!signal.aborted && !isAbortError(e)) fail(e, "Could not open the time entry.");
+    } finally {
+      if (!signal.aborted) setOpening(null);
     }
   };
 
+  // The dialog stays open, with progress on its button, until MyZen answered.
   const remove = async (entry: MyZenTimeEntry) => {
-    setBusy(true);
+    setRemoving(true);
     setError(null);
     try {
       await deleteMyZenTimeEntry(entry.id);
-      await loadEntries();
+      setDeleting(null);
+      await reloadEntries();
     } catch (e: unknown) {
+      setDeleting(null);
       fail(e, "MyZen did not delete the entry.");
     } finally {
-      setBusy(false);
-      setDeleting(null);
+      setRemoving(false);
     }
   };
 
@@ -202,7 +245,7 @@ export function MyZenPanel({ today }: { today?: Date }) {
     return error ? (
       <p className="text-sm text-destructive">{error}</p>
     ) : (
-      <Loader2 className="h-5 w-5 animate-spin" aria-label="Loading" />
+      <LoadingSpinner label="Loading MyZen" showLabel />
     );
   }
 
@@ -224,7 +267,11 @@ export function MyZenPanel({ today }: { today?: Date }) {
 
       {status.state !== "Connected" && !step && (
         <Button disabled={busy} onClick={() => void run(startMyZenLogin)}>
-          <LogIn className="mr-2 h-4 w-4" />
+          {busy ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <LogIn className="mr-2 h-4 w-4" />
+          )}
           {status.state === "Expired" ? "Reconnect MyZen" : "Connect MyZen"}
         </Button>
       )}
@@ -256,6 +303,7 @@ export function MyZenPanel({ today }: { today?: Date }) {
             </p>
           )}
           <Button type="submit" disabled={busy}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             Sign in to MyZen
           </Button>
         </form>
@@ -280,6 +328,7 @@ export function MyZenPanel({ today }: { today?: Date }) {
             onChange={(e) => setCode(e.target.value)}
           />
           <Button type="submit" disabled={busy || !/^\d{6}$/.test(code)}>
+            {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
             Verify
           </Button>
         </form>
@@ -294,11 +343,16 @@ export function MyZenPanel({ today }: { today?: Date }) {
               void run(async () => {
                 await disconnectMyZen();
                 setEntries(null);
+                setSettled(null);
                 await loadStatus();
               })
             }
           >
-            <Unplug className="mr-2 h-4 w-4" />
+            {busy ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Unplug className="mr-2 h-4 w-4" />
+            )}
             Disconnect
           </Button>
           <div className="flex flex-wrap items-center gap-2">
@@ -313,6 +367,7 @@ export function MyZenPanel({ today }: { today?: Date }) {
             <span className="text-sm font-medium" aria-live="polite">
               {month.from.slice(0, 7)}
             </span>
+            {loadingEntries && <LoadingSpinner label="Loading time entries" />}
             <Button
               variant="ghost"
               size="icon"
@@ -339,8 +394,18 @@ export function MyZenPanel({ today }: { today?: Date }) {
               onCancel={() => setEditing(null)}
             />
           )}
+          {!entries && loadingEntries && (
+            <div className="space-y-2" aria-hidden>
+              {[0, 1, 2, 3].map((row) => (
+                <Skeleton key={row} className="h-8 w-full" />
+              ))}
+            </div>
+          )}
           {entries && (
-            <Table>
+            <Table
+              aria-busy={loadingEntries}
+              className={cn("transition-opacity", loadingEntries && "opacity-50")}
+            >
               <TableHeader>
                 <TableRow>
                   <TableHead>Date</TableHead>
@@ -373,16 +438,20 @@ export function MyZenPanel({ today }: { today?: Date }) {
                         variant="ghost"
                         size="icon"
                         aria-label={`Edit entry of ${entry.date}`}
-                        disabled={busy}
+                        disabled={busy || removing || opening !== null}
                         onClick={() => void edit(entry)}
                       >
-                        <Pencil className="h-4 w-4" />
+                        {opening === entry.id ? (
+                          <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                        ) : (
+                          <Pencil className="h-4 w-4" />
+                        )}
                       </Button>
                       <Button
                         variant="ghost"
                         size="icon"
                         aria-label={`Delete entry of ${entry.date}`}
-                        disabled={busy}
+                        disabled={busy || removing}
                         onClick={() => setDeleting(entry)}
                       >
                         <Trash2 className="h-4 w-4" />
@@ -393,7 +462,10 @@ export function MyZenPanel({ today }: { today?: Date }) {
               </TableBody>
             </Table>
           )}
-          <AlertDialog open={deleting !== null} onOpenChange={(open) => !open && setDeleting(null)}>
+          <AlertDialog
+            open={deleting !== null}
+            onOpenChange={(open) => !open && !removing && setDeleting(null)}
+          >
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete this time entry?</AlertDialogTitle>
@@ -403,11 +475,16 @@ export function MyZenPanel({ today }: { today?: Date }) {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel disabled={removing}>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={() => deleting && void remove(deleting)}
+                  disabled={removing}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    if (deleting) void remove(deleting);
+                  }}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
+                  {removing && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
                   Delete
                 </AlertDialogAction>
               </AlertDialogFooter>
