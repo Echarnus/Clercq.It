@@ -81,6 +81,7 @@ public static class DependencyInjection
         services.AddSingleton<IMyZenHttpHandlerFactory, MyZenHttpHandlerFactory>();
         services.AddScoped<IMyZenSessionStore, EfMyZenSessionStore>();
         services.AddScoped<IMyZenGateway, MyZenGateway>();
+        services.AddScoped<IMyZenInvoiceGateway, MyZenGateway>();
 
         // Visitor statistics (issue #429, docs/statistics.md)
         services.AddSingleton<StatisticsState>();

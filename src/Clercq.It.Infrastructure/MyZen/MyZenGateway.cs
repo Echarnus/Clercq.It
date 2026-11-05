@@ -36,7 +36,7 @@ public sealed class MyZenSessionLock
 /// from configuration; the session (cookies, tokens) is stored encrypted.
 /// Never logs cookies, tokens, credentials or MyZen's data.
 /// </summary>
-public sealed class MyZenGateway(
+public sealed partial class MyZenGateway(
     IMyZenSessionStore store,
     IMyZenHttpHandlerFactory handlers,
     MyZenSessionLock sessionLock,

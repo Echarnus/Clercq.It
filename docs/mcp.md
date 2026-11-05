@@ -22,6 +22,7 @@ The server is stateless, so it works with the serverless container scaling to ze
 | Certifications | `list_certifications`, `get_certification`, `create_certification`, `update_certification`, `delete_certification` | `Certifications.Contributor` |
 | Blog posts | `list_blog_posts`, `get_blog_post`, `create_blog_post`, `update_blog_post`, `delete_blog_post` | `Blogs.Contributor` |
 | MyZen | `myzen_status`, `list_myzen_projects`, `search_myzen_projects`, `get_myzen_project`, `list_myzen_customers`, `search_myzen_customers`, `get_myzen_customer`, `list_myzen_time_entries`, `get_myzen_time_entry`, `create_myzen_time_entry`, `update_myzen_time_entry`, `delete_myzen_time_entry` | `MyZen.Owner`, and only while the `MyZen` flag is on |
+| MyZen invoices (read-only) | `list_myzen_invoices`, `get_myzen_invoice` | `MyZen.Owner`, and only while the `MyZen` flag is on |
 
 - The tools send the same MediatR commands as the admin endpoints, so the same FluentValidation rules apply. A validation failure comes back as a tool error with the messages.
 - `update_*` tools change only the fields you pass. `update_certification` takes `clearExpiryDate: true` to remove an expiry date.
@@ -29,6 +30,7 @@ The server is stateless, so it works with the serverless container scaling to ze
 - Dates are `yyyy-MM-dd`. Descriptions and blog bodies are Markdown.
 - Images go in as `imageBase64` plus `imageFileName` (jpg, jpeg, png, gif or webp, max 5 MB) and are uploaded to object storage like admin uploads. Blog posts need an image when created. Projects and certifications can have no image (issue #479): `update_project` or `update_certification` with `removeImage: true` clears it, and the site then shows no picture.
 - The MyZen tools use the session connected on the admin tab ([MyZen](./myzen.md)); they cannot connect it. An expired session gives a tool error that says to reconnect. Each call writes one entry, and `search_myzen_projects` and `list_myzen_projects` give the `projectId` (`id`) and `customerId` an entry needs; absence projects have `customerId: null`. The customer and project read tools are described in [MyZen](./myzen.md#customers-and-projects). `update_myzen_time_entry` keeps the entry's customer unless `projectId` changes; then it takes the `customerId` passed with it.
+- The MyZen invoice tools only read: `list_myzen_invoices` takes a `direction` (`sales` or `purchase`) and a period of at most 366 days, and `get_myzen_invoice` gives one invoice with its lines. See [MyZen invoices](./myzen.md#invoices).
 - Every create, update and delete is logged as `MCP <action> <type> <id> by <caller>`, where the caller is the Keycloak username, or the client id for a service account.
 
 ## Authentication
