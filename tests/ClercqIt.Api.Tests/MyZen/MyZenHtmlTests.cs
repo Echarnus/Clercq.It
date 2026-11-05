@@ -128,6 +128,31 @@ public class MyZenHtmlTests
             101, new DateOnly(2026, 9, 15), "Sprint review", 555, "Acme Website", 777, "Acme NV", new TimeSpan(7, 30, 0), true));
     }
 
+    [Fact(DisplayName = "The time entry list reads MyZen's dates without leading zeros")]
+    public void ParseTimeEntryList_UnpaddedDates()
+    {
+        // Arrange: MyZen renders 9 October as 9/10/2026 and 5 January as 5/1/2027 (issue #489)
+        var html = MyZenPages.EntryList(
+            [
+                MyZenPages.EntryRow(201, "9/10/2026", "a", "c", "p", 3600, invoiced: false),
+                MyZenPages.EntryRow(202, "5/1/2027", "b", "c", "p", 3600, invoiced: false),
+                MyZenPages.EntryRow(203, "12/10/2026", "c", "c", "p", 3600, invoiced: false),
+            ]);
+
+        // Act
+        var entries = MyZenHtml.ParseTimeEntryList(html, 0).Entries;
+
+        // Assert
+        entries.Select(e => e.Date).Should().Equal(new DateOnly(2026, 10, 9), new DateOnly(2027, 1, 5), new DateOnly(2026, 10, 12));
+    }
+
+    [Fact(DisplayName = "The edit form reads MyZen's dates without leading zeros")]
+    public void ParseTimeEntryDetails_UnpaddedDate()
+    {
+        MyZenHtml.ParseTimeEntryDetails(MyZenPages.EntryDetails(1, date: "5/10/2026 0:00:00"))!
+            .Date.Should().Be(new DateOnly(2026, 10, 5));
+    }
+
     [Theory(DisplayName = "The edit form duration may carry seconds; a bad one counts as zero")]
     [InlineData("01:02:03", 1, 2, 3)]
     [InlineData("bad", 0, 0, 0)]
