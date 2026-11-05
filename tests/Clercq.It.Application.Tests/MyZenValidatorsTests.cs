@@ -94,4 +94,32 @@ public class MyZenValidatorsTests
     }
 
     private static readonly MyZenTimeEntryInput ValidEntry = new(new DateOnly(2026, 9, 1), 480, 5, 7, "Work", false);
+
+    [Theory(DisplayName = "A customer search is 2 to 50 characters")]
+    [InlineData("ac", true)]
+    [InlineData(" a ", false)]
+    [InlineData("", false)]
+    public void CustomerSearch_Validated(string query, bool valid)
+    {
+        new SearchMyZenCustomersQueryValidator().Validate(new SearchMyZenCustomersQuery(query)).IsValid.Should().Be(valid);
+    }
+
+    [Theory(DisplayName = "Project and customer IDs must be positive")]
+    [InlineData(1, true)]
+    [InlineData(0, false)]
+    public void ProjectAndCustomerId_Validated(long id, bool valid)
+    {
+        new GetMyZenProjectQueryValidator().Validate(new GetMyZenProjectQuery(id)).IsValid.Should().Be(valid);
+        new GetMyZenCustomerQueryValidator().Validate(new GetMyZenCustomerQuery(id)).IsValid.Should().Be(valid);
+    }
+
+    [Theory(DisplayName = "A typed VAT or company number is searched without separators; names stay as typed")]
+    [InlineData("BE 0825.170.684", "BE0825170684")]
+    [InlineData("0825.170.684", "0825170684")]
+    [InlineData(" In The Pocket ", "In The Pocket")]
+    [InlineData("Acme 2", "Acme 2")]
+    public void VatSearchKeyword(string query, string keyword)
+    {
+        MyZenVat.SearchKeyword(query).Should().Be(keyword);
+    }
 }

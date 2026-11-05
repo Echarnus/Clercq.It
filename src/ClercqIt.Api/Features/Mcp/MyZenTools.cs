@@ -24,16 +24,44 @@ public sealed class MyZenTools(McpContent content)
         await content.SendAsync(new GetMyZenStatusQuery(), cancellationToken);
 
     [McpServerTool(Name = "list_myzen_projects", ReadOnly = true)]
-    [Description("Lists every MyZen project with its customer, dates and status. It has no project or customer IDs for time entries; use search_myzen_projects for those.")]
+    [Description("Lists every MyZen project: id (the projectId), name, customerId, customer, dates and status (Prospect, Bezig, Klaar, Geannuleerd). customerId is null for projects without a customer (Feestdag, Vakantie, Ziekte).")]
     public async Task<IReadOnlyList<MyZenProjectDto>> ListProjectsAsync(CancellationToken cancellationToken) =>
         await content.SendAsync(new GetMyZenProjectsQuery(), cancellationToken);
 
     [McpServerTool(Name = "search_myzen_projects", ReadOnly = true)]
-    [Description("Finds MyZen projects by name and returns the projectId and customerId a time entry needs. Absence projects (Feestdag, Vakantie, Ziekte) have no customer.")]
+    [Description("Finds MyZen projects by name and returns the projectId (id) and customerId a time entry needs. Absence projects (Feestdag, Vakantie, Ziekte) have customerId and customer null.")]
     public async Task<IReadOnlyList<MyZenProjectOptionDto>> SearchProjectsAsync(
         [Description("Part of the project name, 2 to 50 characters")] string query,
         CancellationToken cancellationToken) =>
         await content.SendAsync(new SearchMyZenProjectsQuery(query), cancellationToken);
+
+    [McpServerTool(Name = "get_myzen_project", ReadOnly = true)]
+    [Description("Gets one MyZen project by id: name, customerId and customer, status (Prospect, Bezig, Klaar, Geannuleerd), start and end date (yyyy-MM-dd), reference, notes, budget, time budget in hours and rate.")]
+    public async Task<MyZenProjectDetailsDto> GetProjectAsync(
+        [Description("MyZen project id, from list_myzen_projects or search_myzen_projects")] long id,
+        CancellationToken cancellationToken) =>
+        await content.SendAsync(new GetMyZenProjectQuery(id), cancellationToken)
+            ?? throw McpContent.NotFound("MyZen project", id);
+
+    [McpServerTool(Name = "list_myzen_customers", ReadOnly = true)]
+    [Description("Lists every MyZen customer with id, number, name, VAT number, contact, city, e-mail and phone.")]
+    public async Task<IReadOnlyList<MyZenCustomerSummaryDto>> ListCustomersAsync(CancellationToken cancellationToken) =>
+        await content.SendAsync(new GetMyZenCustomersQuery(), cancellationToken);
+
+    [McpServerTool(Name = "search_myzen_customers", ReadOnly = true)]
+    [Description("Finds MyZen customers by name, VAT number or company number. A VAT number may be typed with spaces and dots (BE 0825.170.684).")]
+    public async Task<IReadOnlyList<MyZenCustomerSummaryDto>> SearchCustomersAsync(
+        [Description("Part of the name, or a VAT or company number, 2 to 50 characters")] string query,
+        CancellationToken cancellationToken) =>
+        await content.SendAsync(new SearchMyZenCustomersQuery(query), cancellationToken);
+
+    [McpServerTool(Name = "get_myzen_customer", ReadOnly = true)]
+    [Description("Gets one MyZen customer by id: name, type (Company or Private), VAT number, contact details, language and invoice address.")]
+    public async Task<MyZenCustomerDto> GetCustomerAsync(
+        [Description("MyZen customer id, from list_myzen_customers or search_myzen_customers")] long id,
+        CancellationToken cancellationToken) =>
+        await content.SendAsync(new GetMyZenCustomerQuery(id), cancellationToken)
+            ?? throw McpContent.NotFound("MyZen customer", id);
 
     [McpServerTool(Name = "list_myzen_time_entries", ReadOnly = true)]
     [Description("Lists the time entries from one day to another, at most 93 days. Durations are hh:mm:ss.")]

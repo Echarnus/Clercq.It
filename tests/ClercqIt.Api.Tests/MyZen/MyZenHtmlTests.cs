@@ -180,7 +180,7 @@ public class MyZenHtmlTests
 
         // Assert
         projects.Should().ContainSingle().Which.Should().Be(
-            new MyZenProjectDto(555, "Acme Website", "Acme NV", "01/01/2026", null, "Bezig"));
+            new MyZenProjectDto(555, "Acme Website", null, "Acme NV", "01/01/2026", null, "Bezig"));
         hasNext.Should().BeTrue();
         hasNextAfterLast.Should().BeFalse();
     }
@@ -191,7 +191,7 @@ public class MyZenHtmlTests
         var (projects, _) = MyZenHtml.ParseProjectList("""<table><tbody><tr id="ProjectID-9"><td>Solo</td></tr></tbody></table>""", 0);
 
         projects.Should().ContainSingle().Which.Should().Be(
-            new MyZenProjectDto(9, "Solo", "", null, null, ""));
+            new MyZenProjectDto(9, "Solo", null, "", null, null, ""));
     }
 
     [Fact(DisplayName = "The project lookup gives each project with its customer")]
@@ -203,7 +203,74 @@ public class MyZenHtmlTests
         // Assert
         options.Should().Equal(
             new MyZenProjectOptionDto(20788, "Acme Website", 777, "Acme NV"),
-            new MyZenProjectOptionDto(23200, "Vakantie", null, ""));
+            new MyZenProjectOptionDto(23200, "Vakantie", null, null),
+            new MyZenProjectOptionDto(23201, "Ziekte", null, null));
+    }
+
+    [Fact(DisplayName = "The customer list gives each customer with its ID and whether a next page exists")]
+    public void ParseCustomerList_RowsAndPaging()
+    {
+        // Act
+        var (customers, hasNext) = MyZenHtml.ParseCustomerList(MyZenPages.CustomerList(0, 1), 0);
+        var (_, hasNextAfterLast) = MyZenHtml.ParseCustomerList(MyZenPages.CustomerList(0, 1), 1);
+
+        // Assert
+        customers.Should().Equal(
+            new MyZenCustomerSummaryDto(777, "2", "Acme NV", "BE0123456749", null, "9000 Gent", "billing@acme.example", null),
+            new MyZenCustomerSummaryDto(778, "3", "Beta BV", null, null, null, null, null));
+        hasNext.Should().BeTrue();
+        hasNextAfterLast.Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "A customer's edit page gives its details and invoice address")]
+    public void ParseCustomerDetails_ReadsFields()
+    {
+        var customer = MyZenHtml.ParseCustomerDetails(MyZenPages.CustomerDetails(777));
+
+        customer.Should().BeEquivalentTo(new MyZenCustomerDto(
+            777, "2", "Acme NV", null, "Company", "BE0123456749", true, "billing@acme.example", "+32 9 123 45 67", null, null,
+            "NL", null, "Ada", null, new MyZenAddressDto("Voorbeeldstraat", "12", "3", "9000", "Gent", "BE")));
+    }
+
+    [Theory(DisplayName = "A page without a customer form gives no customer")]
+    [InlineData("<html><title>Error</title></html>")]
+    [InlineData("""<form id="pageform"><input name="Company.CompanyID" value="0" /></form>""")]
+    public void ParseCustomerDetails_NoForm_Null(string html)
+    {
+        MyZenHtml.ParseCustomerDetails(html).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "A project's edit page gives its customer, status label, dates and amounts")]
+    public void ParseProjectDetails_ReadsFields()
+    {
+        var project = MyZenHtml.ParseProjectDetails(MyZenPages.ProjectDetails(555));
+
+        project.Should().Be(new MyZenProjectDetailsDto(
+            555, "Acme Website", 777, "Acme NV", "Bezig", new DateOnly(2026, 12, 1), null, "PO-1", "Phase 1", 1000.50m, 10.5m, 95m));
+    }
+
+    [Theory(DisplayName = "Project statuses use the labels MyZen shows")]
+    [InlineData("Prospect", "Prospect")]
+    [InlineData("InProgress", "Bezig")]
+    [InlineData("", "")]
+    public void ParseProjectDetails_StatusLabel(string status, string label)
+    {
+        MyZenHtml.ParseProjectDetails(MyZenPages.ProjectDetails(555, status))!.Status.Should().Be(label);
+    }
+
+    [Fact(DisplayName = "A project without a customer has no customer ID or name")]
+    public void ParseProjectDetails_NoCustomer_Null()
+    {
+        var project = MyZenHtml.ParseProjectDetails(MyZenPages.ProjectDetails(23200, customerId: "", customer: ""));
+
+        project!.CustomerId.Should().BeNull();
+        project.Customer.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "MyZen's error page for an unknown project gives no project")]
+    public void ParseProjectDetails_ErrorPage_Null()
+    {
+        MyZenHtml.ParseProjectDetails("<html><title>Sorry</title><body>Er ging iets mis</body></html>").Should().BeNull();
     }
 
     [Theory(DisplayName = "An unexpected project lookup answer gives no projects")]

@@ -24,7 +24,7 @@ public class MyZenHandlersTests
     public async Task GetProjects_ReturnsGatewayProjects()
     {
         // Arrange
-        IReadOnlyList<MyZenProjectDto> projects = [new(1, "Website", "Acme", "01/01/2026", null, "Bezig")];
+        IReadOnlyList<MyZenProjectDto> projects = [new(1, "Website", 7, "Acme", "01/01/2026", null, "Bezig")];
         _gateway.Setup(g => g.GetProjectsAsync(MoqIt.IsAny<CancellationToken>())).ReturnsAsync(projects);
 
         // Act
@@ -176,6 +176,54 @@ public class MyZenHandlersTests
 
         // Assert
         result.Should().BeSameAs(options);
+    }
+
+    [Fact(DisplayName = "The customer search sends a typed VAT number without spaces and dots")]
+    public async Task SearchCustomers_CompactsVat()
+    {
+        // Arrange
+        IReadOnlyList<MyZenCustomerSummaryDto> customers = [new(7, "2", "Acme NV", "BE0825170684", null, null, null, null)];
+        _gateway.Setup(g => g.GetCustomersAsync("BE0825170684", MoqIt.IsAny<CancellationToken>())).ReturnsAsync(customers);
+
+        // Act
+        var result = await new SearchMyZenCustomersQueryHandler(_gateway.Object)
+            .Handle(new SearchMyZenCustomersQuery(" be 0825.170.684 "), CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(customers);
+    }
+
+    [Fact(DisplayName = "The customer list asks the gateway for every customer")]
+    public async Task GetCustomers_NoKeyword()
+    {
+        // Arrange
+        IReadOnlyList<MyZenCustomerSummaryDto> customers = [];
+        _gateway.Setup(g => g.GetCustomersAsync(null, MoqIt.IsAny<CancellationToken>())).ReturnsAsync(customers);
+
+        // Act
+        var result = await new GetMyZenCustomersQueryHandler(_gateway.Object).Handle(new GetMyZenCustomersQuery(), CancellationToken.None);
+
+        // Assert
+        result.Should().BeSameAs(customers);
+    }
+
+    [Fact(DisplayName = "The project and customer queries return the gateway's record")]
+    public async Task GetProjectAndCustomer_ReturnGatewayRecords()
+    {
+        // Arrange
+        var project = new MyZenProjectDetailsDto(5, "Website", 7, "Acme", "Bezig", null, null, null, null, null, null, null);
+        var customer = new MyZenCustomerDto(7, null, "Acme", null, "Company", null, false, null, null, null, null, null, null, null, null,
+            new MyZenAddressDto(null, null, null, null, null, null));
+        _gateway.Setup(g => g.GetProjectAsync(5, MoqIt.IsAny<CancellationToken>())).ReturnsAsync(project);
+        _gateway.Setup(g => g.GetCustomerAsync(7, MoqIt.IsAny<CancellationToken>())).ReturnsAsync(customer);
+
+        // Act
+        var foundProject = await new GetMyZenProjectQueryHandler(_gateway.Object).Handle(new GetMyZenProjectQuery(5), CancellationToken.None);
+        var foundCustomer = await new GetMyZenCustomerQueryHandler(_gateway.Object).Handle(new GetMyZenCustomerQuery(7), CancellationToken.None);
+
+        // Assert
+        foundProject.Should().BeSameAs(project);
+        foundCustomer.Should().BeSameAs(customer);
     }
 
     [Fact(DisplayName = "The MyZen exceptions say what the owner must do")]

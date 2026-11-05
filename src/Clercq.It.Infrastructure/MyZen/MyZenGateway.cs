@@ -208,8 +208,85 @@ public sealed class MyZenGateway(
                     break;
                 }
             }
-            return projects;
+
+            if (projects.All(p => p.Customer.Length == 0))
+            {
+                return projects;
+            }
+
+            // MyZen's project list shows the customer's name only; its customer list has the IDs.
+            if (await ReadCustomersAsync(session, keyword: null, cancellationToken) is not { } customers)
+            {
+                return null;
+            }
+
+            var ids = customers
+                .GroupBy(c => c.Name, StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() == 1)
+                .ToDictionary(g => g.Key, g => g.Single().Id, StringComparer.OrdinalIgnoreCase);
+            return projects
+                .Select(p => p with { CustomerId = ids.TryGetValue(p.Customer, out var id) ? id : null })
+                .ToList();
         }, cancellationToken);
+
+    public async Task<MyZenProjectDetailsDto?> GetProjectAsync(long id, CancellationToken cancellationToken)
+    {
+        var found = await WithSession<IReadOnlyList<MyZenProjectDetailsDto>>(async session =>
+        {
+            // MyZen answers an unknown project ID with an error page (500), which has no project form.
+            var response = await session.GetAsync($"/Project/{id.ToString(CultureInfo.InvariantCulture)}/EditProject", cancellationToken);
+            if (response.IsLoginPage)
+            {
+                return null;
+            }
+
+            return MyZenHtml.ParseProjectDetails(response.Body) is { } project && project.Id == id ? [project] : [];
+        }, cancellationToken);
+        return found.SingleOrDefault();
+    }
+
+    public Task<IReadOnlyList<MyZenCustomerSummaryDto>> GetCustomersAsync(string? keyword, CancellationToken cancellationToken) =>
+        WithSession<IReadOnlyList<MyZenCustomerSummaryDto>>(session => ReadCustomersAsync(session, keyword, cancellationToken), cancellationToken);
+
+    public async Task<MyZenCustomerDto?> GetCustomerAsync(long id, CancellationToken cancellationToken)
+    {
+        var found = await WithSession<IReadOnlyList<MyZenCustomerDto>>(async session =>
+        {
+            // MyZen sends an unknown customer ID to /Home/NoAccess, which has no customer form.
+            var response = await session.GetAsync($"/Company/Customer/{id.ToString(CultureInfo.InvariantCulture)}/CompanyEdit", cancellationToken);
+            if (response.IsLoginPage)
+            {
+                return null;
+            }
+
+            return MyZenHtml.ParseCustomerDetails(response.Body) is { } customer && customer.Id == id ? [customer] : [];
+        }, cancellationToken);
+        return found.SingleOrDefault();
+    }
+
+    /// <summary>Every page of the customer list, filtered by MyZen's keyword search; null when MyZen showed its login page.</summary>
+    private static async Task<IReadOnlyList<MyZenCustomerSummaryDto>?> ReadCustomersAsync(Session session, string? keyword,
+        CancellationToken cancellationToken)
+    {
+        var filter = string.IsNullOrWhiteSpace(keyword) ? string.Empty : $"&Keyword={Uri.EscapeDataString(keyword)}";
+        var customers = new List<MyZenCustomerSummaryDto>();
+        for (var page = 0; page < MaxPages; page++)
+        {
+            var response = await session.GetAsync($"/Company/Customer?CurrentPage={page}{filter}", cancellationToken);
+            if (response.IsLoginPage)
+            {
+                return null;
+            }
+
+            var (items, hasNext) = MyZenHtml.ParseCustomerList(response.Body, page);
+            customers.AddRange(items);
+            if (!hasNext)
+            {
+                break;
+            }
+        }
+        return customers;
+    }
 
     public Task<IReadOnlyList<MyZenTimeEntryDto>> GetTimeEntriesAsync(DateOnly firstDay, DateOnly lastDay, CancellationToken cancellationToken) =>
         WithSession<IReadOnlyList<MyZenTimeEntryDto>>(async session =>
