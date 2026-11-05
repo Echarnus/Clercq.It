@@ -5,6 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Loader2 } from "lucide-react";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { isAbortError } from "@/hooks/use-latest-request";
 import {
   MyZenRejectedError,
   searchMyZenProjects,
@@ -59,6 +62,7 @@ export function MyZenEntryForm({
   );
   const [search, setSearch] = useState("");
   const [options, setOptions] = useState<MyZenProjectOption[]>([]);
+  const [searching, setSearching] = useState(false);
   const [description, setDescription] = useState(entry?.description ?? "");
   const [invoiced, setInvoiced] = useState(entry?.invoiced ?? false);
   const [busy, setBusy] = useState(false);
@@ -67,18 +71,24 @@ export function MyZenEntryForm({
   useEffect(() => {
     const query = search.trim();
     if (query.length < 2) return;
-    let current = true;
+    // A newer search text aborts the request for the older one (issue #490).
+    const controller = new AbortController();
     const timer = setTimeout(() => {
-      searchMyZenProjects(query)
+      setSearching(true);
+      searchMyZenProjects(query, { signal: controller.signal })
         .then((found) => {
-          if (current) setOptions(found);
+          if (!controller.signal.aborted) setOptions(found);
         })
-        .catch(() => {
-          if (current) setError("Could not search MyZen's projects.");
+        .catch((e: unknown) => {
+          if (!controller.signal.aborted && !isAbortError(e))
+            setError("Could not search MyZen's projects.");
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setSearching(false);
         });
     }, 300);
     return () => {
-      current = false;
+      controller.abort();
       clearTimeout(timer);
     };
   }, [search]);
@@ -157,6 +167,9 @@ export function MyZenEntryForm({
               placeholder="Type at least two letters"
               onChange={(e) => setSearch(e.target.value)}
             />
+            {searching && search.trim().length >= 2 && (
+              <LoadingSpinner label="Searching MyZen's projects" showLabel />
+            )}
             {shown.length > 0 && (
               <ul className="rounded-md border text-sm" aria-label="Matching projects">
                 {shown.map((option) => (
@@ -206,6 +219,7 @@ export function MyZenEntryForm({
 
       <div className="flex gap-2">
         <Button type="submit" disabled={busy || !valid}>
+          {busy && <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />}
           {entry ? "Save changes" : "Add entry"}
         </Button>
         <Button type="button" variant="outline" disabled={busy} onClick={onCancel}>

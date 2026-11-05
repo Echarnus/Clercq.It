@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authFetch } from "./adminApi";
+import { authFetch, type RequestOptions } from "./adminApi";
 
 // Visitor statistics (issue #429, docs/statistics.md): the admin page reads the
 // totals. Page views are sent by pageViewApi.ts, which public pages load instead.
@@ -32,8 +32,11 @@ export const SiteStatisticsSchema = z.object({
 export type SiteStatistics = z.infer<typeof SiteStatisticsSchema>;
 
 /** Statistics for the last `days` days, today included (needs the Admin.View role). */
-export async function fetchSiteStatistics(days: number): Promise<SiteStatistics> {
-  const response = await authFetch(`/api/stats?days=${days}`);
+export async function fetchSiteStatistics(
+  days: number,
+  { signal }: RequestOptions = {},
+): Promise<SiteStatistics> {
+  const response = await authFetch(`/api/stats?days=${days}`, { signal });
   if (!response.ok) {
     throw new Error(`Statistics request failed (${response.status})`);
   }

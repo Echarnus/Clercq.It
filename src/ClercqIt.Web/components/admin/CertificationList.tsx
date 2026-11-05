@@ -30,6 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { Pencil, Trash2, Plus, Award, Loader2, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { isAbortError, useLatestRequest } from "@/hooks/use-latest-request";
+import { LoadingSpinner } from "@/components/loading-spinner";
 import { CertificationForm } from "./CertificationForm";
 import {
   fetchAllCertifications,
@@ -52,20 +54,26 @@ export function CertificationList() {
 
   // isLoading starts true; a reload after a change keeps the list on screen.
   // State is only set in promise callbacks, never synchronously in the effect.
-  const loadCertifications = useCallback(
-    () =>
-      fetchAllCertifications()
-        .then(setCertifications)
-        .catch(() =>
-          toast({
-            title: "Error",
-            description: "Failed to load certifications",
-            variant: "destructive",
-          }),
-        )
-        .finally(() => setIsLoading(false)),
-    [toast],
-  );
+  // A newer load, or leaving the section, aborts the older request (issue #490).
+  const nextSignal = useLatestRequest();
+  const loadCertifications = useCallback(() => {
+    const signal = nextSignal();
+    return fetchAllCertifications({ signal })
+      .then((loaded) => {
+        if (!signal.aborted) setCertifications(loaded);
+      })
+      .catch((error: unknown) => {
+        if (signal.aborted || isAbortError(error)) return;
+        toast({
+          title: "Error",
+          description: "Failed to load certifications",
+          variant: "destructive",
+        });
+      })
+      .finally(() => {
+        if (!signal.aborted) setIsLoading(false);
+      });
+  }, [toast, nextSignal]);
 
   useEffect(() => {
     void loadCertifications();
@@ -184,9 +192,7 @@ export function CertificationList() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <LoadingSpinner label="Loading certifications" showLabel className="justify-center py-12" />
     );
   }
 

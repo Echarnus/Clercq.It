@@ -23,6 +23,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { fetchSiteStatistics, type SiteStatistics } from "@/lib/api/statsApi";
+import { LoadingSpinner } from "@/components/loading-spinner";
+import { Skeleton } from "@/components/ui/skeleton";
+import { isAbortError } from "@/hooks/use-latest-request";
+import { cn } from "@/lib/utils";
 
 // Visitor statistics (issue #429, docs/statistics.md).
 
@@ -43,22 +47,30 @@ export function shortDate(isoDate: string): string {
 export function StatisticsPanel() {
   const [period, setPeriod] = useState<Period>(30);
   const [stats, setStats] = useState<SiteStatistics | null>(null);
+  // The period whose load last finished; while it differs from `period` the
+  // previous numbers stay on screen, dimmed, with a spinner.
+  const [settled, setSettled] = useState<Period | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const loading = settled !== period;
 
   useEffect(() => {
-    let cancelled = false;
-    fetchSiteStatistics(period)
+    // Picking another period aborts the request for the previous one (issue #490).
+    const controller = new AbortController();
+    const { signal } = controller;
+    fetchSiteStatistics(period, { signal })
       .then((result) => {
-        if (cancelled) return;
+        if (signal.aborted) return;
         setStats(result);
         setError(null);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Could not load statistics");
+        if (signal.aborted || isAbortError(err)) return;
+        setError(err instanceof Error ? err.message : "Could not load statistics");
+      })
+      .finally(() => {
+        if (!signal.aborted) setSettled(period);
       });
-    return () => {
-      cancelled = true;
-    };
+    return () => controller.abort();
   }, [period]);
 
   const chartData = stats?.days.map((d) => ({
@@ -75,6 +87,7 @@ export function StatisticsPanel() {
             ? `${shortDate(stats.from)} – ${shortDate(stats.to)} (UTC days, today included)`
             : "Loading…"}
         </p>
+        {loading && <LoadingSpinner label="Loading statistics" />}
         <div className="flex gap-2" role="group" aria-label="Period">
           {PERIODS.map((p) => (
             <Button
@@ -96,8 +109,19 @@ export function StatisticsPanel() {
         </p>
       )}
 
+      {!stats && loading && (
+        <div className="grid gap-6 md:grid-cols-3" aria-hidden>
+          {[0, 1, 2].map((card) => (
+            <Skeleton key={card} className="h-28 w-full" />
+          ))}
+        </div>
+      )}
+
       {stats && (
-        <>
+        <div
+          aria-busy={loading}
+          className={cn("space-y-6 transition-opacity", loading && "opacity-50")}
+        >
           <div className="grid gap-6 md:grid-cols-3">
             <StatCard
               title="Page views"
@@ -221,7 +245,7 @@ export function StatisticsPanel() {
             Counted on the site itself, without cookies. Visitors are a daily hash of IP address and
             browser; neither is stored. Bots and admin pages are not counted.
           </p>
-        </>
+        </div>
       )}
     </div>
   );

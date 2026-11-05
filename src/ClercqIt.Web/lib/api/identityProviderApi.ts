@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authFetch } from "./adminApi";
+import { authFetch, type RequestOptions } from "./adminApi";
 
 // The identity provider setup for the admin Settings page (issue #462, docs/ciam.md).
 // Only URLs, the realm, client ids and role names: the API never sends secrets here.
@@ -20,8 +20,10 @@ export const IdentityProviderSchema = z.object({
 export type IdentityProvider = z.infer<typeof IdentityProviderSchema>;
 
 /** How Cloud IAM is set up (needs the Admin.View role). */
-export async function fetchIdentityProvider(): Promise<IdentityProvider> {
-  const response = await authFetch("/api/auth/identity-provider");
+export async function fetchIdentityProvider({
+  signal,
+}: RequestOptions = {}): Promise<IdentityProvider> {
+  const response = await authFetch("/api/auth/identity-provider", { signal });
   if (!response.ok) {
     throw new Error(`Identity provider request failed (${response.status})`);
   }

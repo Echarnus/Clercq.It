@@ -19,4 +19,12 @@ describe("AdminOverview", () => {
     expect(within(list).queryByRole("link", { name: "Overview" })).not.toBeInTheDocument();
     expect(within(list).getAllByRole("link")).toHaveLength(6);
   });
+
+  it("AdminOverview_Loading_ShowsPlaceholdersUntilTheCountsArrive", async () => {
+    render(<AdminOverview username="kenneth" roles={[]} nav={ADMIN_NAV} />);
+
+    expect(screen.getByRole("status", { name: "Loading Total Blogs" })).toBeInTheDocument();
+    expect(await screen.findAllByText("1")).toHaveLength(3);
+    expect(screen.queryByRole("status", { name: "Loading Total Blogs" })).not.toBeInTheDocument();
+  });
 });

@@ -84,6 +84,21 @@ describe("public reads", () => {
   });
 });
 
+describe("cancelled reads", () => {
+  it.each([
+    ["blogs", fetchAllBlogs],
+    ["projects", fetchAllProjects],
+    ["certifications", fetchAllCertifications],
+  ] as const)("%s: an aborted request rejects instead of giving []", async (_path, list) => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const controller = new AbortController();
+    controller.abort();
+
+    await expect(list({ signal: controller.signal })).rejects.toThrow();
+    expect(error).not.toHaveBeenCalled();
+  });
+});
+
 describe("writes without a token", () => {
   beforeEach(() => {
     vi.mocked(getAccessToken).mockResolvedValue(null);

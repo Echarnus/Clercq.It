@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { authFetch } from "./adminApi";
+import { authFetch, type RequestOptions } from "./adminApi";
 
 // The owner's own MyZen account (issue #345, docs/myzen.md). Every call needs
 // the MyZen.Owner role; the API answers 404 while the MyZen flag is off.
@@ -149,8 +149,8 @@ function postJson(body: object, method = "POST"): RequestInit {
   };
 }
 
-export function fetchMyZenStatus(): Promise<MyZenStatus> {
-  return send("/api/myzen/session", MyZenStatusSchema);
+export function fetchMyZenStatus({ signal }: RequestOptions = {}): Promise<MyZenStatus> {
+  return send("/api/myzen/session", MyZenStatusSchema, { signal });
 }
 
 export function startMyZenLogin(): Promise<MyZenLoginStep> {
@@ -172,22 +172,38 @@ export async function disconnectMyZen(): Promise<void> {
   }
 }
 
-/** Entries from `from` to `to` (yyyy-MM-dd, at most 93 days). */
-export function fetchMyZenTimeEntries(from: string, to: string): Promise<MyZenTimeEntry[]> {
+/** Entries from `from` to `to` (yyyy-MM-dd, at most 93 days), oldest first. */
+export function fetchMyZenTimeEntries(
+  from: string,
+  to: string,
+  { signal }: RequestOptions = {},
+): Promise<MyZenTimeEntry[]> {
   const query = new URLSearchParams({ from, to });
-  return send(`/api/myzen/time-entries?${query.toString()}`, z.array(MyZenTimeEntrySchema));
+  return send(`/api/myzen/time-entries?${query.toString()}`, z.array(MyZenTimeEntrySchema), {
+    signal,
+  });
 }
 
 /** One entry with its project and customer IDs, as the edit form needs them. */
-export async function fetchMyZenTimeEntry(id: number): Promise<MyZenTimeEntry> {
-  const response = await check(await authFetch(`/api/myzen/time-entries/${id}`));
+export async function fetchMyZenTimeEntry(
+  id: number,
+  { signal }: RequestOptions = {},
+): Promise<MyZenTimeEntry> {
+  const response = await check(await authFetch(`/api/myzen/time-entries/${id}`, { signal }));
   return MyZenTimeEntrySchema.parse(await response.json());
 }
 
 /** Projects whose name matches `query` (at least two characters). */
-export function searchMyZenProjects(query: string): Promise<MyZenProjectOption[]> {
+export function searchMyZenProjects(
+  query: string,
+  { signal }: RequestOptions = {},
+): Promise<MyZenProjectOption[]> {
   const params = new URLSearchParams({ q: query });
-  return send(`/api/myzen/projects/search?${params.toString()}`, z.array(MyZenProjectOptionSchema));
+  return send(
+    `/api/myzen/projects/search?${params.toString()}`,
+    z.array(MyZenProjectOptionSchema),
+    { signal },
+  );
 }
 
 export async function createMyZenTimeEntry(entry: MyZenTimeEntryInput): Promise<void> {

@@ -77,6 +77,15 @@ Fixed in #368: blog posts have a `title` (required, max 200). It is the card hea
 
 Fixed in #388: items without a picture no longer show a placeholder image (portfolio, blogs, home) or a grey icon box (certifications). The image area is left out.
 
+## Loading and cancellation
+
+Every view that waits for data says so, and drops requests it no longer needs (issue #490).
+
+- **Cancel what is stale.** Each load passes an `AbortSignal` to its API helper (`fetchAllBlogs({ signal })`, `fetchMyZenTimeEntries(from, to, { signal })`, and so on). A component that reloads (another month, another period, a reload after a change) takes its signal from `useLatestRequest()` in `src/ClercqIt.Web/hooks/use-latest-request.ts`: taking a new signal aborts the previous one, and unmounting aborts the last. A one-off load in an effect uses its own `AbortController` and aborts it in the cleanup. Before setting state from a result, check `signal.aborted`, and ignore errors for which `isAbortError` is true. A slow answer for an old month therefore never replaces the month on screen.
+- **Show progress.** Use `LoadingSpinner` (`src/ClercqIt.Web/components/loading-spinner.tsx`, a `role="status"` spinner with a screen-reader label) or `Skeleton` placeholders for a first load. On a reload, keep the old data on screen, dimmed, with `aria-busy` and a spinner next to the control that started it (MyZen months, statistics periods).
+- **Busy buttons.** Save, delete, connect and sign-in buttons show a spinner and are disabled while their request runs, so they cannot be pressed twice. The MyZen delete dialog stays open until MyZen answers.
+- **Public pages.** `loading.tsx` files under `src/ClercqIt.Web/app` show `PageSkeleton` (`src/ClercqIt.Web/components/page-skeleton.tsx`) while a server-rendered page loads on navigation: a card grid for the list pages, a text block for a blog post or project. The admin shows a spinner while it checks the sign-in.
+
 ## Markdown
 
 Bodies of projects, blog posts and certifications render through `src/ClercqIt.Web/components/markdown.tsx`: GitHub Flavored Markdown (tables, task lists, strikethrough), styled with the Tailwind typography plugin. Raw HTML in a body is shown as text, never rendered. Links to other sites open in a new tab.
