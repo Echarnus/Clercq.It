@@ -12,7 +12,7 @@ namespace ClercqIt.Api.Tests.MyZen;
 /// The gateway against a scripted MyZen: each test queues the responses MyZen
 /// would give and checks the requests sent and the session stored.
 /// </summary>
-public class MyZenGatewayTests
+public partial class MyZenGatewayTests
 {
     private const string BaseUrl = "https://myzen.example";
 

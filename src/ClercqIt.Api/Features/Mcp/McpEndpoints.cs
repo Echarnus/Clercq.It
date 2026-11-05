@@ -65,7 +65,8 @@ public static class McpEndpoints
             .WithTools<ProjectTools>()
             .WithTools<CertificationTools>()
             .WithTools<BlogTools>()
-            .WithTools<MyZenTools>();
+            .WithTools<MyZenTools>()
+            .WithTools<MyZenInvoiceTools>();
         return services;
     }
 

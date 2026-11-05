@@ -1,6 +1,6 @@
 # MyZen integration
 
-clercq.it can sign in to the owner's own [MyZen](https://myzen.trustteam.be) account (TrustTeam / Billit time registration), keep that session alive, read his projects and time entries, and add, edit and delete entries one at a time (issues #345 and #357).
+clercq.it can sign in to the owner's own [MyZen](https://myzen.trustteam.be) account (TrustTeam / Billit time registration), keep that session alive, read his projects and time entries, and add, edit and delete entries one at a time (issues #345 and #357). Claude can also read his sales and purchase invoices, read-only (issue #494).
 
 ## How it works
 
@@ -49,12 +49,29 @@ When MyZen drops the session, the next keep-alive or data call notices (MyZen an
 
 Only the authenticator-app MFA is supported. SMS and e-mail codes are not.
 
+## Invoices
+
+Claude can read the company's invoices through two read-only MCP tools (issue #494), to see income and costs, for example what AI subscriptions cost:
+
+- `list_myzen_invoices` lists the invoices of one `direction` in a period of at most 366 days, oldest first. `sales` are the invoices the company sent (MyZen **Inkomsten**), `purchase` the invoices it received (MyZen **Uitgaven**), with their cost category. `kind: "creditNote"` lists credit notes instead. Filters: `search` (MyZen's own keyword search), `status` (`Paid`, `ToPay`, `Draft`, `ToSend`, `Credited`, `PaymentFileGenerated`, `ToDomiciliate`), `overdueOnly`, `counterparty` (part of the customer or supplier name) and `minAmount`/`maxAmount` (on the total incl. VAT). MyZen applies the period, search, status and overdue filters; the API applies counterparty and amount to MyZen's results.
+- `get_myzen_invoice` reads one invoice by the `id`, `direction` and `kind` the list gave: dates, customer or supplier, project, currency, totals, status, paid and paid date, cost category and every line (description, quantity, unit, unit price excl. VAT, VAT %, discount, totals).
+
+Nothing changes an invoice: there are no REST endpoints or admin screens for them, and the gateway only sends GET requests.
+
+| Read | MyZen request |
+| --- | --- |
+| List | `GET /Order/{Income or Cost}/{Invoice or CreditNote}/Index` with the grid form's fields in the query string: `F.DateFrom`, `F.DateTill` (dd/MM/yyyy), `F.CurrentPage`, and `F.Keyword`, `F.OrderStatus`, `F.OverDue=True` when set. 20 rows per page; every page is read. |
+| One invoice | `GET /Order/{Income or Cost}/{Invoice or CreditNote}/{id}/EditOrder` |
+
+`MyZenInvoiceHtml` reads the list's columns by their `sortcolumn` keys, because the purchase list has an extra category column and a credit note list has a second `OrderNumber` column for the invoice it credits. The row's `navigateurl` gives the ID, the `statusType…` class gives the status, and the purchase category is the info icon's `title`. Amounts are Belgian (`€ 12.967,5000`). A sent sales invoice opens read-only (labels with plain text), a purchase invoice opens as a form; the details parser reads a form field first and falls back to the text next to its label. Lines are the `OrderLines[i].*` fields; lines marked `Deleted` are skipped. A page without `Order.OrderID` equal to the ID asked for counts as not found. The pages were mapped read-only from the owner's browser on 5 November 2026; the trimmed copies are in `tests/ClercqIt.Api.Tests/MyZen/MyZenInvoicePages.cs`.
+
 ## Where things live
 
 | Part | File |
 | --- | --- |
 | Gateway contract, DTOs, queries and commands | `src/Clercq.It.Application/Features/MyZen/` |
-| MyZen client, HTML parsing, session store | `src/Clercq.It.Infrastructure/MyZen/` |
+| MyZen client, HTML parsing, session store | `src/Clercq.It.Infrastructure/MyZen/` (invoices: `MyZenGateway.Invoices.cs`, `MyZenInvoiceHtml.cs`) |
+| MCP tools | `src/ClercqIt.Api/Features/Mcp/MyZenTools.cs`, `src/ClercqIt.Api/Features/Mcp/MyZenInvoiceTools.cs` |
 | Endpoints | `src/ClercqIt.Api/Features/MyZenEndpoints.cs` |
 | Keep-alive job | `src/Clercq.It.Jobs/Jobs/MyZenKeepAliveJob.cs`, scheduled in `infra/terraform/jobs.tf` ([Scheduled jobs](./jobs.md)) |
 | Error mapping (409, 422, 502) | `src/ClercqIt.Api/MyZenExceptionHandler.cs` |
@@ -82,10 +99,10 @@ C4Component
   Container_Boundary(site, "Website container clercq-it-app") {
     Component(panel, "MyZen section", "Next.js, MyZenPanel and MyZenEntryForm", "Connect, month list, add, edit, delete")
     Component(endpoints, "MyZen endpoints", "ClercqIt.Api, policy MyZenOwner", "REST at /api/myzen, 404 while the MyZen flag is off")
-    Component(mcp, "MyZen MCP tools", "ClercqIt.Api, Features/Mcp", "The same operations for Claude")
-    Component(handlers, "Handlers", "Application, MediatR", "Commands and queries behind IMyZenGateway")
+    Component(mcp, "MyZen MCP tools", "ClercqIt.Api, Features/Mcp", "The same operations for Claude, plus read-only invoices")
+    Component(handlers, "Handlers", "Application, MediatR", "Commands and queries behind IMyZenGateway and IMyZenInvoiceGateway")
     Component(gateway, "MyZen gateway", "Infrastructure, MyZenGateway", "Login steps, AJAX calls, request token, expiry check")
-    Component(parser, "HTML parsing", "Infrastructure, MyZenHtml", "Turns MyZen's pages into DTOs")
+    Component(parser, "HTML parsing", "Infrastructure, MyZenHtml and MyZenInvoiceHtml", "Turns MyZen's pages into DTOs")
     Component(store, "Session store", "Infrastructure, EfMyZenSessionStore and MyZenSessionCipher", "AES-GCM encrypted cookies, key from myzen-session-key")
   }
 
@@ -102,11 +119,11 @@ C4Component
   Rel(panel, endpoints, "Calls", "HTTPS")
   Rel(endpoints, handlers, "Sends commands and queries")
   Rel(mcp, handlers, "Sends commands and queries")
-  Rel(handlers, gateway, "Uses", "IMyZenGateway")
+  Rel(handlers, gateway, "Uses", "IMyZenGateway, IMyZenInvoiceGateway")
   Rel(gateway, parser, "Parses pages with")
   Rel(gateway, store, "Loads and saves the session")
   Rel(store, db, "Reads and writes", "EF Core")
-  Rel(gateway, myzen, "Login form, MFA, AJAX endpoints", "HTTPS, cookie session")
+  Rel(gateway, myzen, "Login form, MFA, AJAX endpoints, invoice pages", "HTTPS, cookie session")
   Rel(keepalive, store, "Loads and saves the session")
   Rel(keepalive, myzen, "GET /TimeRegistration/Index", "HTTPS")
   Rel(secrets, gateway, "Email, password, session key", "Environment")
