@@ -27,7 +27,7 @@ Claude can do the same through the site's MCP server: the MyZen tools are listed
 
 ## Customers and projects
 
-The MCP server also reads MyZen's customers and projects (issue #493). There is no admin UI or REST endpoint for them.
+The MCP server reads, creates and updates MyZen's customers and projects (issues #493 and #495). There is no admin UI or REST endpoint for them, and no delete tool.
 
 | Tool | MyZen page it reads |
 | --- | --- |
@@ -43,7 +43,32 @@ The MCP server also reads MyZen's customers and projects (issue #493). There is 
 - Project status comes back as the label MyZen shows: `Prospect`, `Bezig`, `Klaar` or `Geannuleerd` (form values `Prospect`, `InProgress`, `Finished`, `Canceled`). Dates are `yyyy-MM-dd`; amounts read MyZen's `1.000,50` format; the time budget is in hours.
 - An unknown project ID gives MyZen's error page (500) and an unknown customer ID its `/Home/NoAccess` page. Neither has the edit form, so the tool says there is no such project or customer.
 
-Creating and updating customers and projects is not built yet. MyZen's save requests for them still have to be captured from the owner's browser (see issue #493); the tools will not guess them. There are no delete tools for customers or projects.
+### Creating and updating
+
+| Tool | MyZen form |
+| --- | --- |
+| `create_myzen_customer` | `GET` then `POST /Company/Customer/CompanyEdit`, `ButtonActionType=Save` |
+| `update_myzen_customer` | `GET` then `POST /Company/Customer/{id}/CompanyEdit`, `ButtonActionType=Save` |
+| `create_myzen_project` | `GET` then `POST /Project/AddProject`, `ButtonActionType=BulkinputSaveReceipt` |
+| `update_myzen_project` | `GET` then `POST /Project/{id}/EditProject`, `ButtonActionType=BulkinputSaveReceipt` |
+
+These requests were captured from the owner's browser on 5 November 2026, by saving an existing customer and project without changes. MyZen's pages post the whole edit form as an ordinary form post (no AJAX headers) to the page's own URL. So the gateway (`src/Clercq.It.Infrastructure/MyZen/MyZenGateway.Companies.cs`):
+
+1. Opens the form and reads every field the way a browser submits it (`src/Clercq.It.Infrastructure/MyZen/MyZenForm.cs`): checked boxes and radios only, the selected option, textareas, no buttons.
+2. Changes only the fields the tool was given. Every other field keeps its value, including the Billit settings the tools do not know (payment terms, Peppol, delivery address). Fields MyZen repeats, such as `InvoiceAddress.Street`, are set everywhere. A checkbox is posted the ASP.NET MVC way (`true` plus the hidden `false`).
+3. Adds `ButtonActionType` from the page's **Opslaan** button and `__RequestVerificationToken` from the `csrfToken` in `script#layoutmainconfig`, then posts the form back.
+4. Counts the save as done only when the returned page shows `.alert-success` ("De aanpassingen zijn succesvol opgeslagen."). Validation messages become MyZen's refusal (tool error with MyZen's text). Anything else is "MyZen did not confirm the save". The red "Ook op deze pagina" badge on every page is ignored.
+5. Reads the new or changed record back and returns it. When MyZen's answer to a create does not show the new ID, the customer is found by VAT number and the project by name and customer.
+
+Rules in the commands (`src/Clercq.It.Application/Features/MyZen/MyZenCompanyCommands.cs`):
+
+- **No duplicates.** Before creating, the tools look for a customer with the same VAT number (for a private customer without VAT: the same name) or a project with the same name for the same customer. If one exists, nothing is written and the tool error names the existing record and its ID. Changing a customer's VAT number to another customer's number, or renaming or moving a project onto an existing one, is refused the same way.
+- **Validation.** A new customer needs a name and, unless `type` is `Private`, a VAT number. VAT numbers may be typed as `BE 0825.170.684`; they are stored as `BE0825170684`, and Belgian numbers must pass the modulo-97 check. E-mail (several separated by `;`), two-letter country, four-digit Belgian postal code, language (`NL`, `FR`, `EN`, `DE`) and lengths are checked. A new project needs a name, a `customerId` that exists in MyZen, and a start date (`yyyy-MM-dd`). The end date may not be before the start date, and amounts may not be negative. Status accepts `Prospect`, `Bezig`, `Klaar`, `Geannuleerd` or the form values. A new project starts as `Prospect` unless a status is given, like in MyZen.
+- **Updates change only what is passed.** An update with no fields is refused. A field cannot be cleared by leaving it out; the tools have no way to empty a field yet.
+
+The address is the invoice address, given in parts: `street`, `streetNumber`, `box`, `zipcode`, `city`, `country`. MyZen's own address search (which fills the hidden street, postal code and city fields in the browser) is not used.
+
+The tests never touch real MyZen: `tests/ClercqIt.Api.Tests/MyZen/MyZenGatewayTests.Companies.cs` runs the gateway against scripted pages and `tests/Clercq.It.Application.Tests/MyZenCompanyCommandsTests.cs` the rules against a mocked gateway. To check against MyZen itself, create one customer and one project through the tools and compare them in MyZen. The first one was the owner's acceptance case: customer "In The Pocket NV" (BE 0825.170.684, Sassevaartstraat 46 bus 401, 9000 Gent) and project "In The Pocket" from 2026-12-01.
 
 When MyZen drops the session, the next keep-alive or data call notices (MyZen answers with its login page), marks it **Expired**, and the section offers **Reconnect MyZen**.
 

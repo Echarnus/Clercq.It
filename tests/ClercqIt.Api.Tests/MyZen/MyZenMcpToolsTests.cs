@@ -24,6 +24,7 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
         "myzen_status", "list_myzen_projects", "search_myzen_projects", "list_myzen_time_entries",
         "get_myzen_time_entry", "create_myzen_time_entry", "update_myzen_time_entry", "delete_myzen_time_entry",
         "get_myzen_project", "list_myzen_customers", "search_myzen_customers", "get_myzen_customer",
+        "create_myzen_customer", "update_myzen_customer", "create_myzen_project", "update_myzen_project",
     ];
 
     private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
@@ -148,6 +149,74 @@ public class MyZenMcpToolsTests(CustomWebApplicationFactory factory) : IAsyncLif
         project.GetProperty("startDate").GetString().Should().Be("2026-12-01");
         (absence[0].TryGetProperty("customer", out var name) ? name.ValueKind : JsonValueKind.Undefined)
             .Should().BeOneOf(JsonValueKind.Null, JsonValueKind.Undefined);
+    }
+
+    [Fact(DisplayName = "Creating a customer returns it; the same VAT number again is a tool error and creates nothing")]
+    public async Task CreateCustomer_ThenDuplicate()
+    {
+        // Arrange
+        var created = new MyZenCustomerDto(888, "3", "In The Pocket NV", null, "Company", "BE0825170684", true, null, null, null, null,
+            "NL", null, null, null, new MyZenAddressDto("Sassevaartstraat", "46", "401", "9000", "Gent", "BE"));
+        _gateway.SetupSequence(g => g.GetCustomersAsync("BE0825170684", It.IsAny<CancellationToken>()))
+            .ReturnsAsync([])
+            .ReturnsAsync([new MyZenCustomerSummaryDto(888, "3", "In The Pocket NV", "BE0825170684", null, "9000 Gent", null, null)]);
+        _gateway.Setup(g => g.CreateCustomerAsync(It.IsAny<MyZenCustomerInput>(), It.IsAny<CancellationToken>())).ReturnsAsync(888);
+        _gateway.Setup(g => g.GetCustomerAsync(888, It.IsAny<CancellationToken>())).ReturnsAsync(created);
+        await using var mcp = await ConnectAsync(_app!, "admin");
+        var args = Args(("name", "In The Pocket NV"), ("vat", "BE 0825.170.684"), ("street", "Sassevaartstraat"),
+            ("streetNumber", "46"), ("box", "401"), ("zipcode", "9000"), ("city", "Gent"));
+
+        // Act
+        var first = Json(await mcp.CallToolAsync("create_myzen_customer", args));
+        var second = await mcp.CallToolAsync("create_myzen_customer", args);
+
+        // Assert
+        first.GetProperty("id").GetInt64().Should().Be(888);
+        second.IsError.Should().BeTrue();
+        Text(second).Should().Contain("already has a customer with VAT number BE0825170684").And.Contain("id 888");
+        _gateway.Verify(g => g.CreateCustomerAsync(It.IsAny<MyZenCustomerInput>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact(DisplayName = "An invalid VAT number is a validation error and nothing reaches MyZen")]
+    public async Task CreateCustomer_InvalidVat_ToolError()
+    {
+        await using var mcp = await ConnectAsync(_app!, "admin");
+
+        var result = await mcp.CallToolAsync("create_myzen_customer", Args(("name", "Acme"), ("vat", "BE 0825.170.685")));
+
+        result.IsError.Should().BeTrue();
+        Text(result).Should().Contain("VAT number 'BE 0825.170.685' is not valid");
+        _gateway.VerifyNoOtherCalls();
+    }
+
+    [Fact(DisplayName = "Creating a project and changing its status go through the gateway once each")]
+    public async Task CreateAndUpdateProject()
+    {
+        // Arrange
+        var customer = new MyZenCustomerDto(888, "3", "In The Pocket NV", null, "Company", "BE0825170684", true, null, null, null, null,
+            "NL", null, null, null, new MyZenAddressDto(null, null, null, null, null, null));
+        var project = new MyZenProjectDetailsDto(999, "In The Pocket", 888, "In The Pocket NV", "Prospect", new DateOnly(2026, 12, 1),
+            null, null, null, null, null, null);
+        _gateway.Setup(g => g.GetCustomerAsync(888, It.IsAny<CancellationToken>())).ReturnsAsync(customer);
+        _gateway.Setup(g => g.GetProjectsAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        _gateway.Setup(g => g.CreateProjectAsync(It.IsAny<MyZenProjectInput>(), "In The Pocket NV", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(999);
+        _gateway.Setup(g => g.GetProjectAsync(999, It.IsAny<CancellationToken>())).ReturnsAsync(project);
+        _gateway.Setup(g => g.UpdateProjectAsync(999, It.IsAny<MyZenProjectInput>(), null, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        await using var mcp = await ConnectAsync(_app!, "admin");
+
+        // Act
+        var created = Json(await mcp.CallToolAsync("create_myzen_project",
+            Args(("name", "In The Pocket"), ("customerId", 888), ("startDate", "2026-12-01"))));
+        var updated = Json(await mcp.CallToolAsync("update_myzen_project", Args(("id", 999), ("status", "Bezig"))));
+        var unknown = await mcp.CallToolAsync("update_myzen_project", Args(("id", 5), ("status", "Klaar")));
+
+        // Assert
+        created.GetProperty("id").GetInt64().Should().Be(999);
+        updated.GetProperty("id").GetInt64().Should().Be(999);
+        Text(unknown).Should().Contain("No MyZen project with id 5");
+        var sent = new MyZenProjectInput(Status: MyZenProjectStatus.InProgress);
+        _gateway.Verify(g => g.UpdateProjectAsync(999, sent, null, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact(DisplayName = "An unknown project or customer ID is a tool error")]

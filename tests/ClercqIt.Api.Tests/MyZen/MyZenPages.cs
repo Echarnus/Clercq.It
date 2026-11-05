@@ -157,4 +157,27 @@ internal static class MyZenPages
           <input name="Rate" type="text" value="95,0000" />
         </form>
         """;
+
+    /// <summary>
+    /// A whole edit page around a form: the layout config with the anti-forgery token, the red
+    /// "also on this page" badge MyZen always shows, the save buttons, and after a save the
+    /// success alert or a validation message.
+    /// </summary>
+    public static string EditPage(string form, string saveAction, bool saved = false, string? error = null) => $$"""
+        <html><body>
+        <script type="application/json" id="layoutmainconfig">{"csrfToken":"<input name=\"__RequestVerificationToken\" type=\"hidden\" value=\"form-token\" />","rawcsrfToken":"page-token"}</script>
+        <div class="alert alert-danger float-right p-2 mr-3">Ook op deze pagina:</div>
+        <div class="d-none alert alert-danger">Je bent uitgelogd.</div>
+        {{(saved ? "<div class=\"alert alert-success\">De aanpassingen zijn succesvol opgeslagen.</div>" : "")}}
+        {{(error is null ? "" : $"<span class=\"field-validation-error\">{error}</span>")}}
+        {{form}}
+        <button buttonactiontype="Delete" class="btnSubmitActionType" type="button">Wissen</button>
+        <button buttonactiontype="{{saveAction}}" class="btn-primary btn btnSubmitActionType" type="button">Opslaan</button>
+        </body></html>
+        """;
+
+    public static string CustomerPage(long id, bool saved = false, string? error = null) => EditPage(CustomerDetails(id), "Save", saved, error);
+
+    public static string ProjectPage(long id, bool saved = false, string? error = null) =>
+        EditPage(ProjectDetails(id), "BulkinputSaveReceipt", saved, error);
 }

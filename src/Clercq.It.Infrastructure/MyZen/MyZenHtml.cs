@@ -316,15 +316,6 @@ public static class MyZenHtml
                 Field("InvoiceAddress.Country")));
     }
 
-    /// <summary>MyZen's project statuses (the <c>ProjectStatus</c> radio values) and the labels its pages show.</summary>
-    public static readonly IReadOnlyDictionary<string, string> ProjectStatusLabels = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
-    {
-        ["Prospect"] = "Prospect",
-        ["InProgress"] = "Bezig",
-        ["Finished"] = "Klaar",
-        ["Canceled"] = "Geannuleerd",
-    };
-
     /// <summary>Reads one project from its edit page (<c>/Project/{id}/EditProject</c>).</summary>
     /// <returns>The project, or null when the page has no project form.</returns>
     public static MyZenProjectDetailsDto? ParseProjectDetails(string html)
@@ -347,7 +338,7 @@ public static class MyZenHtml
             Field("ProjectName") ?? string.Empty,
             ParseId(Field("CustomerID")),
             Field("CustomerName"),
-            ProjectStatusLabels.TryGetValue(status, out var label) ? label : status,
+            MyZenProjectStatus.ToLabel(status),
             Date("StartDate"),
             Date("EndDate"),
             Field("Reference"),
@@ -385,6 +376,29 @@ public static class MyZenHtml
     /// <summary>MyZen's unfilled template fields, such as <c>[extradata-CustomerName]</c>.</summary>
     private static bool IsPlaceholder(string text) =>
         text.Trim() is { Length: > 0 } t && t.StartsWith("[extradata-", StringComparison.OrdinalIgnoreCase) && t.EndsWith(']');
+
+    /// <summary>
+    /// Reads the page MyZen returns after an edit form is posted (customers and projects, issue #495).
+    /// A saved form shows <c>.alert-success</c> ("De aanpassingen zijn succesvol opgeslagen.");
+    /// a refused one shows ASP.NET validation messages. The red "Ook op deze pagina" badge
+    /// (someone else viewing the page) is not an error.
+    /// </summary>
+    public static (bool Saved, string? Error) ParseFormSave(string html)
+    {
+        var document = Parser.ParseDocument(html);
+        var errors = document
+            .QuerySelectorAll(".field-validation-error, .validation-summary-errors li")
+            .Select(e => Clean(e.TextContent))
+            .Where(text => text.Length > 0)
+            .Distinct()
+            .ToList();
+        if (errors.Count > 0)
+        {
+            return (false, Truncate(string.Join(" ", errors), 300));
+        }
+
+        return (document.QuerySelector(".alert-success:not(.d-none)") is not null, null);
+    }
 
     /// <summary>Reads MyZen's answer to a save or delete.</summary>
     /// <returns>MyZen's reason when it refused the change, or null when it accepted it.</returns>
